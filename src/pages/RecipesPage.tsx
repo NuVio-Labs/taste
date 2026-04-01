@@ -8,6 +8,7 @@ import { RecipeCreateModal } from "../components/recipes/RecipeCreateModal";
 import { RecipeFilters } from "../components/recipes/RecipeFilters";
 import { RecipeOverview } from "../components/recipes/RecipeOverview";
 import { useAuth } from "../features/auth/useAuth";
+import { useProfile } from "../features/profile/useProfile";
 import { useRecipes } from "../features/recipes/useRecipes";
 import type {
   RecipeCategorySummary,
@@ -133,6 +134,7 @@ export function RecipesPage() {
     typeof session?.user.user_metadata.full_name === "string"
       ? session.user.user_metadata.full_name
       : "";
+  const { profile } = useProfile(userId);
   const { recipes, isLoading, error, reload } = useRecipes(userId);
 
   const activeCategory =
@@ -239,7 +241,8 @@ export function RecipesPage() {
         onLogout={handleLogout}
         onToggle={() => setIsDrawerOpen((previous) => !previous)}
         userEmail={userEmail}
-        userName={metadataName}
+        userName={profile?.username || metadataName}
+        profileTo="/profile"
       />
 
       <RecipeCreateModal

@@ -6,6 +6,7 @@ import { NavDrawer, type NavDrawerItem } from "../components/layout/NavDrawer";
 import { RecipeDetail } from "../components/recipes/RecipeDetail";
 import { RecipeCreateModal } from "../components/recipes/RecipeCreateModal";
 import { useAuth } from "../features/auth/useAuth";
+import { useProfile } from "../features/profile/useProfile";
 import { deleteRecipe } from "../features/recipes/recipeService";
 import { useRecipe } from "../features/recipes/useRecipe";
 
@@ -26,6 +27,7 @@ export function RecipeDetailPage() {
     typeof session?.user.user_metadata.full_name === "string"
       ? session.user.user_metadata.full_name
       : "";
+  const { profile } = useProfile(userId);
   const { recipe, isLoading, error, reload } = useRecipe(userId, id);
 
   const navItems: NavDrawerItem[] = useMemo(
@@ -106,7 +108,8 @@ export function RecipeDetailPage() {
         onLogout={handleLogout}
         onToggle={() => setIsDrawerOpen((previous) => !previous)}
         userEmail={userEmail}
-        userName={metadataName}
+        userName={profile?.username || metadataName}
+        profileTo="/profile"
       />
 
       <RecipeCreateModal

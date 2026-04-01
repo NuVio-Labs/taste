@@ -24,6 +24,7 @@ type NavDrawerProps = {
   items: NavDrawerItem[];
   onClose: () => void;
   onLogout?: () => void;
+  profileTo?: string;
   onToggle: () => void;
   userEmail?: string;
   userName?: string;
@@ -37,6 +38,7 @@ export function NavDrawer({
   items,
   onClose,
   onLogout,
+  profileTo = "/profile",
   onToggle,
   userEmail,
   userName,
@@ -142,12 +144,15 @@ export function NavDrawer({
               </div>
 
               <div className="flex flex-col items-start gap-3">
-                <div className="inline-flex items-center gap-2 rounded-full border border-white/8 bg-white/[0.03] px-4 py-2 text-sm text-[#C7B79F]">
+                <NavLink
+                  to={profileTo}
+                  className="inline-flex items-center gap-2 rounded-full border border-white/8 bg-white/[0.03] px-4 py-2 text-sm text-[#C7B79F] transition-colors duration-300 hover:border-[#D6A84A]/18 hover:text-[#F6EFE4]"
+                >
                   <UserCircle2 size={16} className="text-[#D6A84A]" />
                   <span className="max-w-[220px] truncate">
                     {firstName}
                   </span>
-                </div>
+                </NavLink>
 
 
               </div>

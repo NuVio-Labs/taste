@@ -487,6 +487,7 @@ export function DashboardPage() {
         onToggle={() => setIsDrawerOpen((previous) => !previous)}
         userEmail={userEmail}
         userName={profileUserName || metadataName}
+        profileTo="/profile"
       />
 
       <RecipeCreateModal

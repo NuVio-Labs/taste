@@ -51,3 +51,23 @@ export async function signOutUser(): Promise<void> {
     throw error;
   }
 }
+
+export async function updateUserEmail(email: string): Promise<void> {
+  const { error } = await supabase.auth.updateUser({
+    email,
+  });
+
+  if (error) {
+    throw error;
+  }
+}
+
+export async function updateUserPassword(password: string): Promise<void> {
+  const { error } = await supabase.auth.updateUser({
+    password,
+  });
+
+  if (error) {
+    throw error;
+  }
+}
