@@ -11,6 +11,7 @@ export type RecipeStep = {
 };
 
 export type RecipeListItem = {
+  authorName: string;
   category: string;
   createdAt: string | null;
   description: string;

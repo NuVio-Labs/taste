@@ -26,6 +26,11 @@ type RecipeLikeRow = {
   recipe_id: string;
 };
 
+type ProfileRow = {
+  id: string;
+  username: string | null;
+};
+
 function readString(value: unknown): string | null {
   return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
 }
@@ -102,12 +107,28 @@ function buildLikeCountMap(rows: RecipeLikeRow[]): Map<string, number> {
   return counts;
 }
 
+function buildAuthorMap(rows: ProfileRow[]): Map<string, string> {
+  const authors = new Map<string, string>();
+
+  for (const row of rows) {
+    const username = readString(row.username);
+
+    if (username) {
+      authors.set(row.id, username);
+    }
+  }
+
+  return authors;
+}
+
 function mapRecipeListItem(
   row: RecipeRow,
   likedRecipeIds: Set<string>,
   likeCounts: Map<string, number>,
+  authorNames: Map<string, string>,
 ): RecipeListItem {
   return {
+    authorName: authorNames.get(row.user_id) ?? "Unbekannter Nutzer",
     id: row.id,
     title: readString(row.title) ?? "Unbenanntes Rezept",
     description: readString(row.description) ?? "Keine Beschreibung vorhanden.",
@@ -174,8 +195,18 @@ export async function fetchRecipes(userId: string): Promise<RecipeListItem[]> {
 
   const likeCounts = buildLikeCountMap(allLikeRows);
   const likedRecipeIds = new Set(ownLikeRows.map((entry) => entry.recipe_id));
+  const userIds = Array.from(new Set(recipeRows.map((row) => row.user_id)));
+  const { data: profileData } = await supabase
+    .from("profiles")
+    .select("id, username")
+    .in("id", userIds);
+  const authorNames = buildAuthorMap(
+    Array.isArray(profileData) ? profileData.map((row) => row as ProfileRow) : [],
+  );
 
-  return recipeRows.map((row) => mapRecipeListItem(row, likedRecipeIds, likeCounts));
+  return recipeRows.map((row) =>
+    mapRecipeListItem(row, likedRecipeIds, likeCounts, authorNames),
+  );
 }
 
 export async function fetchRecipeById(
@@ -218,12 +249,25 @@ export async function fetchRecipeById(
 
   const likedRecipeIds = new Set<string>();
   const likeCounts = new Map<string, number>([[recipeId, likeCountResult.count ?? 0]]);
+  const { data: profileData } = await supabase
+    .from("profiles")
+    .select("id, username")
+    .eq("id", (recipeResult.data as RecipeRow).user_id)
+    .maybeSingle();
+  const authorNames = buildAuthorMap(
+    profileData ? [profileData as ProfileRow] : [],
+  );
 
   if (ownLikeResult.data && typeof (ownLikeResult.data as RecipeLikeRow).recipe_id === "string") {
     likedRecipeIds.add((ownLikeResult.data as RecipeLikeRow).recipe_id);
   }
 
-  const recipe = mapRecipeListItem(recipeResult.data as RecipeRow, likedRecipeIds, likeCounts);
+  const recipe = mapRecipeListItem(
+    recipeResult.data as RecipeRow,
+    likedRecipeIds,
+    likeCounts,
+    authorNames,
+  );
 
   return {
     ...recipe,

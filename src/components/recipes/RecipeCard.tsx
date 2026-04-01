@@ -61,6 +61,10 @@ export function RecipeCard({
           {recipe.description}
         </p>
 
+        <p className="text-sm text-[#B7AA96]">
+          Von {recipe.authorName}
+        </p>
+
         <div className="flex flex-wrap gap-2 text-sm text-[#E2D4BE]">
           <button
             type="button"

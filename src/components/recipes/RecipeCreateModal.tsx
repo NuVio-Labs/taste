@@ -33,9 +33,7 @@ const stepSchema = z.object({
 const recipeSchema = z.object({
   title: z.string().min(2, "Titel zu kurz"),
   description: z.string().min(10, "Beschreibung zu kurz"),
-  image_url: z
-    .union([z.string().url("Bitte gültige URL eingeben"), z.literal("")])
-    .optional(),
+  image_url: z.string().optional(),
   category: z.string().min(2, "Kategorie angeben"),
   prep_time: z.number().int().min(1, "Mindestens 1 Minute"),
   prep_time_unit: z.enum(["minutes", "hours", "days"]),
@@ -280,7 +278,7 @@ export function RecipeCreateModal({
         description: values.description,
         ingredients: values.ingredients,
         steps: values.steps,
-        imageUrl: values.image_url?.trim() ? values.image_url : null,
+        imageUrl: values.image_url?.trim() ?? null,
         category: values.category,
         prepTime: convertPrepTimeToMinutes(
           values.prep_time,
@@ -402,17 +400,39 @@ export function RecipeCreateModal({
 
                           <div>
                             <label className="mb-2 block text-sm font-medium text-[#F6EFE4]">
-                              Bild URL
+                              Rezeptbild
                             </label>
-                            <div className="relative">
-                              <ImageIcon
-                                size={16}
-                                className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#8E806F]"
-                              />
+                            <div className="space-y-3">
+                              <div className="flex min-h-[164px] flex-col items-center justify-center gap-3 rounded-[24px] border border-dashed border-white/12 bg-black/10 px-5 py-6 text-center opacity-75">
+                                {recipe?.imageUrl ? (
+                                  <img
+                                    src={recipe.imageUrl}
+                                    alt="Vorschau"
+                                    className="h-28 w-full rounded-[18px] object-cover"
+                                  />
+                                ) : (
+                                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03] text-[#D6A84A]">
+                                    <ImageIcon size={22} />
+                                  </div>
+                                )}
+
+                                <div>
+                                  <p className="text-sm font-medium text-[#FFF8EE]">
+                                    Bild-Upload
+                                  </p>
+                                  <p className="mt-1 text-xs leading-5 text-[#9F917D]">
+                                    Foto-Uploads kommen später direkt im Rezept-Modal.
+                                  </p>
+                                </div>
+
+                                <span className="rounded-full border border-white/8 bg-white/[0.04] px-3 py-1 text-[0.68rem] uppercase tracking-[0.18em] text-[#B89A67]">
+                                  Soon
+                                </span>
+                              </div>
+
                               <input
                                 {...register("image_url")}
-                                placeholder="https://..."
-                                className="h-12 w-full rounded-2xl border border-white/10 bg-black/10 pl-11 pr-4 text-[#FFF8EE] outline-none transition-colors duration-300 placeholder:text-[#8E806F] focus:border-[#D6A84A]"
+                                type="hidden"
                               />
                             </div>
                             <FieldError message={errors.image_url?.message} />
