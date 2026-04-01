@@ -7,12 +7,14 @@ import {
   Image as ImageIcon,
   LayoutGrid,
   Mail,
+  MessageSquareText,
   Save,
   Sparkles,
   Tag,
   UserCircle2,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import { FeedbackModal } from "../components/feedback/FeedbackModal";
 import { NavDrawer, type NavDrawerItem } from "../components/layout/NavDrawer";
 import {
   signInWithEmailPassword,
@@ -46,7 +48,9 @@ function formatCreatedAt(value: string | null) {
 export function ProfilePage() {
   const { session, signOut } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [username, setUsername] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -93,6 +97,14 @@ export function ProfilePage() {
         label: "Inspiration",
         icon: Sparkles,
         disabled: true,
+      },
+      {
+        label: "Feedback",
+        icon: MessageSquareText,
+        onSelect: () => {
+          setIsDrawerOpen(false);
+          setIsFeedbackOpen(true);
+        },
       },
     ],
     [],
@@ -230,6 +242,15 @@ export function ProfilePage() {
         userName={profile?.username ?? ""}
         plan={profile?.plan ?? "free"}
         profileTo="/profile"
+      />
+
+      <FeedbackModal
+        open={isFeedbackOpen}
+        onClose={() => setIsFeedbackOpen(false)}
+        currentPage={`${location.pathname}${location.search}`}
+        userId={userId}
+        userEmail={userEmail}
+        username={profile?.username ?? ""}
       />
 
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(214,168,74,0.10),transparent_18%),radial-gradient(circle_at_16%_18%,rgba(94,71,32,0.09),transparent_22%),radial-gradient(circle_at_84%_22%,rgba(111,123,59,0.07),transparent_20%),linear-gradient(180deg,#0F0E0C_0%,#090806_100%)]" />

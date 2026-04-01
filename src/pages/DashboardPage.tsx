@@ -9,12 +9,14 @@ import {
   Heart,
   LayoutGrid,
   Lock,
+  MessageSquareText,
   Plus,
   Sparkles,
   Star,
   Tag,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import { FeedbackModal } from "../components/feedback/FeedbackModal";
 import { NavDrawer, type NavDrawerItem } from "../components/layout/NavDrawer";
 import { RecipeCreateModal } from "../components/recipes/RecipeCreateModal";
 import { useAuth } from "../features/auth/useAuth";
@@ -315,6 +317,7 @@ function ActionCard({
 export function DashboardPage() {
   const { session, signOut } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const userId = session?.user.id ?? "";
   const userEmail = session?.user.email ?? "";
   const metadataName =
@@ -325,6 +328,7 @@ export function DashboardPage() {
   const [profileUserName, setProfileUserName] = useState("");
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isCreateRecipeOpen, setIsCreateRecipeOpen] = useState(false);
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [recentRecipes, setRecentRecipes] = useState<RecipePreview[]>([]);
   const [isRecipesLoading, setIsRecipesLoading] = useState(true);
   const [recipesError, setRecipesError] = useState<string | null>(null);
@@ -371,6 +375,14 @@ export function DashboardPage() {
       label: "Inspiration",
       icon: Sparkles,
       disabled: true,
+    },
+    {
+      label: "Feedback",
+      icon: MessageSquareText,
+      onSelect: () => {
+        setIsDrawerOpen(false);
+        setIsFeedbackOpen(true);
+      },
     },
   ];
 
@@ -500,6 +512,15 @@ export function DashboardPage() {
         onCreated={() => {
           void loadDashboardRecipes();
         }}
+      />
+
+      <FeedbackModal
+        open={isFeedbackOpen}
+        onClose={() => setIsFeedbackOpen(false)}
+        currentPage={`${location.pathname}${location.search}`}
+        userId={userId}
+        userEmail={userEmail}
+        username={profileUserName || metadataName}
       />
 
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(214,168,74,0.10),transparent_18%),radial-gradient(circle_at_16%_18%,rgba(94,71,32,0.09),transparent_22%),radial-gradient(circle_at_84%_22%,rgba(111,123,59,0.07),transparent_20%),linear-gradient(180deg,#0F0E0C_0%,#090806_100%)]" />

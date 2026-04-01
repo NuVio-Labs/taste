@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { BookOpen, Heart, LayoutGrid, Plus, Sparkles, Tag } from "lucide-react";
+import { BookOpen, Heart, LayoutGrid, MessageSquareText, Plus, Sparkles, Tag } from "lucide-react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { FeedbackModal } from "../components/feedback/FeedbackModal";
 import { NavDrawer, type NavDrawerItem } from "../components/layout/NavDrawer";
 import { CategoryOverview } from "../components/recipes/CategoryOverview";
 import { RecipeCreateModal } from "../components/recipes/RecipeCreateModal";
@@ -129,6 +130,7 @@ export function RecipesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isCreateRecipeOpen, setIsCreateRecipeOpen] = useState(false);
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [likePendingRecipeId, setLikePendingRecipeId] = useState<string | null>(null);
   const recipeListRef = useRef<HTMLDivElement | null>(null);
   const hasRestoredScrollRef = useRef(false);
@@ -200,6 +202,14 @@ export function RecipesPage() {
       label: "Inspiration",
       icon: Sparkles,
       disabled: true,
+    },
+    {
+      label: "Feedback",
+      icon: MessageSquareText,
+      onSelect: () => {
+        setIsDrawerOpen(false);
+        setIsFeedbackOpen(true);
+      },
     },
   ];
 
@@ -279,6 +289,15 @@ export function RecipesPage() {
         onCreated={() => {
           void reload();
         }}
+      />
+
+      <FeedbackModal
+        open={isFeedbackOpen}
+        onClose={() => setIsFeedbackOpen(false)}
+        currentPage={`${location.pathname}${location.search}`}
+        userId={userId}
+        userEmail={userEmail}
+        username={profile?.username || metadataName}
       />
 
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(214,168,74,0.10),transparent_18%),radial-gradient(circle_at_16%_18%,rgba(94,71,32,0.09),transparent_22%),radial-gradient(circle_at_84%_22%,rgba(111,123,59,0.07),transparent_20%),linear-gradient(180deg,#0F0E0C_0%,#090806_100%)]" />

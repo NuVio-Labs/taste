@@ -4,7 +4,6 @@ import {
   ChefHat,
   LogOut,
   Menu,
-  Plus,
   UserCircle2,
   X,
 } from "lucide-react";
@@ -198,6 +197,31 @@ export function NavDrawer({
                 );
               }
 
+              if (!item.to) {
+                return (
+                  <button
+                    key={item.label}
+                    type="button"
+                    onClick={() => {
+                      item.onSelect?.();
+                    }}
+                    className="group flex w-full items-center gap-3 rounded-[22px] border border-white/6 bg-white/[0.02] px-4 py-3 transition-all duration-300 hover:border-[#D6A84A]/12 hover:bg-white/[0.03]"
+                  >
+                    <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/8 bg-white/[0.025] text-[#E9D8B4] transition-all duration-300 group-hover:border-[#D6A84A]/14">
+                      <Icon size={17} />
+                    </div>
+
+                    <div className="flex-1 text-left">
+                      <div className="text-[0.98rem] font-medium text-[#D1C0A8] transition-colors duration-300">
+                        {item.label}
+                      </div>
+                    </div>
+
+                    <div className="h-2 w-2 rounded-full bg-white/10 transition-all duration-300" />
+                  </button>
+                );
+              }
+
               return (
                 <NavLink
                   key={item.label}
@@ -249,18 +273,6 @@ export function NavDrawer({
 
           <div className="mt-auto rounded-[28px] border border-white/8 bg-white/[0.03] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
             <div className="flex items-center gap-3">
-              <button
-                type="button"
-                aria-label="Neues Rezept erstellen"
-                onClick={() => {
-                  onClose();
-                  onCreateRecipe?.();
-                }}
-                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#E9D8B4]/12 bg-white/[0.03] text-[#D6A84A] transition-all duration-300 hover:-translate-y-0.5 hover:border-[#D6A84A]/20 hover:bg-white/[0.045] hover:text-[#E9D8B4]"
-              >
-                <Plus size={16} />
-              </button>
-
               {onLogout ? (
                 <button
                   type="button"
