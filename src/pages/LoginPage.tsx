@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useMemo, useState, type FormEvent, type ReactNode } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   ArrowRight,
   ChefHat,
@@ -383,13 +383,19 @@ export function LoginPage() {
                   <button
                     type="button"
                     onClick={() => switchMode("signup")}
+                    disabled
                     className={`relative z-20 rounded-full px-5 py-3 text-[1.05rem] font-medium transition-colors duration-300 ${
                       !isLogin
                         ? "text-[#FFF8EE]"
-                        : "text-[#8F806F] hover:text-[#CDB99B]"
+                        : "text-[#8F806F]"
                     }`}
                   >
-                    Sign Up
+                    <span className="inline-flex items-center gap-2">
+                      Sign Up
+                      <span className="rounded-full border border-white/8 bg-white/[0.04] px-2 py-0.5 text-[0.62rem] uppercase tracking-[0.18em] text-[#B89A67]">
+                        Soon
+                      </span>
+                    </span>
                   </button>
                 </div>
               </div>
@@ -532,8 +538,28 @@ export function LoginPage() {
               </div>
 
               <div className="relative z-10 mt-7 text-center text-[0.88rem] leading-6 text-[#ffffff]">
-                By continuing, you agree to NuVio Taste terms and privacy
-                guidelines.
+                Mit der Nutzung akzeptierst du die{" "}
+                <Link
+                  to="/terms"
+                  className="text-[#E9D8B4] underline underline-offset-4 transition-colors duration-300 hover:text-white"
+                >
+                  Nutzungsbedingungen
+                </Link>{" "}
+                und die{" "}
+                <Link
+                  to="/privacy"
+                  className="text-[#E9D8B4] underline underline-offset-4 transition-colors duration-300 hover:text-white"
+                >
+                  Datenschutzerklärung
+                </Link>
+                . Zum{" "}
+                <Link
+                  to="/imprint"
+                  className="text-[#E9D8B4] underline underline-offset-4 transition-colors duration-300 hover:text-white"
+                >
+                  Impressum
+                </Link>
+                .
               </div>
             </div>
 

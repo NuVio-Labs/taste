@@ -3,10 +3,13 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { Spinner } from "./components/ui/Spinner";
 import { useAuth } from "./features/auth/useAuth";
 import { DashboardPage } from "./pages/DashboardPage";
+import { ImprintPage } from "./pages/ImprintPage";
 import { LoginPage } from "./pages/LoginPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
+import { PrivacyPage } from "./pages/PrivacyPage";
 import { RecipeDetailPage } from "./pages/RecipeDetailPage";
 import { RecipesPage } from "./pages/RecipesPage";
+import { TermsPage } from "./pages/TermsPage";
 import { ProtectedRoute } from "./routes/ProtectedRoute";
 import { PublicOnlyRoute } from "./routes/PublicOnlyRoute";
 
@@ -49,6 +52,10 @@ export default function App() {
         <Route path="/recipes" element={<RecipesPage />} />
         <Route path="/recipes/:id" element={<RecipeDetailPage />} />
       </Route>
+
+      <Route path="/privacy" element={<PrivacyPage />} />
+      <Route path="/terms" element={<TermsPage />} />
+      <Route path="/imprint" element={<ImprintPage />} />
 
       <Route
         path="/"
