@@ -4,6 +4,7 @@ import {
   Globe2,
   Lock,
   Pencil,
+  ShoppingCart,
   Trash2,
   Users2,
 } from "lucide-react";
@@ -65,6 +66,17 @@ export function RecipeDetail({
             </div>
 
             <div className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                disabled
+                className="inline-flex h-11 items-center gap-2 rounded-full border border-white/8 bg-white/[0.02] px-4 text-sm text-[#B7AA96] opacity-70"
+              >
+                <ShoppingCart size={16} />
+                Zur Einkaufsliste hinzufügen
+                <span className="rounded-full border border-white/8 bg-white/[0.04] px-2 py-0.5 text-[0.62rem] uppercase tracking-[0.18em] text-[#B89A67]">
+                  Soon
+                </span>
+              </button>
               <button
                 type="button"
                 onClick={onEdit}
