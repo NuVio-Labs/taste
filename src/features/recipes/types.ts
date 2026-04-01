@@ -23,6 +23,7 @@ export type RecipeListItem = {
   servings: number | null;
   title: string;
   updatedAt: string | null;
+  userId: string;
 };
 
 export type RecipeDetailData = RecipeListItem & {

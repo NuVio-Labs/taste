@@ -34,6 +34,7 @@ export function RecipeDetailPage() {
       : "";
   const { profile } = useProfile(userId);
   const { recipe, isLoading, error, reload } = useRecipe(userId, id);
+  const canManageRecipe = recipe?.userId === userId;
 
   const navItems: NavDrawerItem[] = useMemo(
     () => [
@@ -169,6 +170,7 @@ export function RecipeDetailPage() {
             </div>
           ) : (
             <RecipeDetail
+              canManageRecipe={canManageRecipe}
               recipe={recipe}
               onBack={handleBack}
               onEdit={() => setIsCreateRecipeOpen(true)}

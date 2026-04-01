@@ -12,6 +12,7 @@ import {
 import type { RecipeDetailData } from "../../features/recipes/types";
 
 type RecipeDetailProps = {
+  canManageRecipe?: boolean;
   isDeleting?: boolean;
   isLikePending?: boolean;
   onBack: () => void;
@@ -22,6 +23,7 @@ type RecipeDetailProps = {
 };
 
 export function RecipeDetail({
+  canManageRecipe = true,
   isDeleting = false,
   isLikePending = false,
   onBack,
@@ -98,23 +100,27 @@ export function RecipeDetail({
                   Soon
                 </span>
               </button>
-              <button
-                type="button"
-                onClick={onEdit}
-                className="inline-flex h-11 items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-4 text-sm font-medium text-[#F6EFE4] transition-colors duration-300 hover:border-[#D6A84A]/18"
-              >
-                <Pencil size={16} />
-                Bearbeiten
-              </button>
-              <button
-                type="button"
-                onClick={onDelete}
-                disabled={isDeleting}
-                className="inline-flex h-11 items-center gap-2 rounded-full border border-[rgba(255,120,120,0.22)] bg-[rgba(255,120,120,0.08)] px-4 text-sm font-medium text-red-100 transition-colors duration-300 hover:bg-[rgba(255,120,120,0.12)] disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                <Trash2 size={16} />
-                {isDeleting ? "Löscht..." : "Löschen"}
-              </button>
+              {canManageRecipe ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={onEdit}
+                    className="inline-flex h-11 items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-4 text-sm font-medium text-[#F6EFE4] transition-colors duration-300 hover:border-[#D6A84A]/18"
+                  >
+                    <Pencil size={16} />
+                    Bearbeiten
+                  </button>
+                  <button
+                    type="button"
+                    onClick={onDelete}
+                    disabled={isDeleting}
+                    className="inline-flex h-11 items-center gap-2 rounded-full border border-[rgba(255,120,120,0.22)] bg-[rgba(255,120,120,0.08)] px-4 text-sm font-medium text-red-100 transition-colors duration-300 hover:bg-[rgba(255,120,120,0.12)] disabled:cursor-not-allowed disabled:opacity-70"
+                  >
+                    <Trash2 size={16} />
+                    {isDeleting ? "Löscht..." : "Löschen"}
+                  </button>
+                </>
+              ) : null}
             </div>
           </div>
 

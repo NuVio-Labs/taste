@@ -20,6 +20,7 @@ type RecipeRow = {
   steps?: unknown;
   title: string | null;
   updated_at: string | null;
+  user_id: string;
 };
 
 type RecipeLikeRow = {
@@ -106,6 +107,7 @@ function mapRecipeListItem(row: RecipeRow, likedRecipeIds: Set<string>): RecipeL
     isLiked: likedRecipeIds.has(row.id),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    userId: row.user_id,
   };
 }
 
@@ -114,9 +116,9 @@ export async function fetchRecipes(userId: string): Promise<RecipeListItem[]> {
     supabase
       .from("recipes")
       .select(
-        "id, title, description, image_url, category, prep_time, servings, is_public, created_at, updated_at, like_count",
+        "id, user_id, title, description, image_url, category, prep_time, servings, is_public, created_at, updated_at, like_count",
       )
-      .eq("user_id", userId)
+      .or(`user_id.eq.${userId},is_public.eq.true`)
       .order("created_at", { ascending: false }),
     supabase.from("recipe_likes").select("recipe_id").eq("user_id", userId),
   ]);
@@ -150,10 +152,10 @@ export async function fetchRecipeById(
     supabase
       .from("recipes")
       .select(
-        "id, title, description, image_url, category, prep_time, servings, is_public, created_at, updated_at, ingredients, steps, like_count",
+        "id, user_id, title, description, image_url, category, prep_time, servings, is_public, created_at, updated_at, ingredients, steps, like_count",
       )
-      .eq("user_id", userId)
       .eq("id", recipeId)
+      .or(`user_id.eq.${userId},is_public.eq.true`)
       .maybeSingle(),
     supabase
       .from("recipe_likes")
