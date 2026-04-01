@@ -24,6 +24,7 @@ type NavDrawerProps = {
   items: NavDrawerItem[];
   onClose: () => void;
   onLogout?: () => void;
+  plan?: "free" | "pro";
   profileTo?: string;
   onToggle: () => void;
   userEmail?: string;
@@ -38,6 +39,7 @@ export function NavDrawer({
   items,
   onClose,
   onLogout,
+  plan = "free",
   profileTo = "/profile",
   onToggle,
   userEmail,
@@ -152,6 +154,11 @@ export function NavDrawer({
                   <span className="max-w-[220px] truncate">
                     {firstName}
                   </span>
+                  {plan === "pro" ? (
+                    <span className="rounded-full border border-[#D6A84A]/20 bg-[#D6A84A]/12 px-2 py-0.5 text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-[#F6D78E]">
+                      Pro
+                    </span>
+                  ) : null}
                 </NavLink>
 
 

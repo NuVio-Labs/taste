@@ -228,6 +228,7 @@ export function ProfilePage() {
         onToggle={() => setIsDrawerOpen((previous) => !previous)}
         userEmail={userEmail}
         userName={profile?.username ?? ""}
+        plan={profile?.plan ?? "free"}
         profileTo="/profile"
       />
 
@@ -301,6 +302,10 @@ export function ProfilePage() {
                   <p>
                     <span className="font-medium text-[#FFF8EE]">Profil erstellt:</span>{" "}
                     {formatCreatedAt(profile?.createdAt ?? null)}
+                  </p>
+                  <p>
+                    <span className="font-medium text-[#FFF8EE]">Plan:</span>{" "}
+                    {profile?.plan === "pro" ? "Pro" : "Free"}
                   </p>
                 </div>
               </div>

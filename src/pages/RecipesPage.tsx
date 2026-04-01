@@ -269,6 +269,7 @@ export function RecipesPage() {
         onToggle={() => setIsDrawerOpen((previous) => !previous)}
         userEmail={userEmail}
         userName={profile?.username || metadataName}
+        plan={profile?.plan ?? "free"}
         profileTo="/profile"
       />
 

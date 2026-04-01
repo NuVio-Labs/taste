@@ -17,6 +17,7 @@ import { useNavigate } from "react-router-dom";
 import { NavDrawer, type NavDrawerItem } from "../components/layout/NavDrawer";
 import { RecipeCreateModal } from "../components/recipes/RecipeCreateModal";
 import { useAuth } from "../features/auth/useAuth";
+import { useProfile } from "../features/profile/useProfile";
 import { supabase } from "../lib/supabase";
 
 type StatCardProps = {
@@ -319,6 +320,7 @@ export function DashboardPage() {
     typeof session?.user.user_metadata.full_name === "string"
       ? session.user.user_metadata.full_name
       : "";
+  const { profile } = useProfile(userId);
   const [profileUserName, setProfileUserName] = useState("");
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isCreateRecipeOpen, setIsCreateRecipeOpen] = useState(false);
@@ -487,6 +489,7 @@ export function DashboardPage() {
         onToggle={() => setIsDrawerOpen((previous) => !previous)}
         userEmail={userEmail}
         userName={profileUserName || metadataName}
+        plan={profile?.plan ?? "free"}
         profileTo="/profile"
       />
 
