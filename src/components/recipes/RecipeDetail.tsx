@@ -2,6 +2,7 @@ import {
   ArrowLeft,
   Clock3,
   Globe2,
+  Heart,
   Lock,
   Pencil,
   ShoppingCart,
@@ -12,17 +13,21 @@ import type { RecipeDetailData } from "../../features/recipes/types";
 
 type RecipeDetailProps = {
   isDeleting?: boolean;
+  isLikePending?: boolean;
   onBack: () => void;
   onDelete: () => void;
   onEdit: () => void;
+  onToggleLike: () => void;
   recipe: RecipeDetailData;
 };
 
 export function RecipeDetail({
   isDeleting = false,
+  isLikePending = false,
   onBack,
   onDelete,
   onEdit,
+  onToggleLike,
   recipe,
 }: RecipeDetailProps) {
   return (
@@ -66,6 +71,22 @@ export function RecipeDetail({
             </div>
 
             <div className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={onToggleLike}
+                disabled={isLikePending}
+                className={`inline-flex h-11 items-center gap-2 rounded-full border px-4 text-sm font-medium transition-colors duration-300 ${
+                  recipe.isLiked
+                    ? "border-[#D85B7D]/30 bg-[rgba(216,91,125,0.14)] text-[#FFD2DD]"
+                    : "border-white/10 bg-white/[0.03] text-[#F6EFE4] hover:border-[#D85B7D]/18"
+                }`}
+              >
+                <Heart
+                  size={16}
+                  className={recipe.isLiked ? "fill-current" : undefined}
+                />
+                {recipe.likeCount}
+              </button>
               <button
                 type="button"
                 disabled

@@ -7,7 +7,11 @@ import { RecipeDetail } from "../components/recipes/RecipeDetail";
 import { RecipeCreateModal } from "../components/recipes/RecipeCreateModal";
 import { useAuth } from "../features/auth/useAuth";
 import { useProfile } from "../features/profile/useProfile";
-import { deleteRecipe } from "../features/recipes/recipeService";
+import {
+  deleteRecipe,
+  likeRecipe,
+  unlikeRecipe,
+} from "../features/recipes/recipeService";
 import { useRecipe } from "../features/recipes/useRecipe";
 
 export function RecipeDetailPage() {
@@ -20,6 +24,7 @@ export function RecipeDetailPage() {
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isLikePending, setIsLikePending] = useState(false);
 
   const userId = session?.user.id ?? "";
   const userEmail = session?.user.email ?? "";
@@ -98,6 +103,26 @@ export function RecipeDetailPage() {
     }
   }
 
+  async function handleToggleLike() {
+    if (!userId || !recipe || isLikePending) {
+      return;
+    }
+
+    setIsLikePending(true);
+
+    try {
+      if (recipe.isLiked) {
+        await unlikeRecipe(userId, recipe.id);
+      } else {
+        await likeRecipe(userId, recipe.id);
+      }
+
+      await reload();
+    } finally {
+      setIsLikePending(false);
+    }
+  }
+
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#0F0E0C] text-white">
       <NavDrawer
@@ -146,11 +171,15 @@ export function RecipeDetailPage() {
               recipe={recipe}
               onBack={handleBack}
               onEdit={() => setIsCreateRecipeOpen(true)}
+              onToggleLike={() => {
+                void handleToggleLike();
+              }}
               onDelete={() => {
                 setDeleteError(null);
                 setIsDeleteConfirmOpen(true);
               }}
               isDeleting={isDeleting}
+              isLikePending={isLikePending}
             />
           )}
         </motion.section>

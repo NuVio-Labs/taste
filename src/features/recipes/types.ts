@@ -17,6 +17,8 @@ export type RecipeListItem = {
   id: string;
   imageUrl: string | null;
   isPublic: boolean;
+  isLiked: boolean;
+  likeCount: number;
   prepTime: number | null;
   servings: number | null;
   title: string;

@@ -1,9 +1,11 @@
 import { motion } from "framer-motion";
-import { Clock3, Globe2, Lock, Users2 } from "lucide-react";
+import { Clock3, Globe2, Heart, Lock, Users2 } from "lucide-react";
 import type { RecipeListItem } from "../../features/recipes/types";
 
 type RecipeCardProps = {
   onClick: () => void;
+  onToggleLike: () => void;
+  isLikePending?: boolean;
   recipe: RecipeListItem;
 };
 
@@ -11,7 +13,12 @@ function fallbackLabel(recipe: RecipeListItem) {
   return recipe.title.slice(0, 1).toUpperCase();
 }
 
-export function RecipeCard({ onClick, recipe }: RecipeCardProps) {
+export function RecipeCard({
+  onClick,
+  onToggleLike,
+  isLikePending = false,
+  recipe,
+}: RecipeCardProps) {
   return (
     <motion.button
       type="button"
@@ -55,6 +62,25 @@ export function RecipeCard({ onClick, recipe }: RecipeCardProps) {
         </p>
 
         <div className="flex flex-wrap gap-2 text-sm text-[#E2D4BE]">
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              onToggleLike();
+            }}
+            disabled={isLikePending}
+            className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 transition-colors duration-300 ${
+              recipe.isLiked
+                ? "border-[#D85B7D]/30 bg-[rgba(216,91,125,0.14)] text-[#FFD2DD]"
+                : "border-white/8 bg-black/10 text-[#E2D4BE]"
+            }`}
+          >
+            <Heart
+              size={14}
+              className={recipe.isLiked ? "fill-current" : undefined}
+            />
+            {recipe.likeCount}
+          </button>
           <span className="inline-flex items-center gap-2 rounded-full border border-white/8 bg-black/10 px-3 py-1.5">
             <Clock3 size={14} />
             {recipe.prepTime ? `${recipe.prepTime} Min` : "Zeit offen"}

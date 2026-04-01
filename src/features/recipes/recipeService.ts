@@ -14,11 +14,16 @@ type RecipeRow = {
   image_url: string | null;
   ingredients?: unknown;
   is_public: boolean | null;
+  like_count?: number | null;
   prep_time: number | null;
   servings: number | null;
   steps?: unknown;
   title: string | null;
   updated_at: string | null;
+};
+
+type RecipeLikeRow = {
+  recipe_id: string;
 };
 
 function readString(value: unknown): string | null {
@@ -87,7 +92,7 @@ function parseSteps(value: unknown): RecipeStep[] {
     .filter((entry): entry is RecipeStep => entry !== null);
 }
 
-function mapRecipeListItem(row: RecipeRow): RecipeListItem {
+function mapRecipeListItem(row: RecipeRow, likedRecipeIds: Set<string>): RecipeListItem {
   return {
     id: row.id,
     title: readString(row.title) ?? "Unbenanntes Rezept",
@@ -97,54 +102,91 @@ function mapRecipeListItem(row: RecipeRow): RecipeListItem {
     prepTime: readNumber(row.prep_time),
     servings: readNumber(row.servings),
     isPublic: row.is_public === true,
+    likeCount: readNumber(row.like_count) ?? 0,
+    isLiked: likedRecipeIds.has(row.id),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
 }
 
 export async function fetchRecipes(userId: string): Promise<RecipeListItem[]> {
-  const { data, error } = await supabase
-    .from("recipes")
-    .select(
-      "id, title, description, image_url, category, prep_time, servings, is_public, created_at, updated_at",
-    )
-    .eq("user_id", userId)
-    .order("created_at", { ascending: false });
+  const [recipesResult, likesResult] = await Promise.all([
+    supabase
+      .from("recipes")
+      .select(
+        "id, title, description, image_url, category, prep_time, servings, is_public, created_at, updated_at, like_count",
+      )
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false }),
+    supabase.from("recipe_likes").select("recipe_id").eq("user_id", userId),
+  ]);
 
-  if (error) {
-    throw new Error(error.message);
+  if (recipesResult.error || likesResult.error) {
+    throw new Error(
+      recipesResult.error?.message ??
+        likesResult.error?.message ??
+        "Die Rezepte konnten nicht geladen werden.",
+    );
   }
 
-  return Array.isArray(data) ? data.map((row) => mapRecipeListItem(row as RecipeRow)) : [];
+  const likedRecipeIds = new Set(
+    Array.isArray(likesResult.data)
+      ? likesResult.data
+          .map((entry) => (entry as RecipeLikeRow).recipe_id)
+          .filter((recipeId): recipeId is string => typeof recipeId === "string")
+      : [],
+  );
+
+  return Array.isArray(recipesResult.data)
+    ? recipesResult.data.map((row) => mapRecipeListItem(row as RecipeRow, likedRecipeIds))
+    : [];
 }
 
 export async function fetchRecipeById(
   userId: string,
   recipeId: string,
 ): Promise<RecipeDetailData> {
-  const { data, error } = await supabase
-    .from("recipes")
-    .select(
-      "id, title, description, image_url, category, prep_time, servings, is_public, created_at, updated_at, ingredients, steps",
-    )
-    .eq("user_id", userId)
-    .eq("id", recipeId)
-    .maybeSingle();
+  const [recipeResult, likeResult] = await Promise.all([
+    supabase
+      .from("recipes")
+      .select(
+        "id, title, description, image_url, category, prep_time, servings, is_public, created_at, updated_at, ingredients, steps, like_count",
+      )
+      .eq("user_id", userId)
+      .eq("id", recipeId)
+      .maybeSingle(),
+    supabase
+      .from("recipe_likes")
+      .select("recipe_id")
+      .eq("user_id", userId)
+      .eq("recipe_id", recipeId)
+      .maybeSingle(),
+  ]);
 
-  if (error) {
-    throw new Error(error.message);
+  if (recipeResult.error || likeResult.error) {
+    throw new Error(
+      recipeResult.error?.message ??
+        likeResult.error?.message ??
+        "Das Rezept konnte nicht geladen werden.",
+    );
   }
 
-  if (!data) {
+  if (!recipeResult.data) {
     throw new Error("Rezept nicht gefunden.");
   }
 
-  const recipe = mapRecipeListItem(data as RecipeRow);
+  const likedRecipeIds = new Set<string>();
+
+  if (likeResult.data && typeof (likeResult.data as RecipeLikeRow).recipe_id === "string") {
+    likedRecipeIds.add((likeResult.data as RecipeLikeRow).recipe_id);
+  }
+
+  const recipe = mapRecipeListItem(recipeResult.data as RecipeRow, likedRecipeIds);
 
   return {
     ...recipe,
-    ingredients: parseIngredients((data as RecipeRow).ingredients),
-    steps: parseSteps((data as RecipeRow).steps),
+    ingredients: parseIngredients((recipeResult.data as RecipeRow).ingredients),
+    steps: parseSteps((recipeResult.data as RecipeRow).steps),
   };
 }
 
@@ -227,5 +269,74 @@ export async function deleteRecipe(userId: string, recipeId: string) {
 
   if (error) {
     throw new Error(error.message);
+  }
+}
+
+export async function likeRecipe(userId: string, recipeId: string) {
+  const { error: likeInsertError } = await supabase
+    .from("recipe_likes")
+    .insert({
+      recipe_id: recipeId,
+      user_id: userId,
+    });
+
+  if (likeInsertError) {
+    throw new Error(likeInsertError.message);
+  }
+
+  const { data: recipeData, error: recipeReadError } = await supabase
+    .from("recipes")
+    .select("like_count")
+    .eq("id", recipeId)
+    .maybeSingle();
+
+  if (recipeReadError) {
+    throw new Error(recipeReadError.message);
+  }
+
+  const nextLikeCount =
+    ((recipeData as { like_count?: number | null } | null)?.like_count ?? 0) + 1;
+
+  const { error: recipeUpdateError } = await supabase
+    .from("recipes")
+    .update({ like_count: nextLikeCount })
+    .eq("id", recipeId);
+
+  if (recipeUpdateError) {
+    throw new Error(recipeUpdateError.message);
+  }
+}
+
+export async function unlikeRecipe(userId: string, recipeId: string) {
+  const { error: likeDeleteError } = await supabase
+    .from("recipe_likes")
+    .delete()
+    .eq("user_id", userId)
+    .eq("recipe_id", recipeId);
+
+  if (likeDeleteError) {
+    throw new Error(likeDeleteError.message);
+  }
+
+  const { data: recipeData, error: recipeReadError } = await supabase
+    .from("recipes")
+    .select("like_count")
+    .eq("id", recipeId)
+    .maybeSingle();
+
+  if (recipeReadError) {
+    throw new Error(recipeReadError.message);
+  }
+
+  const currentLikeCount =
+    (recipeData as { like_count?: number | null } | null)?.like_count ?? 0;
+
+  const { error: recipeUpdateError } = await supabase
+    .from("recipes")
+    .update({ like_count: Math.max(0, currentLikeCount - 1) })
+    .eq("id", recipeId);
+
+  if (recipeUpdateError) {
+    throw new Error(recipeUpdateError.message);
   }
 }

@@ -3,13 +3,17 @@ import { RecipeCard } from "./RecipeCard";
 
 type RecipeOverviewProps = {
   emptyMessage: string;
+  likePendingRecipeId?: string | null;
   onSelectRecipe: (recipeId: string) => void;
+  onToggleLike: (recipeId: string) => void;
   recipes: RecipeListItem[];
 };
 
 export function RecipeOverview({
   emptyMessage,
+  likePendingRecipeId = null,
   onSelectRecipe,
+  onToggleLike,
   recipes,
 }: RecipeOverviewProps) {
   if (recipes.length === 0) {
@@ -27,6 +31,8 @@ export function RecipeOverview({
           key={recipe.id}
           recipe={recipe}
           onClick={() => onSelectRecipe(recipe.id)}
+          onToggleLike={() => onToggleLike(recipe.id)}
+          isLikePending={likePendingRecipeId === recipe.id}
         />
       ))}
     </div>

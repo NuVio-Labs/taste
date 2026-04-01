@@ -9,6 +9,10 @@ import { RecipeFilters } from "../components/recipes/RecipeFilters";
 import { RecipeOverview } from "../components/recipes/RecipeOverview";
 import { useAuth } from "../features/auth/useAuth";
 import { useProfile } from "../features/profile/useProfile";
+import {
+  likeRecipe,
+  unlikeRecipe,
+} from "../features/recipes/recipeService";
 import { useRecipes } from "../features/recipes/useRecipes";
 import type {
   RecipeCategorySummary,
@@ -125,6 +129,7 @@ export function RecipesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isCreateRecipeOpen, setIsCreateRecipeOpen] = useState(false);
+  const [likePendingRecipeId, setLikePendingRecipeId] = useState<string | null>(null);
   const recipeListRef = useRef<HTMLDivElement | null>(null);
   const hasRestoredScrollRef = useRef(false);
 
@@ -219,6 +224,28 @@ export function RecipesPage() {
 
   async function handleLogout() {
     await signOut();
+  }
+
+  async function handleToggleLike(recipeId: string) {
+    const recipe = recipes.find((entry) => entry.id === recipeId);
+
+    if (!userId || !recipe || likePendingRecipeId) {
+      return;
+    }
+
+    setLikePendingRecipeId(recipeId);
+
+    try {
+      if (recipe.isLiked) {
+        await unlikeRecipe(userId, recipeId);
+      } else {
+        await likeRecipe(userId, recipeId);
+      }
+
+      await reload();
+    } finally {
+      setLikePendingRecipeId(null);
+    }
   }
 
   function handleSelectRecipe(recipeId: string) {
@@ -330,6 +357,8 @@ export function RecipesPage() {
             <RecipeOverview
               recipes={filteredRecipes}
               onSelectRecipe={handleSelectRecipe}
+              onToggleLike={handleToggleLike}
+              likePendingRecipeId={likePendingRecipeId}
               emptyMessage={
                 recipes.length === 0
                   ? "Noch keine Rezepte vorhanden. Erstelle dein erstes Rezept und die Übersicht füllt sich automatisch."
