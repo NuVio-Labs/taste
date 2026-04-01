@@ -9,6 +9,7 @@ import {
   Heart,
   LayoutGrid,
   Lock,
+  Plus,
   Sparkles,
   Star,
   Tag,
@@ -385,13 +386,13 @@ export function DashboardPage() {
       supabase
         .from("recipes")
         .select("*")
-        .eq("user_id", userId)
+        .or(`user_id.eq.${userId},is_public.eq.true`)
         .order("created_at", { ascending: false })
         .limit(3),
       supabase
         .from("recipes")
         .select("id, title, is_public, created_at, updated_at")
-        .eq("user_id", userId)
+        .or(`user_id.eq.${userId},is_public.eq.true`)
         .order("created_at", { ascending: false }),
     ]);
 
@@ -510,6 +511,20 @@ export function DashboardPage() {
       <div className="relative z-10 mx-auto max-w-7xl px-4 py-5 pl-7 sm:px-6 sm:py-7 lg:px-8">
         <motion.section
           {...fadeUp}
+          className="mb-6 flex items-center justify-end"
+        >
+          <button
+            type="button"
+            onClick={() => setIsCreateRecipeOpen(true)}
+            className="inline-flex h-12 items-center gap-2 rounded-full border border-[#D6A84A]/20 bg-[linear-gradient(180deg,rgba(214,168,74,0.18),rgba(214,168,74,0.1))] px-5 text-sm font-semibold text-[#FFF1D4] shadow-[0_12px_24px_rgba(214,168,74,0.12),inset_0_1px_0_rgba(255,255,255,0.06)] transition-all duration-300 hover:-translate-y-0.5 hover:border-[#D6A84A]/28 hover:bg-[linear-gradient(180deg,rgba(214,168,74,0.22),rgba(214,168,74,0.12))]"
+          >
+            <Plus size={16} />
+            Rezept hinzufügen
+          </button>
+        </motion.section>
+
+        <motion.section
+          {...fadeUp}
           className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
         >
           <StatCard
@@ -558,8 +573,9 @@ export function DashboardPage() {
                 </div>
               ) : recentRecipes.length === 0 ? (
                 <div className="rounded-[22px] border border-white/8 bg-white/[0.025] px-4 py-5 text-sm leading-6 text-[#B7AA96]">
-                  Noch keine Rezepte vorhanden. Lege dein erstes Rezept in
-                  Supabase an, dann erscheint es hier automatisch.
+                  Noch keine sichtbaren Rezepte vorhanden. Erstelle ein eigenes
+                  Rezept oder veröffentliche bestehende Inhalte, dann erscheint
+                  hier automatisch etwas.
                 </div>
               ) : (
                 <div className="space-y-3">

@@ -23,7 +23,7 @@ export function NotFoundPage() {
           Seite nicht gefunden
         </h1>
         <p className="mt-3 text-sm leading-6 text-neutral-600">
-          Diese Route existiert noch nicht. Zurueck geht es ueber den Login.
+          Diese Route existiert noch nicht. Zurück geht es über den Login.
         </p>
         <Link
           to="/login"

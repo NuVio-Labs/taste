@@ -38,6 +38,7 @@ const recipeSchema = z.object({
     .optional(),
   category: z.string().min(2, "Kategorie angeben"),
   prep_time: z.number().int().min(1, "Mindestens 1 Minute"),
+  prep_time_unit: z.enum(["minutes", "hours", "days"]),
   servings: z.number().int().min(1, "Mindestens 1 Portion"),
   visibility: z.enum(["private", "public"]),
   ingredients: z.array(ingredientSchema).min(1, "Mindestens 1 Zutat"),
@@ -60,6 +61,7 @@ function createDefaultValues(): RecipeFormValues {
     image_url: "",
     category: "",
     prep_time: 20,
+    prep_time_unit: "minutes",
     servings: 2,
     visibility: "private",
     ingredients: [
@@ -79,13 +81,62 @@ function createDefaultValues(): RecipeFormValues {
   };
 }
 
+function getPrepTimeFormValues(prepTime: number | null): {
+  prep_time: number;
+  prep_time_unit: RecipeFormValues["prep_time_unit"];
+} {
+  if (!prepTime || prepTime <= 0) {
+    return {
+      prep_time: 20,
+      prep_time_unit: "minutes",
+    };
+  }
+
+  if (prepTime % 1440 === 0) {
+    return {
+      prep_time: prepTime / 1440,
+      prep_time_unit: "days",
+    };
+  }
+
+  if (prepTime % 60 === 0 && prepTime >= 60) {
+    return {
+      prep_time: prepTime / 60,
+      prep_time_unit: "hours",
+    };
+  }
+
+  return {
+    prep_time: prepTime,
+    prep_time_unit: "minutes",
+  };
+}
+
+function convertPrepTimeToMinutes(
+  value: number,
+  unit: RecipeFormValues["prep_time_unit"],
+): number {
+  if (unit === "days") {
+    return value * 1440;
+  }
+
+  if (unit === "hours") {
+    return value * 60;
+  }
+
+  return value;
+}
+
 function createValuesFromRecipe(recipe: RecipeDetailData): RecipeFormValues {
+  const prepTimeValues = getPrepTimeFormValues(recipe.prepTime);
+
   return {
     title: recipe.title,
     description: recipe.description,
     image_url: recipe.imageUrl ?? "",
     category: recipe.category,
-    prep_time: recipe.prepTime ?? 20,
+    prep_time: prepTimeValues.prep_time,
+    prep_time_unit: prepTimeValues.prep_time_unit,
     servings: recipe.servings ?? 2,
     visibility: recipe.isPublic ? "public" : "private",
     ingredients:
@@ -231,7 +282,10 @@ export function RecipeCreateModal({
         steps: values.steps,
         imageUrl: values.image_url?.trim() ? values.image_url : null,
         category: values.category,
-        prepTime: values.prep_time,
+        prepTime: convertPrepTimeToMinutes(
+          values.prep_time,
+          values.prep_time_unit,
+        ),
         servings: values.servings,
         isPublic: values.visibility === "public",
       };
@@ -545,13 +599,29 @@ export function RecipeCreateModal({
                               <label className="mb-2 block text-sm font-medium text-[#F6EFE4]">
                                 Vorbereitungszeit
                               </label>
-                              <input
-                                type="number"
-                                {...register("prep_time", {
-                                  valueAsNumber: true,
-                                })}
-                                className="h-12 w-full rounded-2xl border border-white/10 bg-black/10 px-4 text-[#FFF8EE] outline-none focus:border-[#D6A84A]"
-                              />
+                              <div className="grid grid-cols-[1fr_110px] gap-3">
+                                <input
+                                  type="number"
+                                  {...register("prep_time", {
+                                    valueAsNumber: true,
+                                  })}
+                                  className="h-12 w-full rounded-2xl border border-white/10 bg-black/10 px-4 text-[#FFF8EE] outline-none focus:border-[#D6A84A]"
+                                />
+                                <select
+                                  {...register("prep_time_unit")}
+                                  className="h-12 w-full appearance-none rounded-2xl border border-white/10 bg-[#171411] px-4 text-[#FFF8EE] outline-none transition-colors duration-300 focus:border-[#D6A84A]"
+                                >
+                                  <option value="minutes" className="bg-[#171411] text-[#FFF8EE]">
+                                    Min
+                                  </option>
+                                  <option value="hours" className="bg-[#171411] text-[#FFF8EE]">
+                                    Std
+                                  </option>
+                                  <option value="days" className="bg-[#171411] text-[#FFF8EE]">
+                                    Tage
+                                  </option>
+                                </select>
+                              </div>
                               <FieldError message={errors.prep_time?.message} />
                             </div>
 

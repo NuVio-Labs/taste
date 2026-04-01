@@ -53,7 +53,7 @@ export function RecipeCard({
           </div>
 
           <div className="rounded-full border border-white/8 bg-black/10 px-3 py-1 text-xs text-[#D7C6AE]">
-            {recipe.isPublic ? "Public" : "Private"}
+            {recipe.isPublic ? "Öffentlich" : "Privat"}
           </div>
         </div>
 
@@ -91,7 +91,7 @@ export function RecipeCard({
           </span>
           <span className="inline-flex items-center gap-2 rounded-full border border-white/8 bg-black/10 px-3 py-1.5">
             {recipe.isPublic ? <Globe2 size={14} /> : <Lock size={14} />}
-            {recipe.isPublic ? "Oeffentlich" : "Privat"}
+            {recipe.isPublic ? "Öffentlich" : "Privat"}
           </span>
         </div>
       </div>

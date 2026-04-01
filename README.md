@@ -45,7 +45,7 @@ VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY=
 Die App prueft beim Start die aktuelle Supabase Session.
 Ohne Session wird auf `/login` geleitet.
 Mit gueltiger Session wird `/dashboard` freigeschaltet.
-Der Logout in der Dashboard-Topbar beendet die Session und leitet zurueck auf `/login`.
+Der Logout in der Dashboard-Topbar beendet die Session und leitet zurück auf `/login`.
 
 ## Struktur
 
@@ -65,5 +65,5 @@ src/
 ```
 
 `src/features/auth` kapselt Session-Handling und Auth-Funktionen.  
-`src/routes` enthaelt die Guards fuer oeffentliche und geschuetzte Bereiche.  
-`src/pages` enthaelt nur die drei benoetigten Seiten: Login, Dashboard und Not Found.
+`src/routes` enthält die Guards für öffentliche und geschützte Bereiche.  
+`src/pages` enthält nur die drei benötigten Seiten: Login, Dashboard und Not Found.
