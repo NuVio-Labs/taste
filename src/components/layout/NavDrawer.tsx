@@ -19,6 +19,7 @@ export type NavDrawerItem = {
 };
 
 type NavDrawerProps = {
+  onCreateRecipe?: () => void;
   isOpen: boolean;
   items: NavDrawerItem[];
   onClose: () => void;
@@ -31,6 +32,7 @@ type NavDrawerProps = {
 const DRAWER_WIDTH = 292;
 
 export function NavDrawer({
+  onCreateRecipe,
   isOpen,
   items,
   onClose,
@@ -105,7 +107,7 @@ export function NavDrawer({
         initial={false}
         animate={{ x: isOpen ? DRAWER_WIDTH - 20 : 0 }}
         transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
-        className="fixed left-0 top-1/2 z-[60] flex h-14 w-10 -translate-y-1/2 items-center justify-center rounded-r-[18px] border border-white/10 bg-[linear-gradient(180deg,rgba(29,23,19,0.98),rgba(18,15,12,0.98))] text-[#D6A84A] shadow-[0_12px_24px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.03)] transition-colors duration-300 hover:text-[#E9D8B4]"
+        className="fixed left-0 top-1/2 z-[60] flex h-14 w-[25px] -translate-y-1/2 items-center justify-center rounded-r-[22px] border border-white/10 bg-[linear-gradient(180deg,rgba(29,23,19,0.98),rgba(18,15,12,0.98))] text-[#D6A84A] shadow-[0_12px_24px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.03)] transition-colors duration-300 hover:text-[#E9D8B4]"
       >
         {isOpen ? <X size={16} /> : <Menu size={16} />}
       </motion.button>
@@ -238,6 +240,10 @@ export function NavDrawer({
               <button
                 type="button"
                 aria-label="Neues Rezept erstellen"
+                onClick={() => {
+                  onClose();
+                  onCreateRecipe?.();
+                }}
                 className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#E9D8B4]/12 bg-white/[0.03] text-[#D6A84A] transition-all duration-300 hover:-translate-y-0.5 hover:border-[#D6A84A]/20 hover:bg-white/[0.045] hover:text-[#E9D8B4]"
               >
                 <Plus size={16} />

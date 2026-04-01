@@ -5,14 +5,17 @@ import {
   BookOpen,
   ChefHat,
   Clock3,
+  Globe2,
   Heart,
   LayoutGrid,
-  Plus,
+  Lock,
   Sparkles,
   Star,
   Tag,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { NavDrawer, type NavDrawerItem } from "../components/layout/NavDrawer";
+import { RecipeCreateModal } from "../components/recipes/RecipeCreateModal";
 import { useAuth } from "../features/auth/useAuth";
 import { supabase } from "../lib/supabase";
 
@@ -37,6 +40,22 @@ type RecipePreview = {
   sortTimestamp: number;
   subtitle: string;
   title: string;
+};
+
+type RecipeStatsRow = {
+  created_at: string | null;
+  id: string;
+  is_public: boolean | null;
+  title: string | null;
+  updated_at: string | null;
+};
+
+type DashboardStats = {
+  lastUpdatedHint: string;
+  lastUpdatedLabel: string;
+  privateRecipes: number;
+  publicRecipes: number;
+  totalRecipes: number;
 };
 
 function readString(value: unknown): string | null {
@@ -104,6 +123,98 @@ function mapRecipeRow(row: RecipeRow, index: number): RecipePreview {
     sortTimestamp: Number.isNaN(sortTimestamp) ? 0 : sortTimestamp,
     title,
     subtitle: formatRecipeSubtitle(row),
+  };
+}
+
+function formatRelativeDate(value: string | null): string {
+  if (!value) {
+    return "Noch offen";
+  }
+
+  const parsedDate = new Date(value);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return "Noch offen";
+  }
+
+  const now = new Date();
+  const differenceInDays = Math.floor(
+    (now.getTime() - parsedDate.getTime()) / (1000 * 60 * 60 * 24),
+  );
+
+  if (differenceInDays <= 0) {
+    return "Heute";
+  }
+
+  if (differenceInDays === 1) {
+    return "Gestern";
+  }
+
+  if (differenceInDays < 7) {
+    return `Vor ${differenceInDays} Tagen`;
+  }
+
+  return parsedDate.toLocaleDateString("de-DE");
+}
+
+function formatPreciseDate(value: string | null): string {
+  if (!value) {
+    return "Kein Zeitstempel vorhanden";
+  }
+
+  const parsedDate = new Date(value);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return "Kein Zeitstempel vorhanden";
+  }
+
+  return parsedDate.toLocaleString("de-DE", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function buildDashboardStats(rows: RecipeStatsRow[]): DashboardStats {
+  const totalRecipes = rows.length;
+  const publicRecipes = rows.filter((row) => row.is_public === true).length;
+  const privateRecipes = totalRecipes - publicRecipes;
+  const latestRow = rows.reduce<RecipeStatsRow | null>((latest, row) => {
+    const dateValue = row.updated_at ?? row.created_at;
+
+    if (!dateValue) {
+      return latest;
+    }
+
+    const timestamp = new Date(dateValue).getTime();
+
+    if (Number.isNaN(timestamp)) {
+      return latest;
+    }
+
+    if (!latest) {
+      return row;
+    }
+
+    const latestValue = latest.updated_at ?? latest.created_at;
+    const latestTimestamp = latestValue ? new Date(latestValue).getTime() : 0;
+
+    return timestamp > latestTimestamp ? row : latest;
+  }, null);
+
+  const latestDateValue = latestRow?.updated_at ?? latestRow?.created_at ?? null;
+  const latestTitle = readString(latestRow?.title) ?? "Unbenanntes Rezept";
+
+  return {
+    totalRecipes,
+    publicRecipes,
+    privateRecipes,
+    lastUpdatedLabel: formatRelativeDate(latestDateValue),
+    lastUpdatedHint: latestDateValue
+      ? `${latestTitle} · ${formatPreciseDate(latestDateValue)}`
+      : "Noch keine Rezeptänderung vorhanden.",
   };
 }
 
@@ -201,6 +312,7 @@ function ActionCard({
 
 export function DashboardPage() {
   const { session, signOut } = useAuth();
+  const navigate = useNavigate();
   const userId = session?.user.id ?? "";
   const userEmail = session?.user.email ?? "";
   const metadataName =
@@ -209,9 +321,17 @@ export function DashboardPage() {
       : "";
   const [profileUserName, setProfileUserName] = useState("");
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isCreateRecipeOpen, setIsCreateRecipeOpen] = useState(false);
   const [recentRecipes, setRecentRecipes] = useState<RecipePreview[]>([]);
   const [isRecipesLoading, setIsRecipesLoading] = useState(true);
   const [recipesError, setRecipesError] = useState<string | null>(null);
+  const [stats, setStats] = useState<DashboardStats>({
+    totalRecipes: 0,
+    publicRecipes: 0,
+    privateRecipes: 0,
+    lastUpdatedLabel: "Noch offen",
+    lastUpdatedHint: "Noch keine Rezeptänderung vorhanden.",
+  });
 
   const fadeUp = {
     initial: { opacity: 0, y: 14, filter: "blur(6px)" },
@@ -232,7 +352,7 @@ export function DashboardPage() {
     {
       label: "Rezepte",
       icon: BookOpen,
-      disabled: true,
+      to: "/recipes",
     },
     {
       label: "Favoriten",
@@ -253,6 +373,53 @@ export function DashboardPage() {
 
   async function handleLogout() {
     await signOut();
+  }
+
+  async function loadDashboardRecipes() {
+    setIsRecipesLoading(true);
+    setRecipesError(null);
+
+    const [recentRecipesResult, statsResult] = await Promise.all([
+      supabase
+        .from("recipes")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(3),
+      supabase
+        .from("recipes")
+        .select("id, title, is_public, created_at, updated_at")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false }),
+    ]);
+
+    if (recentRecipesResult.error || statsResult.error) {
+      setRecipesError(
+        recentRecipesResult.error?.message ??
+          statsResult.error?.message ??
+          "Die Rezeptdaten konnten nicht geladen werden.",
+      );
+      setRecentRecipes([]);
+      setStats({
+        totalRecipes: 0,
+        publicRecipes: 0,
+        privateRecipes: 0,
+        lastUpdatedLabel: "Noch offen",
+        lastUpdatedHint: "Noch keine Rezeptänderung vorhanden.",
+      });
+      setIsRecipesLoading(false);
+      return;
+    }
+
+    const recentRows = Array.isArray(recentRecipesResult.data)
+      ? recentRecipesResult.data
+      : [];
+    const statsRows = Array.isArray(statsResult.data) ? statsResult.data : [];
+    const mappedRecipes = recentRows.map(mapRecipeRow);
+
+    setRecentRecipes(mappedRecipes);
+    setStats(buildDashboardStats(statsRows));
+    setIsRecipesLoading(false);
   }
 
   useEffect(() => {
@@ -296,45 +463,23 @@ export function DashboardPage() {
 
   useEffect(() => {
     let isMounted = true;
-
-    async function loadRecentRecipes() {
-      setIsRecipesLoading(true);
-      setRecipesError(null);
-
-      const { data, error } = await supabase
-        .from("recipes")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(3);
+    void (async () => {
+      await loadDashboardRecipes();
 
       if (!isMounted) {
         return;
       }
-
-      if (error) {
-        setRecipesError(error.message);
-        setRecentRecipes([]);
-        setIsRecipesLoading(false);
-        return;
-      }
-
-      const rows = Array.isArray(data) ? data : [];
-      const mappedRecipes = rows.map(mapRecipeRow);
-
-      setRecentRecipes(mappedRecipes);
-      setIsRecipesLoading(false);
-    }
-
-    void loadRecentRecipes();
+    })();
 
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [userId]);
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#0F0E0C] text-white">
       <NavDrawer
+        onCreateRecipe={() => setIsCreateRecipeOpen(true)}
         isOpen={isDrawerOpen}
         items={navItems}
         onClose={() => setIsDrawerOpen(false)}
@@ -342,6 +487,14 @@ export function DashboardPage() {
         onToggle={() => setIsDrawerOpen((previous) => !previous)}
         userEmail={userEmail}
         userName={profileUserName || metadataName}
+      />
+
+      <RecipeCreateModal
+        open={isCreateRecipeOpen}
+        onClose={() => setIsCreateRecipeOpen(false)}
+        onCreated={() => {
+          void loadDashboardRecipes();
+        }}
       />
 
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(214,168,74,0.10),transparent_18%),radial-gradient(circle_at_16%_18%,rgba(94,71,32,0.09),transparent_22%),radial-gradient(circle_at_84%_22%,rgba(111,123,59,0.07),transparent_20%),linear-gradient(180deg,#0F0E0C_0%,#090806_100%)]" />
@@ -357,26 +510,26 @@ export function DashboardPage() {
         >
           <StatCard
             label="Rezepte"
-            value="24"
-            hint="Deine Sammlung kann hier später direkt aus Supabase geladen werden."
+            value={String(stats.totalRecipes)}
+            hint="Gesamtzahl aller aktuell gespeicherten Rezepte in deiner Sammlung."
             icon={<BookOpen size={18} />}
           />
           <StatCard
-            label="Favoriten"
-            value="08"
-            hint="Lieblingsgerichte und deine wichtigsten Go To Rezepte."
-            icon={<Heart size={18} />}
+            label="Privat"
+            value={String(stats.privateRecipes)}
+            hint="Rezepte, die derzeit nur in deinem persönlichen Bereich sichtbar sind."
+            icon={<Lock size={18} />}
           />
           <StatCard
-            label="Kategorien"
-            value="06"
-            hint="Frühstück, Meal Prep, Desserts und mehr auf einen Blick."
-            icon={<Tag size={18} />}
+            label="Öffentlich"
+            value={String(stats.publicRecipes)}
+            hint="Bereits freigegebene Rezepte mit aktivierter öffentlicher Sichtbarkeit."
+            icon={<Globe2 size={18} />}
           />
           <StatCard
             label="Letztes Update"
-            value="Heute"
-            hint="Dein Dashboard ist bereit für die nächsten echten Daten."
+            value={stats.lastUpdatedLabel}
+            hint={stats.lastUpdatedHint}
             icon={<Clock3 size={18} />}
           />
         </motion.section>
@@ -430,6 +583,7 @@ export function DashboardPage() {
 
                       <button
                         type="button"
+                        onClick={() => navigate(`/recipes/${recipe.id}`)}
                         className="rounded-full border border-white/8 bg-white/[0.03] px-4 py-2 text-sm text-[#D6A84A] transition-colors duration-300 hover:border-[#D6A84A]/20 hover:text-[#E9D8B4]"
                       >
                         Öffnen
@@ -447,22 +601,60 @@ export function DashboardPage() {
             className="space-y-6"
           >
 
-            <SectionCard title="Nächste sinnvolle Schritte">
-              <div className="space-y-3">
+            <SectionCard title="Roadmap">
+              <div className="space-y-4">
                 {[
-                  "Recipe Table in Supabase anlegen",
-                  "Create Recipe Modal bauen",
-                  "Favoriten mit User Bezug speichern",
-                  "Dashboard Stats aus echten Daten befüllen",
-                ].map((step, index) => (
+                  {
+                    phase: "Jetzt",
+                    title: "Rezeptbasis steht",
+                    description:
+                      "Dashboard, letzte Rezepte und das Create-Recipe-Modal sind bereits angebunden.",
+                  },
+                  {
+                    phase: "Als Nächstes",
+                    title: "Rezepte-Seite aufbauen",
+                    description:
+                      "Alle Rezepte listen, filtern und den Detailfluss für einzelne Einträge vorbereiten.",
+                  },
+                  {
+                    phase: "Danach",
+                    title: "Favoriten und Kategorien ergänzen",
+                    description:
+                      "Persönliche Organisation mit User-Bezug, Filtern und sauberer Strukturierung ausbauen.",
+                  },
+                  {
+                    phase: "Später",
+                    title: "Einkaufsliste und Feinschliff",
+                    description:
+                      "Rezepte in Einkaufslisten überführen und den Workspace weiter produktiv ausformen.",
+                  },
+                ].map((item, index) => (
                   <div
-                    key={step}
-                    className="flex items-start gap-3 rounded-[20px] border border-white/8 bg-white/[0.025] px-4 py-4"
+                    key={item.title}
+                    className="rounded-[22px] border border-white/8 bg-white/[0.025] px-4 py-4"
                   >
-                    <div className="mt-0.5 flex h-7 w-7 items-center justify-center rounded-full border border-[#E9D8B4]/10 bg-white/[0.03] text-xs font-semibold text-[#E9D8B4]">
-                      {index + 1}
+                    <div className="flex items-start gap-3">
+                      <div className="flex flex-col items-center">
+                        <div className="mt-0.5 flex h-7 w-7 items-center justify-center rounded-full border border-[#E9D8B4]/10 bg-white/[0.03] text-xs font-semibold text-[#E9D8B4]">
+                          {index + 1}
+                        </div>
+                        {index < 3 ? (
+                          <div className="mt-2 h-8 w-px bg-white/10" />
+                        ) : null}
+                      </div>
+
+                      <div className="min-w-0">
+                        <p className="text-[0.7rem] font-semibold uppercase tracking-[0.24em] text-[#B89A67]">
+                          {item.phase}
+                        </p>
+                        <h3 className="mt-2 text-sm font-semibold text-[#F6EFE4]">
+                          {item.title}
+                        </h3>
+                        <p className="mt-2 text-sm leading-6 text-[#D5C5AF]">
+                          {item.description}
+                        </p>
+                      </div>
                     </div>
-                    <p className="text-sm leading-6 text-[#D5C5AF]">{step}</p>
                   </div>
                 ))}
               </div>
