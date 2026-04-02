@@ -4,7 +4,6 @@ import { BookOpen, Heart, LayoutGrid, MessageSquareText, Plus, Sparkles, Tag } f
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { FeedbackModal } from "../components/feedback/FeedbackModal";
 import { NavDrawer, type NavDrawerItem } from "../components/layout/NavDrawer";
-import { CategoryOverview } from "../components/recipes/CategoryOverview";
 import { RecipeCreateModal } from "../components/recipes/RecipeCreateModal";
 import { RecipeFilters } from "../components/recipes/RecipeFilters";
 import { RecipeOverview } from "../components/recipes/RecipeOverview";
@@ -328,22 +327,14 @@ export function RecipesPage() {
 
           <div className="mt-6 space-y-6">
             <RecipeFilters
+              activeCategory={activeCategory}
+              categories={categories}
+              onCategoryChange={setCategory}
               searchValue={searchValue}
               sortValue={sortValue}
               onSearchChange={setSearch}
               onSortChange={setSort}
             />
-
-            <div>
-              <p className="mb-3 text-xs uppercase tracking-[0.24em] text-[#8D7E6E]">
-                Kategorien Overview
-              </p>
-              <CategoryOverview
-                activeCategory={activeCategory}
-                categories={categories}
-                onSelectCategory={setCategory}
-              />
-            </div>
           </div>
         </motion.section>
 
