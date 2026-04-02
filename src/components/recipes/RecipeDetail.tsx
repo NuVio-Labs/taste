@@ -10,6 +10,7 @@ import {
   Users2,
 } from "lucide-react";
 import type { RecipeDetailData } from "../../features/recipes/types";
+import { getRecipeCategoryTheme } from "./categoryTheme";
 
 type RecipeDetailProps = {
   canManageRecipe?: boolean;
@@ -32,6 +33,8 @@ export function RecipeDetail({
   onToggleLike,
   recipe,
 }: RecipeDetailProps) {
+  const categoryTheme = getRecipeCategoryTheme(recipe.category);
+
   return (
     <div className="space-y-6">
       <button
@@ -44,13 +47,16 @@ export function RecipeDetail({
       </button>
 
       <section className="overflow-hidden rounded-[34px] border border-white/8 bg-white/[0.03] shadow-[0_20px_48px_rgba(0,0,0,0.24)]">
-        <div className="aspect-[16/8] bg-[linear-gradient(135deg,rgba(214,168,74,0.22),rgba(32,24,18,0.35))]">
+        <div className={`relative aspect-[16/8] ${categoryTheme.mediaClassName}`}>
           {recipe.imageUrl ? (
-            <img
-              src={recipe.imageUrl}
-              alt={recipe.title}
-              className="h-full w-full object-cover"
-            />
+            <>
+              <img
+                src={recipe.imageUrl}
+                alt={recipe.title}
+                className="h-full w-full object-cover"
+              />
+              <div className={`absolute inset-0 ${categoryTheme.overlayClassName}`} />
+            </>
           ) : (
             <div className="flex h-full items-center justify-center px-6 text-center text-4xl font-semibold tracking-[-0.05em] text-[#FFF4DF]">
               {recipe.title}
@@ -61,7 +67,9 @@ export function RecipeDetail({
         <div className="space-y-6 p-6 sm:p-8">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
-              <p className="text-xs uppercase tracking-[0.24em] text-[#B89A67]">
+              <p
+                className={`text-xs uppercase tracking-[0.24em] ${categoryTheme.categoryTextClassName}`}
+              >
                 {recipe.category}
               </p>
               <h1 className="mt-2 text-3xl font-semibold tracking-[-0.05em] text-[#FFF8EE] sm:text-4xl">

@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Clock3, Globe2, Heart, Lock, Users2 } from "lucide-react";
 import type { RecipeListItem } from "../../features/recipes/types";
+import { getRecipeCategoryTheme } from "./categoryTheme";
 
 type RecipeCardProps = {
   onClick: () => void;
@@ -19,6 +20,8 @@ export function RecipeCard({
   isLikePending = false,
   recipe,
 }: RecipeCardProps) {
+  const categoryTheme = getRecipeCategoryTheme(recipe.category);
+
   return (
     <motion.button
       type="button"
@@ -27,13 +30,16 @@ export function RecipeCard({
       onClick={onClick}
       className="overflow-hidden rounded-[28px] border border-white/8 bg-white/[0.03] text-left shadow-[0_16px_40px_rgba(0,0,0,0.18)] transition-all duration-300 hover:border-[#D6A84A]/18 hover:bg-white/[0.04]"
     >
-      <div className="aspect-[16/10] bg-[linear-gradient(135deg,rgba(214,168,74,0.22),rgba(32,24,18,0.35))]">
+      <div className={`relative aspect-[16/10] ${categoryTheme.mediaClassName}`}>
         {recipe.imageUrl ? (
-          <img
-            src={recipe.imageUrl}
-            alt={recipe.title}
-            className="h-full w-full object-cover"
-          />
+          <>
+            <img
+              src={recipe.imageUrl}
+              alt={recipe.title}
+              className="h-full w-full object-cover"
+            />
+            <div className={`absolute inset-0 ${categoryTheme.overlayClassName}`} />
+          </>
         ) : (
           <div className="flex h-full items-center justify-center text-4xl font-semibold tracking-[-0.05em] text-[#FFF4DF]">
             {fallbackLabel(recipe)}
@@ -44,7 +50,7 @@ export function RecipeCard({
       <div className="space-y-4 p-5">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-xs uppercase tracking-[0.24em] text-[#B89A67]">
+            <p className={`text-xs uppercase tracking-[0.24em] ${categoryTheme.categoryTextClassName}`}>
               {recipe.category}
             </p>
             <h3 className="mt-2 text-xl font-semibold tracking-[-0.04em] text-[#FFF8EE]">
