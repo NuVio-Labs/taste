@@ -26,10 +26,19 @@ type RecipeLikeRow = {
   recipe_id: string;
 };
 
+type RecipeFavoriteRow = {
+  recipe_id: string;
+};
+
 type ProfileRow = {
   id: string;
   username: string | null;
 };
+
+function isMissingFavoritesTableError(error: { message?: string } | null | undefined) {
+  const message = error?.message?.toLowerCase() ?? "";
+  return message.includes("recipe_favorites") && message.includes("could not find the table");
+}
 
 function readString(value: unknown): string | null {
   return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
@@ -123,6 +132,7 @@ function buildAuthorMap(rows: ProfileRow[]): Map<string, string> {
 
 function mapRecipeListItem(
   row: RecipeRow,
+  favoriteRecipeIds: Set<string>,
   likedRecipeIds: Set<string>,
   likeCounts: Map<string, number>,
   authorNames: Map<string, string>,
@@ -136,6 +146,7 @@ function mapRecipeListItem(
     category: readString(row.category) ?? "Ohne Kategorie",
     prepTime: readNumber(row.prep_time),
     servings: readNumber(row.servings),
+    isFavorite: favoriteRecipeIds.has(row.id),
     isPublic: row.is_public === true,
     likeCount: likeCounts.get(row.id) ?? 0,
     isLiked: likedRecipeIds.has(row.id),
@@ -165,10 +176,15 @@ export async function fetchRecipes(userId: string): Promise<RecipeListItem[]> {
     return [];
   }
 
-  const [likesResult, ownLikesResult] = await Promise.all([
+  const [likesResult, ownLikesResult, ownFavoritesResult] = await Promise.all([
     supabase.from("recipe_likes").select("recipe_id").in("recipe_id", recipeIds),
     supabase
       .from("recipe_likes")
+      .select("recipe_id")
+      .eq("user_id", userId)
+      .in("recipe_id", recipeIds),
+    supabase
+      .from("recipe_favorites")
       .select("recipe_id")
       .eq("user_id", userId)
       .in("recipe_id", recipeIds),
@@ -179,6 +195,102 @@ export async function fetchRecipes(userId: string): Promise<RecipeListItem[]> {
       likesResult.error?.message ??
         ownLikesResult.error?.message ??
         "Die Rezepte konnten nicht geladen werden.",
+    );
+  }
+
+  if (ownFavoritesResult.error && !isMissingFavoritesTableError(ownFavoritesResult.error)) {
+    throw new Error(ownFavoritesResult.error.message);
+  }
+
+  const allLikeRows = Array.isArray(likesResult.data)
+    ? likesResult.data
+        .map((entry) => entry as RecipeLikeRow)
+        .filter((entry) => typeof entry.recipe_id === "string")
+    : [];
+  const ownLikeRows = Array.isArray(ownLikesResult.data)
+    ? ownLikesResult.data
+        .map((entry) => entry as RecipeLikeRow)
+        .filter((entry) => typeof entry.recipe_id === "string")
+    : [];
+  const ownFavoriteRows = Array.isArray(ownFavoritesResult.data)
+    ? ownFavoritesResult.data
+        .map((entry) => entry as RecipeFavoriteRow)
+        .filter((entry) => typeof entry.recipe_id === "string")
+    : [];
+
+  const likeCounts = buildLikeCountMap(allLikeRows);
+  const likedRecipeIds = new Set(ownLikeRows.map((entry) => entry.recipe_id));
+  const favoriteRecipeIds = new Set(ownFavoriteRows.map((entry) => entry.recipe_id));
+  const userIds = Array.from(new Set(recipeRows.map((row) => row.user_id)));
+  const { data: profileData } = await supabase
+    .from("profiles")
+    .select("id, username")
+    .in("id", userIds);
+  const authorNames = buildAuthorMap(
+    Array.isArray(profileData) ? profileData.map((row) => row as ProfileRow) : [],
+  );
+
+  return recipeRows.map((row) =>
+    mapRecipeListItem(row, favoriteRecipeIds, likedRecipeIds, likeCounts, authorNames),
+  );
+}
+
+export async function fetchFavoriteRecipes(userId: string): Promise<RecipeListItem[]> {
+  const { data: favoriteData, error: favoritesError } = await supabase
+    .from("recipe_favorites")
+    .select("recipe_id")
+    .eq("user_id", userId);
+
+  if (favoritesError) {
+    throw new Error(favoritesError.message);
+  }
+
+  const favoriteRows = Array.isArray(favoriteData)
+    ? favoriteData
+        .map((entry) => entry as RecipeFavoriteRow)
+        .filter((entry) => typeof entry.recipe_id === "string")
+    : [];
+  const favoriteRecipeIds = new Set(favoriteRows.map((entry) => entry.recipe_id));
+  const recipeIds = Array.from(favoriteRecipeIds);
+
+  if (recipeIds.length === 0) {
+    return [];
+  }
+
+  const { data: recipeData, error: recipesError } = await supabase
+    .from("recipes")
+    .select(
+      "id, user_id, title, description, image_url, category, prep_time, servings, is_public, created_at, updated_at",
+    )
+    .in("id", recipeIds)
+    .or(`user_id.eq.${userId},is_public.eq.true`)
+    .order("created_at", { ascending: false });
+
+  if (recipesError) {
+    throw new Error(recipesError.message);
+  }
+
+  const recipeRows = Array.isArray(recipeData) ? recipeData.map((row) => row as RecipeRow) : [];
+  const visibleRecipeIds = recipeRows.map((row) => row.id);
+
+  if (visibleRecipeIds.length === 0) {
+    return [];
+  }
+
+  const [likesResult, ownLikesResult] = await Promise.all([
+    supabase.from("recipe_likes").select("recipe_id").in("recipe_id", visibleRecipeIds),
+    supabase
+      .from("recipe_likes")
+      .select("recipe_id")
+      .eq("user_id", userId)
+      .in("recipe_id", visibleRecipeIds),
+  ]);
+
+  if (likesResult.error || ownLikesResult.error) {
+    throw new Error(
+      likesResult.error?.message ??
+        ownLikesResult.error?.message ??
+        "Die Favoriten konnten nicht geladen werden.",
     );
   }
 
@@ -205,7 +317,7 @@ export async function fetchRecipes(userId: string): Promise<RecipeListItem[]> {
   );
 
   return recipeRows.map((row) =>
-    mapRecipeListItem(row, likedRecipeIds, likeCounts, authorNames),
+    mapRecipeListItem(row, favoriteRecipeIds, likedRecipeIds, likeCounts, authorNames),
   );
 }
 
@@ -213,7 +325,7 @@ export async function fetchRecipeById(
   userId: string,
   recipeId: string,
 ): Promise<RecipeDetailData> {
-  const [recipeResult, ownLikeResult, likeCountResult] = await Promise.all([
+  const [recipeResult, ownLikeResult, ownFavoriteResult, likeCountResult] = await Promise.all([
     supabase
       .from("recipes")
       .select(
@@ -224,6 +336,12 @@ export async function fetchRecipeById(
       .maybeSingle(),
     supabase
       .from("recipe_likes")
+      .select("recipe_id")
+      .eq("user_id", userId)
+      .eq("recipe_id", recipeId)
+      .maybeSingle(),
+    supabase
+      .from("recipe_favorites")
       .select("recipe_id")
       .eq("user_id", userId)
       .eq("recipe_id", recipeId)
@@ -243,10 +361,15 @@ export async function fetchRecipeById(
     );
   }
 
+  if (ownFavoriteResult.error && !isMissingFavoritesTableError(ownFavoriteResult.error)) {
+    throw new Error(ownFavoriteResult.error.message);
+  }
+
   if (!recipeResult.data) {
     throw new Error("Rezept nicht gefunden.");
   }
 
+  const favoriteRecipeIds = new Set<string>();
   const likedRecipeIds = new Set<string>();
   const likeCounts = new Map<string, number>([[recipeId, likeCountResult.count ?? 0]]);
   const { data: profileData } = await supabase
@@ -262,8 +385,16 @@ export async function fetchRecipeById(
     likedRecipeIds.add((ownLikeResult.data as RecipeLikeRow).recipe_id);
   }
 
+  if (
+    ownFavoriteResult.data &&
+    typeof (ownFavoriteResult.data as RecipeFavoriteRow).recipe_id === "string"
+  ) {
+    favoriteRecipeIds.add((ownFavoriteResult.data as RecipeFavoriteRow).recipe_id);
+  }
+
   const recipe = mapRecipeListItem(
     recipeResult.data as RecipeRow,
+    favoriteRecipeIds,
     likedRecipeIds,
     likeCounts,
     authorNames,
@@ -380,5 +511,30 @@ export async function unlikeRecipe(userId: string, recipeId: string) {
 
   if (likeDeleteError) {
     throw new Error(likeDeleteError.message);
+  }
+}
+
+export async function favoriteRecipe(userId: string, recipeId: string) {
+  const { error } = await supabase
+    .from("recipe_favorites")
+    .insert({
+      recipe_id: recipeId,
+      user_id: userId,
+    });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+}
+
+export async function unfavoriteRecipe(userId: string, recipeId: string) {
+  const { error } = await supabase
+    .from("recipe_favorites")
+    .delete()
+    .eq("user_id", userId)
+    .eq("recipe_id", recipeId);
+
+  if (error) {
+    throw new Error(error.message);
   }
 }

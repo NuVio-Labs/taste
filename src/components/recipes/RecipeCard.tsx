@@ -1,10 +1,12 @@
 import { motion } from "framer-motion";
-import { Clock3, Globe2, Heart, Lock, Users2 } from "lucide-react";
+import { Bookmark, Clock3, Globe2, Lock, ThumbsUp, Users2 } from "lucide-react";
 import type { RecipeListItem } from "../../features/recipes/types";
 import { getRecipeCategoryTheme } from "./categoryTheme";
 
 type RecipeCardProps = {
+  isFavoritePending?: boolean;
   onClick: () => void;
+  onToggleFavorite: () => void;
   onToggleLike: () => void;
   isLikePending?: boolean;
   recipe: RecipeListItem;
@@ -15,7 +17,9 @@ function fallbackLabel(recipe: RecipeListItem) {
 }
 
 export function RecipeCard({
+  isFavoritePending = false,
   onClick,
+  onToggleFavorite,
   onToggleLike,
   isLikePending = false,
   recipe,
@@ -76,16 +80,34 @@ export function RecipeCard({
             type="button"
             onClick={(event) => {
               event.stopPropagation();
+              onToggleFavorite();
+            }}
+            disabled={isFavoritePending}
+            className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 transition-colors duration-300 ${
+              recipe.isFavorite
+                ? "border-[#E7C26E]/30 bg-[rgba(231,194,110,0.14)] text-[#FCE7B0]"
+                : "border-white/8 bg-black/10 text-[#E2D4BE]"
+            }`}
+          >
+            <Bookmark
+              size={14}
+              className={recipe.isFavorite ? "fill-current" : undefined}
+            />
+          </button>
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
               onToggleLike();
             }}
             disabled={isLikePending}
             className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 transition-colors duration-300 ${
               recipe.isLiked
-                ? "border-[#D85B7D]/30 bg-[rgba(216,91,125,0.14)] text-[#FFD2DD]"
+                ? "border-[#6FA6FF]/30 bg-[rgba(111,166,255,0.14)] text-[#D9E8FF]"
                 : "border-white/8 bg-black/10 text-[#E2D4BE]"
             }`}
           >
-            <Heart
+            <ThumbsUp
               size={14}
               className={recipe.isLiked ? "fill-current" : undefined}
             />

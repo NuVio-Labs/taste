@@ -1,11 +1,12 @@
 import {
   ArrowLeft,
+  Bookmark,
   Clock3,
   Globe2,
-  Heart,
   Lock,
   Pencil,
   ShoppingCart,
+  ThumbsUp,
   Trash2,
   Users2,
 } from "lucide-react";
@@ -15,10 +16,12 @@ import { getRecipeCategoryTheme } from "./categoryTheme";
 type RecipeDetailProps = {
   canManageRecipe?: boolean;
   isDeleting?: boolean;
+  isFavoritePending?: boolean;
   isLikePending?: boolean;
   onBack: () => void;
   onDelete: () => void;
   onEdit: () => void;
+  onToggleFavorite: () => void;
   onToggleLike: () => void;
   recipe: RecipeDetailData;
 };
@@ -26,10 +29,12 @@ type RecipeDetailProps = {
 export function RecipeDetail({
   canManageRecipe = true,
   isDeleting = false,
+  isFavoritePending = false,
   isLikePending = false,
   onBack,
   onDelete,
   onEdit,
+  onToggleFavorite,
   onToggleLike,
   recipe,
 }: RecipeDetailProps) {
@@ -86,15 +91,31 @@ export function RecipeDetail({
             <div className="flex flex-wrap gap-3">
               <button
                 type="button"
+                onClick={onToggleFavorite}
+                disabled={isFavoritePending}
+                className={`inline-flex h-11 items-center gap-2 rounded-full border px-4 text-sm font-medium transition-colors duration-300 ${
+                  recipe.isFavorite
+                    ? "border-[#E7C26E]/30 bg-[rgba(231,194,110,0.14)] text-[#FCE7B0]"
+                    : "border-white/10 bg-white/[0.03] text-[#F6EFE4] hover:border-[#E7C26E]/18"
+                }`}
+              >
+                <Bookmark
+                  size={16}
+                  className={recipe.isFavorite ? "fill-current" : undefined}
+                />
+                {recipe.isFavorite ? "Favorit" : "Speichern"}
+              </button>
+              <button
+                type="button"
                 onClick={onToggleLike}
                 disabled={isLikePending}
                 className={`inline-flex h-11 items-center gap-2 rounded-full border px-4 text-sm font-medium transition-colors duration-300 ${
                   recipe.isLiked
-                    ? "border-[#D85B7D]/30 bg-[rgba(216,91,125,0.14)] text-[#FFD2DD]"
-                    : "border-white/10 bg-white/[0.03] text-[#F6EFE4] hover:border-[#D85B7D]/18"
+                    ? "border-[#6FA6FF]/30 bg-[rgba(111,166,255,0.14)] text-[#D9E8FF]"
+                    : "border-white/10 bg-white/[0.03] text-[#F6EFE4] hover:border-[#6FA6FF]/18"
                 }`}
               >
-                <Heart
+                <ThumbsUp
                   size={16}
                   className={recipe.isLiked ? "fill-current" : undefined}
                 />

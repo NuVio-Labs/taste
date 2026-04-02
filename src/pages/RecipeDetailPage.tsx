@@ -10,7 +10,9 @@ import { useAuth } from "../features/auth/useAuth";
 import { useProfile } from "../features/profile/useProfile";
 import {
   deleteRecipe,
+  favoriteRecipe,
   likeRecipe,
+  unfavoriteRecipe,
   unlikeRecipe,
 } from "../features/recipes/recipeService";
 import { useRecipe } from "../features/recipes/useRecipe";
@@ -26,6 +28,7 @@ export function RecipeDetailPage() {
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isFavoritePending, setIsFavoritePending] = useState(false);
   const [isLikePending, setIsLikePending] = useState(false);
 
   const userId = session?.user.id ?? "";
@@ -53,7 +56,7 @@ export function RecipeDetailPage() {
       {
         label: "Favoriten",
         icon: Heart,
-        disabled: true,
+        to: "/favorites",
       },
       {
         label: "Einkaufsliste",
@@ -134,6 +137,26 @@ export function RecipeDetailPage() {
     }
   }
 
+  async function handleToggleFavorite() {
+    if (!userId || !recipe || isFavoritePending) {
+      return;
+    }
+
+    setIsFavoritePending(true);
+
+    try {
+      if (recipe.isFavorite) {
+        await unfavoriteRecipe(userId, recipe.id);
+      } else {
+        await favoriteRecipe(userId, recipe.id);
+      }
+
+      await reload();
+    } finally {
+      setIsFavoritePending(false);
+    }
+  }
+
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#0F0E0C] text-white">
       <NavDrawer
@@ -193,6 +216,9 @@ export function RecipeDetailPage() {
               recipe={recipe}
               onBack={handleBack}
               onEdit={() => setIsCreateRecipeOpen(true)}
+              onToggleFavorite={() => {
+                void handleToggleFavorite();
+              }}
               onToggleLike={() => {
                 void handleToggleLike();
               }}
@@ -201,6 +227,7 @@ export function RecipeDetailPage() {
                 setIsDeleteConfirmOpen(true);
               }}
               isDeleting={isDeleting}
+              isFavoritePending={isFavoritePending}
               isLikePending={isLikePending}
             />
           )}

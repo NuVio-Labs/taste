@@ -1,10 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { BookOpen, Heart, LayoutGrid, MessageSquareText, Plus, Sparkles, Tag } from "lucide-react";
+import {
+  ArrowRight,
+  BookMarked,
+  BookOpen,
+  Heart,
+  LayoutGrid,
+  MessageSquareText,
+  Sparkles,
+  Tag,
+} from "lucide-react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { FeedbackModal } from "../components/feedback/FeedbackModal";
 import { NavDrawer, type NavDrawerItem } from "../components/layout/NavDrawer";
-import { RecipeCreateModal } from "../components/recipes/RecipeCreateModal";
 import { RecipeFilters } from "../components/recipes/RecipeFilters";
 import { RecipeOverview } from "../components/recipes/RecipeOverview";
 import { useAuth } from "../features/auth/useAuth";
@@ -15,7 +23,7 @@ import {
   unfavoriteRecipe,
   unlikeRecipe,
 } from "../features/recipes/recipeService";
-import { useRecipes } from "../features/recipes/useRecipes";
+import { useFavoriteRecipes } from "../features/recipes/useFavoriteRecipes";
 import type {
   RecipeCategorySummary,
   RecipeListItem,
@@ -24,7 +32,7 @@ import type {
 
 const DEFAULT_SORT: RecipeSortOption = "latest";
 const ALL_CATEGORY_KEY = "all";
-const SCROLL_STORAGE_KEY = "recipes-scroll-position";
+const SCROLL_STORAGE_KEY = "favorites-scroll-position";
 
 function normalizeCategoryKey(value: string) {
   return value.trim().toLowerCase();
@@ -53,7 +61,7 @@ function buildCategorySummary(recipes: RecipeListItem[]): RecipeCategorySummary[
   return [
     {
       key: ALL_CATEGORY_KEY,
-      label: "Alle Rezepte",
+      label: "Alle Favoriten",
       count: recipes.length,
     },
     ...Array.from(categoryMap.values()).sort((left, right) =>
@@ -124,13 +132,12 @@ function updateParams(
   params.set(key, value);
 }
 
-export function RecipesPage() {
+export function FavoritesPage() {
   const { session, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [isCreateRecipeOpen, setIsCreateRecipeOpen] = useState(false);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [favoritePendingRecipeId, setFavoritePendingRecipeId] = useState<string | null>(null);
   const [likePendingRecipeId, setLikePendingRecipeId] = useState<string | null>(null);
@@ -144,18 +151,22 @@ export function RecipesPage() {
       ? session.user.user_metadata.full_name
       : "";
   const { profile } = useProfile(userId);
-  const { recipes, isLoading, error, reload } = useRecipes(userId);
+  const { favorites, isLoading, error, reload } = useFavoriteRecipes(userId);
 
   const activeCategory =
     searchParams.get("category")?.trim().toLowerCase() || ALL_CATEGORY_KEY;
   const searchValue = searchParams.get("q") ?? "";
   const sortValue = (searchParams.get("sort") as RecipeSortOption) || DEFAULT_SORT;
 
-  const categories = useMemo(() => buildCategorySummary(recipes), [recipes]);
+  const categories = useMemo(() => buildCategorySummary(favorites), [favorites]);
   const filteredRecipes = useMemo(
-    () => filterRecipes(recipes, activeCategory, searchValue, sortValue),
-    [activeCategory, recipes, searchValue, sortValue],
+    () => filterRecipes(favorites, activeCategory, searchValue, sortValue),
+    [activeCategory, favorites, searchValue, sortValue],
   );
+  const hasActiveFilters =
+    activeCategory !== ALL_CATEGORY_KEY ||
+    searchValue.trim().length > 0 ||
+    sortValue !== DEFAULT_SORT;
 
   useEffect(() => {
     if (isLoading || hasRestoredScrollRef.current) {
@@ -234,12 +245,17 @@ export function RecipesPage() {
     setSearchParams(nextParams, { replace: true });
   }
 
+  function resetFilters() {
+    setSearchParams(new URLSearchParams(), { replace: true });
+    recipeListRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   async function handleLogout() {
     await signOut();
   }
 
   async function handleToggleLike(recipeId: string) {
-    const recipe = recipes.find((entry) => entry.id === recipeId);
+    const recipe = favorites.find((entry) => entry.id === recipeId);
 
     if (!userId || !recipe || likePendingRecipeId) {
       return;
@@ -261,7 +277,7 @@ export function RecipesPage() {
   }
 
   async function handleToggleFavorite(recipeId: string) {
-    const recipe = recipes.find((entry) => entry.id === recipeId);
+    const recipe = favorites.find((entry) => entry.id === recipeId);
 
     if (!userId || !recipe || favoritePendingRecipeId) {
       return;
@@ -295,7 +311,6 @@ export function RecipesPage() {
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#0F0E0C] text-white">
       <NavDrawer
-        onCreateRecipe={() => setIsCreateRecipeOpen(true)}
         isOpen={isDrawerOpen}
         items={navItems}
         onClose={() => setIsDrawerOpen(false)}
@@ -305,14 +320,6 @@ export function RecipesPage() {
         userName={profile?.username || metadataName}
         plan={profile?.plan ?? "free"}
         profileTo="/profile"
-      />
-
-      <RecipeCreateModal
-        open={isCreateRecipeOpen}
-        onClose={() => setIsCreateRecipeOpen(false)}
-        onCreated={() => {
-          void reload();
-        }}
       />
 
       <FeedbackModal
@@ -334,20 +341,18 @@ export function RecipesPage() {
           transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
           className="rounded-[34px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.018))] p-5 shadow-[0_18px_50px_rgba(0,0,0,0.24)] sm:p-6"
         >
-          <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
-            <div>
-              <p className="text-xs uppercase tracking-[0.24em] text-[#8D7E6E]">
-                Rezeptsammlung
-              </p>
-              <h1 className="mt-2 text-3xl font-semibold tracking-[-0.05em] text-[#FFF8EE] sm:text-4xl">
-                Rezepte
-              </h1>
-             <p className="mt-3 max-w-2xl text-sm leading-6 text-[#B7AA96] sm:text-base">
-  Wähle oben eine Kategorie aus oder stöbere direkt durch deine Rezepte. Mit einem Tap öffnest du die vollständige Detailansicht.
-</p>
-            </div>
-
-
+          <div>
+            <p className="text-xs uppercase tracking-[0.24em] text-[#8D7E6E]">
+              Gespeicherte Rezepte
+            </p>
+            <h1 className="mt-2 flex items-center gap-3 text-3xl font-semibold tracking-[-0.05em] text-[#FFF8EE] sm:text-4xl">
+              <BookMarked className="text-[#E7C26E]" size={28} />
+              Favoriten
+            </h1>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-[#B7AA96] sm:text-base">
+              Hier liegen nur Rezepte, die du bewusst gespeichert hast. Likes und
+              Favoriten bleiben damit sauber getrennt.
+            </p>
           </div>
 
           <div className="mt-6 space-y-6">
@@ -367,27 +372,79 @@ export function RecipesPage() {
           <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="text-xs uppercase tracking-[0.24em] text-[#8D7E6E]">
-                Rezept Overview
+                Deine Merkliste
               </p>
               <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-[#FFF8EE]">
-                {filteredRecipes.length} passende Rezepte
+                {filteredRecipes.length} gespeicherte Rezepte
               </h2>
             </div>
-            <p className="text-sm text-[#B7AA96]">
-              Filter aktiv:{" "}
-              {categories.find((entry) => entry.key === activeCategory)?.label ??
-                "Alle Rezepte"}
-            </p>
+            <div className="flex flex-wrap items-center gap-3">
+              <p className="text-sm text-[#B7AA96]">
+                Filter aktiv:{" "}
+                {categories.find((entry) => entry.key === activeCategory)?.label ??
+                  "Alle Favoriten"}
+              </p>
+              {hasActiveFilters ? (
+                <button
+                  type="button"
+                  onClick={resetFilters}
+                  className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-sm text-[#F6EFE4] transition-colors duration-300 hover:border-[#D6A84A]/18 hover:text-[#FFF8EE]"
+                >
+                  Filter zurücksetzen
+                </button>
+              ) : null}
+            </div>
           </div>
 
           {isLoading ? (
             <div className="rounded-[24px] border border-white/8 bg-white/[0.025] px-4 py-5 text-sm text-[#B7AA96]">
-              Rezepte werden geladen...
+              Favoriten werden geladen...
             </div>
           ) : error ? (
             <div className="rounded-[24px] border border-[rgba(214,168,74,0.14)] bg-[rgba(255,255,255,0.025)] px-4 py-5 text-sm leading-6 text-[#D9C9B1]">
-              Die Rezeptdaten konnten nicht geladen werden.
+              Die Favoriten konnten nicht geladen werden.
               <div className="mt-2 text-[#A99883]">{error}</div>
+            </div>
+          ) : favorites.length === 0 ? (
+            <div className="rounded-[28px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.018))] p-6 shadow-[0_16px_40px_rgba(0,0,0,0.18)]">
+              <p className="text-xs uppercase tracking-[0.24em] text-[#8D7E6E]">
+                Noch leer
+              </p>
+              <h3 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-[#FFF8EE]">
+                Noch keine Favoriten gespeichert
+              </h3>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-[#B7AA96]">
+                Nutze das Bookmark an einem Rezept, um dir Gerichte gezielt für später
+                zu merken.
+              </p>
+              <button
+                type="button"
+                onClick={() => navigate("/recipes")}
+                className="mt-5 inline-flex items-center gap-2 rounded-full border border-[#E9D8B4]/12 bg-white/[0.03] px-5 py-3 text-sm font-medium text-[#F6EFE4] transition-all duration-300 hover:-translate-y-0.5 hover:border-[#D6A84A]/20"
+              >
+                Rezepte entdecken
+                <ArrowRight size={16} />
+              </button>
+            </div>
+          ) : filteredRecipes.length === 0 ? (
+            <div className="rounded-[28px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.018))] p-6 shadow-[0_16px_40px_rgba(0,0,0,0.18)]">
+              <p className="text-xs uppercase tracking-[0.24em] text-[#8D7E6E]">
+                Kein Treffer
+              </p>
+              <h3 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-[#FFF8EE]">
+                Keine Favoriten passen zu deinem Filter
+              </h3>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-[#B7AA96]">
+                Passe Suche, Kategorie oder Sortierung an oder setze die Filter direkt
+                zurück.
+              </p>
+              <button
+                type="button"
+                onClick={resetFilters}
+                className="mt-5 inline-flex items-center gap-2 rounded-full border border-[#E9D8B4]/12 bg-white/[0.03] px-5 py-3 text-sm font-medium text-[#F6EFE4] transition-all duration-300 hover:-translate-y-0.5 hover:border-[#D6A84A]/20"
+              >
+                Filter zurücksetzen
+              </button>
             </div>
           ) : (
             <RecipeOverview
@@ -397,11 +454,7 @@ export function RecipesPage() {
               onToggleLike={handleToggleLike}
               favoritePendingRecipeId={favoritePendingRecipeId}
               likePendingRecipeId={likePendingRecipeId}
-              emptyMessage={
-                recipes.length === 0
-                  ? "Noch keine Rezepte vorhanden. Erstelle dein erstes Rezept und die Übersicht füllt sich automatisch."
-                  : "Keine Rezepte passen aktuell zu Suche und Filter."
-              }
+              emptyMessage=""
             />
           )}
         </section>

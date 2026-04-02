@@ -17,6 +17,7 @@ export type RecipeListItem = {
   description: string;
   id: string;
   imageUrl: string | null;
+  isFavorite: boolean;
   isPublic: boolean;
   isLiked: boolean;
   likeCount: number;

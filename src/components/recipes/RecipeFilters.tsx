@@ -24,7 +24,7 @@ export function RecipeFilters({
   sortValue,
 }: RecipeFiltersProps) {
   const selectClassName =
-    "h-13 w-full appearance-none rounded-[22px] border border-white/10 bg-[#14110E] pl-14 pr-10 text-[#FFF8EE] outline-none transition-colors duration-300 focus:border-[#D6A84A]";
+    "h-13 w-full appearance-none rounded-[22px] border border-white/10 bg-[#14110E] pl-24 pr-10 text-[#FFF8EE] outline-none transition-colors duration-300 focus:border-[#D6A84A]";
   const optionClassName = "bg-[#171411] text-[#FFF8EE]";
 
   return (
@@ -44,7 +44,7 @@ export function RecipeFilters({
 
       <label className="relative block">
         <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#8E806F]">
-          Kat
+          Kategorie
         </span>
         <select
           value={activeCategory}

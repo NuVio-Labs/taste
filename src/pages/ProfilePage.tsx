@@ -86,7 +86,7 @@ export function ProfilePage() {
       {
         label: "Favoriten",
         icon: Heart,
-        disabled: true,
+        to: "/favorites",
       },
       {
         label: "Einkaufsliste",
