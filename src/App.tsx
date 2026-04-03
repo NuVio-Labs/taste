@@ -1,6 +1,7 @@
 import { Outlet } from "react-router-dom";
 import { ChefHat } from "lucide-react";
 import { Suspense } from "react";
+import { RouteSpeedInsights } from "./components/analytics/RouteSpeedInsights";
 import { ErrorBoundary } from "./components/ui/ErrorBoundary";
 import { Spinner } from "./components/ui/Spinner";
 
@@ -26,6 +27,7 @@ export function AppLoadingScreen() {
 export default function AppShell() {
   return (
     <ErrorBoundary>
+      <RouteSpeedInsights />
       <Suspense fallback={<AppLoadingScreen />}>
         <Outlet />
       </Suspense>

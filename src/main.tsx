@@ -1,7 +1,6 @@
 import { StrictMode } from "react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Analytics } from "@vercel/analytics/react";
-import { SpeedInsights } from "@vercel/speed-insights/react";
 import { createRoot } from "react-dom/client";
 import { RouterProvider } from "react-router-dom";
 import { AuthProvider } from "./features/auth/AuthProvider";
@@ -15,7 +14,6 @@ createRoot(document.getElementById("root")!).render(
       <AuthProvider>
         <RouterProvider router={router} />
         <Analytics />
-        <SpeedInsights />
       </AuthProvider>
     </QueryClientProvider>
   </StrictMode>,

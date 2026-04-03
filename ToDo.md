@@ -22,6 +22,7 @@ _Zuletzt aktualisiert: 2026-04-03 (Session 4)_
 
 ## Zuletzt abgeschlossen
 
+- Performance: Login-Initial-Render vereinfacht, externe Font-Blocker entfernt und Speed-Insights-Routen an React Router angebunden
 - P1: Playwright-Profil-speichern-Flow abgedeckt
 - P1: Playwright-Einkaufslisten-Flow abgedeckt
 - P1: Playwright-Favoriten-Seiten-Flow abgedeckt
@@ -72,11 +73,15 @@ _Zuletzt aktualisiert: 2026-04-03 (Session 4)_
 - E2E-Abdeckung ist für P1 gut, aber noch nicht vollständig CI-orientiert für spätere P2- und P3-Flows
 - Error Boundary wurde noch nicht bewusst manuell getriggert
 - Deployment hängt weiter an sauber gepflegten Dependency-Versionen, weil Vercel Peer-Konflikte strikt auflöst
+- Wirkung der jüngsten FCP/LCP-Optimierungen muss erst in neuen Vercel-Speed-Insights-Daten bestätigt werden
 
 ## Änderungslog
 
 ### 2026-04-03 (Session 4)
 
+- Performance: Login-Seite für den ersten Render entschärft; Google-Font-Blocker entfernt und schwere Hintergrundeffekte reduziert
+- Analytics: Vercel Speed Insights an React Router gebunden, damit Seiten nicht mehr als `Unknown` aggregiert werden
+- Routing: Öffentliche Auth-Seiten rendern ohne vorgelagerten Session-Loader und kommen schneller zum ersten Paint
 - Dokumentation: `ToDo.md` auf aktuellen Projektstand bereinigt und auf sauberen UTF-8-Inhalt mit Umlauten umgestellt
 
 ### 2026-04-03 (Session 3)

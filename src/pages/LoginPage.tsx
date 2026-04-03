@@ -90,68 +90,10 @@ function AuthField({
 function BottomWaveGlow() {
   return (
     <div className="pointer-events-none absolute inset-x-0 bottom-0 h-52 overflow-hidden rounded-b-[34px]">
-      <div className="absolute inset-x-6 bottom-[-28px] h-36 rounded-full bg-[radial-gradient(circle_at_center,_rgba(214,168,74,0.7)_0%,_rgba(201,133,47,0.45)_28%,_rgba(111,123,59,0.24)_52%,_rgba(0,0,0,0)_76%)] blur-2xl" />
-
-      <motion.div
-        className="absolute bottom-[-14px] left-[-18%] h-28 w-[68%] rounded-[999px] bg-[linear-gradient(90deg,rgba(94,71,32,0.88)_0%,rgba(214,168,74,0.92)_38%,rgba(201,133,47,0.82)_68%,rgba(111,123,59,0.7)_100%)] opacity-90 blur-[20px]"
-        animate={{
-          x: [0, 30, -10, 0],
-          y: [0, -8, 6, 0],
-          rotate: [0, 2, -2, 0],
-        }}
-        transition={{
-          duration: 8,
-          repeat: Number.POSITIVE_INFINITY,
-          ease: "easeInOut",
-        }}
-      />
-
-      <motion.div
-        className="absolute bottom-[-18px] right-[-14%] h-24 w-[64%] rounded-[999px] bg-[linear-gradient(90deg,rgba(214,168,74,0.72)_0%,rgba(233,216,180,0.55)_22%,rgba(201,133,47,0.75)_58%,rgba(111,123,59,0.55)_100%)] opacity-75 blur-[24px]"
-        animate={{
-          x: [0, -26, 14, 0],
-          y: [0, 10, -4, 0],
-          rotate: [0, -2, 1, 0],
-        }}
-        transition={{
-          duration: 9.5,
-          repeat: Number.POSITIVE_INFINITY,
-          ease: "easeInOut",
-        }}
-      />
-
-      <motion.div
-        className="absolute bottom-10 left-1/2 h-16 w-[72%] -translate-x-1/2 rounded-[999px] bg-[radial-gradient(circle_at_center,_rgba(245,239,228,0.17)_0%,_rgba(214,168,74,0.13)_40%,_rgba(0,0,0,0)_76%)] blur-2xl"
-        animate={{
-          scaleX: [1, 1.08, 0.96, 1],
-          opacity: [0.35, 0.52, 0.28, 0.35],
-        }}
-        transition={{
-          duration: 7,
-          repeat: Number.POSITIVE_INFINITY,
-          ease: "easeInOut",
-        }}
-      />
-
-      <svg
-        className="absolute bottom-0 left-0 h-24 w-[220%] opacity-40"
-        viewBox="0 0 1440 320"
-        preserveAspectRatio="none"
-      >
-        <motion.path
-          d="M0,224L48,208C96,192,192,160,288,170.7C384,181,480,235,576,245.3C672,256,768,224,864,186.7C960,149,1056,107,1152,112C1248,117,1344,171,1392,197.3L1440,224L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"
-          fill="rgba(214,168,74,0.22)"
-          animate={{
-            x: [0, -140, 0],
-          }}
-          transition={{
-            duration: 11,
-            repeat: Number.POSITIVE_INFINITY,
-            ease: "linear",
-          }}
-        />
-      </svg>
-
+      <div className="absolute inset-x-6 bottom-[-28px] h-36 rounded-full bg-[radial-gradient(circle_at_center,_rgba(214,168,74,0.55)_0%,_rgba(201,133,47,0.28)_28%,_rgba(111,123,59,0.12)_52%,_rgba(0,0,0,0)_76%)] blur-2xl" />
+      <div className="absolute bottom-[-14px] left-[-18%] h-28 w-[68%] rounded-[999px] bg-[linear-gradient(90deg,rgba(94,71,32,0.72)_0%,rgba(214,168,74,0.78)_38%,rgba(201,133,47,0.64)_68%,rgba(111,123,59,0.52)_100%)] opacity-80 blur-[20px]" />
+      <div className="absolute bottom-[-18px] right-[-14%] h-24 w-[64%] rounded-[999px] bg-[linear-gradient(90deg,rgba(214,168,74,0.54)_0%,rgba(233,216,180,0.36)_22%,rgba(201,133,47,0.58)_58%,rgba(111,123,59,0.42)_100%)] opacity-70 blur-[22px]" />
+      <div className="absolute bottom-10 left-1/2 h-16 w-[72%] -translate-x-1/2 rounded-[999px] bg-[radial-gradient(circle_at_center,_rgba(245,239,228,0.14)_0%,_rgba(214,168,74,0.10)_40%,_rgba(0,0,0,0)_76%)] blur-2xl" />
       <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-[#171411] via-[#171411]/85 to-transparent" />
     </div>
   );
