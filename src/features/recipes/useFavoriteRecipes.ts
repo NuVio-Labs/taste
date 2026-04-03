@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { fetchFavoriteRecipes } from "./recipeService";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { favoriteRecipesQueryOptions } from "./queryOptions";
 import type { RecipeListItem } from "./types";
 
 type UseFavoriteRecipesResult = {
@@ -10,44 +10,17 @@ type UseFavoriteRecipesResult = {
 };
 
 export function useFavoriteRecipes(userId: string): UseFavoriteRecipesResult {
-  const [favorites, setFavorites] = useState<RecipeListItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  async function loadFavorites() {
-    if (!userId) {
-      setFavorites([]);
-      setError(null);
-      setIsLoading(false);
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const nextFavorites = await fetchFavoriteRecipes(userId);
-      setFavorites(nextFavorites);
-    } catch (loadError) {
-      setFavorites([]);
-      setError(
-        loadError instanceof Error
-          ? loadError.message
-          : "Die Favoriten konnten nicht geladen werden.",
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    void loadFavorites();
-  }, [userId]);
+  const queryClient = useQueryClient();
+  const query = useQuery(favoriteRecipesQueryOptions(userId));
 
   return {
-    favorites,
-    isLoading,
-    error,
-    reload: loadFavorites,
+    favorites: query.data ?? [],
+    isLoading: query.isLoading,
+    error: query.error instanceof Error ? query.error.message : null,
+    reload: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: favoriteRecipesQueryOptions(userId).queryKey,
+      });
+    },
   };
 }

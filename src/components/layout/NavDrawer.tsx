@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ChefHat,
@@ -8,6 +9,10 @@ import {
   X,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
+import {
+  favoriteRecipesQueryOptions,
+  recipesQueryOptions,
+} from "../../features/recipes/queryOptions";
 
 export type NavDrawerItem = {
   disabled?: boolean;
@@ -18,7 +23,7 @@ export type NavDrawerItem = {
 };
 
 type NavDrawerProps = {
-  onCreateRecipe?: () => void;
+  _onCreateRecipe?: () => void;
   isOpen: boolean;
   items: NavDrawerItem[];
   onClose: () => void;
@@ -26,6 +31,7 @@ type NavDrawerProps = {
   plan?: "free" | "pro";
   profileTo?: string;
   onToggle: () => void;
+  userId?: string;
   userEmail?: string;
   userName?: string;
 };
@@ -33,7 +39,7 @@ type NavDrawerProps = {
 const DRAWER_WIDTH = 292;
 
 export function NavDrawer({
-  onCreateRecipe,
+  _onCreateRecipe,
   isOpen,
   items,
   onClose,
@@ -41,10 +47,12 @@ export function NavDrawer({
   plan = "free",
   profileTo = "/profile",
   onToggle,
+  userId,
   userEmail,
   userName,
 }: NavDrawerProps) {
   const location = useLocation();
+  const queryClient = useQueryClient();
   const firstName = useMemo(() => {
     const sourceName = userName?.trim();
 
@@ -61,6 +69,7 @@ export function NavDrawer({
 
   useEffect(() => {
     onClose();
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- onClose bei Route-Wechsel aufrufen; onClose-Referenz ist stabil
   }, [location.pathname]);
 
   useEffect(() => {
@@ -85,6 +94,21 @@ export function NavDrawer({
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [onClose]);
+
+  function prefetchRouteData(path?: string) {
+    if (!userId || !path) {
+      return;
+    }
+
+    if (path === "/recipes") {
+      void queryClient.prefetchQuery(recipesQueryOptions(userId));
+      return;
+    }
+
+    if (path === "/favorites") {
+      void queryClient.prefetchQuery(favoriteRecipesQueryOptions(userId));
+    }
+  }
 
   return (
     <>
@@ -147,6 +171,9 @@ export function NavDrawer({
               <div className="flex flex-col items-start gap-3">
                 <NavLink
                   to={profileTo}
+                  onMouseEnter={() => prefetchRouteData(profileTo)}
+                  onFocus={() => prefetchRouteData(profileTo)}
+                  onTouchStart={() => prefetchRouteData(profileTo)}
                   className="inline-flex items-center gap-2 rounded-full border border-white/8 bg-white/[0.03] px-4 py-2 text-sm text-[#C7B79F] transition-colors duration-300 hover:border-[#D6A84A]/18 hover:text-[#F6EFE4]"
                 >
                   <UserCircle2 size={16} className="text-[#D6A84A]" />
@@ -227,6 +254,9 @@ export function NavDrawer({
                   key={item.label}
                   to={item.to ?? "/dashboard"}
                   onClick={item.onSelect}
+                  onMouseEnter={() => prefetchRouteData(item.to)}
+                  onFocus={() => prefetchRouteData(item.to)}
+                  onTouchStart={() => prefetchRouteData(item.to)}
                   className={({ isActive }) =>
                     `group flex items-center gap-3 rounded-[22px] border px-4 py-3 transition-all duration-300 ${
                       isActive

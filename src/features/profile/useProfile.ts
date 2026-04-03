@@ -1,53 +1,21 @@
-import { useEffect, useState } from "react";
-import { fetchProfile } from "./profileService";
+import { useQuery } from "@tanstack/react-query";
+import { profileQueryOptions } from "./queryOptions";
 import type { ProfileData } from "./types";
 
 type UseProfileResult = {
   error: string | null;
   isLoading: boolean;
   profile: ProfileData | null;
-  reload: () => Promise<void>;
+  reload: () => void;
 };
 
 export function useProfile(userId: string): UseProfileResult {
-  const [profile, setProfile] = useState<ProfileData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  async function loadProfile() {
-    if (!userId) {
-      setProfile(null);
-      setError(null);
-      setIsLoading(false);
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const nextProfile = await fetchProfile(userId);
-      setProfile(nextProfile);
-    } catch (loadError) {
-      setProfile(null);
-      setError(
-        loadError instanceof Error
-          ? loadError.message
-          : "Das Profil konnte nicht geladen werden.",
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    void loadProfile();
-  }, [userId]);
+  const { data, isLoading, error, refetch } = useQuery(profileQueryOptions(userId));
 
   return {
-    profile,
+    profile: data ?? null,
     isLoading,
-    error,
-    reload: loadProfile,
+    error: error instanceof Error ? error.message : null,
+    reload: () => { void refetch(); },
   };
 }

@@ -1,11 +1,13 @@
 import { useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { BookOpen, Heart, LayoutGrid, MessageSquareText, Sparkles, Tag } from "lucide-react";
+import { BookOpen, Heart, LayoutGrid, MessageSquareText, Tag } from "lucide-react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { FeedbackModal } from "../components/feedback/FeedbackModal";
 import { NavDrawer, type NavDrawerItem } from "../components/layout/NavDrawer";
 import { RecipeDetail } from "../components/recipes/RecipeDetail";
 import { RecipeCreateModal } from "../components/recipes/RecipeCreateModal";
+import { ShoppingListPickerDialog } from "../components/shopping-list/ShoppingListPickerDialog";
 import { useAuth } from "../features/auth/useAuth";
 import { useProfile } from "../features/profile/useProfile";
 import {
@@ -16,8 +18,10 @@ import {
   unlikeRecipe,
 } from "../features/recipes/recipeService";
 import { useRecipe } from "../features/recipes/useRecipe";
+import { useShoppingLists } from "../features/shopping-list/useShoppingLists";
 
 export function RecipeDetailPage() {
+  const queryClient = useQueryClient();
   const { session, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -30,6 +34,9 @@ export function RecipeDetailPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isFavoritePending, setIsFavoritePending] = useState(false);
   const [isLikePending, setIsLikePending] = useState(false);
+  const [isShoppingListDialogOpen, setIsShoppingListDialogOpen] = useState(false);
+  const [shoppingListError, setShoppingListError] = useState<string | null>(null);
+  const [shoppingListSuccess, setShoppingListSuccess] = useState<string | null>(null);
 
   const userId = session?.user.id ?? "";
   const userEmail = session?.user.email ?? "";
@@ -38,7 +45,8 @@ export function RecipeDetailPage() {
       ? session.user.user_metadata.full_name
       : "";
   const { profile } = useProfile(userId);
-  const { recipe, isLoading, error, reload } = useRecipe(userId, id);
+  const { recipe, isLoading, error } = useRecipe(userId, id);
+  const shoppingLists = useShoppingLists(userId, profile?.plan ?? "free");
   const canManageRecipe = recipe?.userId === userId;
 
   const navItems: NavDrawerItem[] = useMemo(
@@ -61,12 +69,7 @@ export function RecipeDetailPage() {
       {
         label: "Einkaufsliste",
         icon: Tag,
-        disabled: true,
-      },
-      {
-        label: "Inspiration",
-        icon: Sparkles,
-        disabled: true,
+        to: "/shopping-list",
       },
       {
         label: "Feedback",
@@ -105,6 +108,11 @@ export function RecipeDetailPage() {
 
     try {
       await deleteRecipe(userId, recipe.id);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["recipes", userId] }),
+        queryClient.invalidateQueries({ queryKey: ["favorite-recipes", userId] }),
+        queryClient.invalidateQueries({ queryKey: ["dashboard", userId] }),
+      ]);
       navigate("/recipes");
     } catch (deleteRecipeError) {
       setDeleteError(
@@ -131,7 +139,11 @@ export function RecipeDetailPage() {
         await likeRecipe(userId, recipe.id);
       }
 
-      await reload();
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["recipe", userId, id] }),
+        queryClient.invalidateQueries({ queryKey: ["recipes", userId] }),
+        queryClient.invalidateQueries({ queryKey: ["favorite-recipes", userId] }),
+      ]);
     } finally {
       setIsLikePending(false);
     }
@@ -151,21 +163,60 @@ export function RecipeDetailPage() {
         await favoriteRecipe(userId, recipe.id);
       }
 
-      await reload();
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["recipe", userId, id] }),
+        queryClient.invalidateQueries({ queryKey: ["recipes", userId] }),
+        queryClient.invalidateQueries({ queryKey: ["favorite-recipes", userId] }),
+      ]);
     } finally {
       setIsFavoritePending(false);
+    }
+  }
+
+  function handleCreateShoppingList(name: string) {
+    try {
+      const nextList = shoppingLists.createList(name);
+      setShoppingListError(null);
+      return nextList.id;
+    } catch (createListError) {
+      setShoppingListError(
+        createListError instanceof Error
+          ? createListError.message
+          : "Die Liste konnte nicht erstellt werden.",
+      );
+      return null;
+    }
+  }
+
+  function handleConfirmAddToShoppingList(listId: string, servings: number) {
+    if (!recipe) {
+      return;
+    }
+
+    try {
+      shoppingLists.addRecipe(listId, recipe, servings);
+      setIsShoppingListDialogOpen(false);
+      setShoppingListError(null);
+      setShoppingListSuccess(`„${recipe.title}“ wurde zur Einkaufsliste hinzugefügt.`);
+    } catch (addToListError) {
+      setShoppingListError(
+        addToListError instanceof Error
+          ? addToListError.message
+          : "Das Rezept konnte nicht zur Einkaufsliste hinzugefügt werden.",
+      );
     }
   }
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#0F0E0C] text-white">
       <NavDrawer
-        onCreateRecipe={() => setIsCreateRecipeOpen(true)}
+        _onCreateRecipe={() => setIsCreateRecipeOpen(true)}
         isOpen={isDrawerOpen}
         items={navItems}
         onClose={() => setIsDrawerOpen(false)}
         onLogout={handleLogout}
         onToggle={() => setIsDrawerOpen((previous) => !previous)}
+        userId={userId}
         userEmail={userEmail}
         userName={profile?.username || metadataName}
         plan={profile?.plan ?? "free"}
@@ -177,7 +228,9 @@ export function RecipeDetailPage() {
         onClose={() => setIsCreateRecipeOpen(false)}
         recipe={recipe}
         onCreated={() => {
-          void reload();
+          void queryClient.invalidateQueries({ queryKey: ["recipe", userId, id] });
+          void queryClient.invalidateQueries({ queryKey: ["recipes", userId] });
+          void queryClient.invalidateQueries({ queryKey: ["dashboard", userId] });
         }}
       />
 
@@ -211,28 +264,67 @@ export function RecipeDetailPage() {
               </div>
             </div>
           ) : (
-            <RecipeDetail
-              canManageRecipe={canManageRecipe}
-              recipe={recipe}
-              onBack={handleBack}
-              onEdit={() => setIsCreateRecipeOpen(true)}
-              onToggleFavorite={() => {
-                void handleToggleFavorite();
-              }}
-              onToggleLike={() => {
-                void handleToggleLike();
-              }}
-              onDelete={() => {
-                setDeleteError(null);
-                setIsDeleteConfirmOpen(true);
-              }}
-              isDeleting={isDeleting}
-              isFavoritePending={isFavoritePending}
-              isLikePending={isLikePending}
-            />
+            <div className="space-y-4">
+              {shoppingListSuccess ? (
+                <div className="rounded-[24px] border border-[rgba(214,168,74,0.18)] bg-[rgba(214,168,74,0.08)] px-4 py-4 text-sm leading-6 text-[#F4E1B6]">
+                  {shoppingListSuccess}
+                </div>
+              ) : null}
+
+              {shoppingListError ? (
+                <div className="rounded-[24px] border border-[rgba(255,120,120,0.18)] bg-[rgba(255,120,120,0.06)] px-4 py-4 text-sm leading-6 text-red-200">
+                  {shoppingListError}
+                </div>
+              ) : null}
+
+              <RecipeDetail
+                canManageRecipe={canManageRecipe}
+                recipe={recipe}
+                onAddToShoppingList={() => {
+                  setShoppingListSuccess(null);
+                  setShoppingListError(null);
+                  setIsShoppingListDialogOpen(true);
+                }}
+                onBack={handleBack}
+                onEdit={() => setIsCreateRecipeOpen(true)}
+                onToggleFavorite={() => {
+                  void handleToggleFavorite();
+                }}
+                onToggleLike={() => {
+                  void handleToggleLike();
+                }}
+                onDelete={() => {
+                  setDeleteError(null);
+                  setIsDeleteConfirmOpen(true);
+                }}
+                isDeleting={isDeleting}
+                isFavoritePending={isFavoritePending}
+                isLikePending={isLikePending}
+              />
+            </div>
           )}
         </motion.section>
       </div>
+
+      <ShoppingListPickerDialog
+        isOpen={isShoppingListDialogOpen}
+        canCreateList={!shoppingLists.hasReachedLimit}
+        listLimit={shoppingLists.maxLists}
+        lists={shoppingLists.lists.map((list) => ({
+          id: list.id,
+          name: list.name,
+          recipeCount: list.recipes.length,
+        }))}
+        onClose={() => {
+          setIsShoppingListDialogOpen(false);
+          setShoppingListError(null);
+        }}
+        onConfirm={handleConfirmAddToShoppingList}
+        onCreateList={handleCreateShoppingList}
+        plan={profile?.plan ?? "free"}
+        recipeServings={recipe?.servings ?? 1}
+        recipeTitle={recipe?.title ?? "Rezept"}
+      />
 
       {isDeleteConfirmOpen ? (
         <>

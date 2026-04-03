@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { fetchRecipeById } from "./recipeService";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { recipeDetailQueryOptions } from "./queryOptions";
 import type { RecipeDetailData } from "./types";
 
 type UseRecipeResult = {
@@ -10,44 +10,17 @@ type UseRecipeResult = {
 };
 
 export function useRecipe(userId: string, recipeId: string): UseRecipeResult {
-  const [recipe, setRecipe] = useState<RecipeDetailData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  async function loadRecipe() {
-    if (!userId || !recipeId) {
-      setRecipe(null);
-      setError(null);
-      setIsLoading(false);
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const nextRecipe = await fetchRecipeById(userId, recipeId);
-      setRecipe(nextRecipe);
-    } catch (loadError) {
-      setRecipe(null);
-      setError(
-        loadError instanceof Error
-          ? loadError.message
-          : "Das Rezept konnte nicht geladen werden.",
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    void loadRecipe();
-  }, [recipeId, userId]);
+  const queryClient = useQueryClient();
+  const query = useQuery(recipeDetailQueryOptions(userId, recipeId));
 
   return {
-    recipe,
-    isLoading,
-    error,
-    reload: loadRecipe,
+    recipe: query.data ?? null,
+    isLoading: query.isLoading,
+    error: query.error instanceof Error ? query.error.message : null,
+    reload: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: recipeDetailQueryOptions(userId, recipeId).queryKey,
+      });
+    },
   };
 }

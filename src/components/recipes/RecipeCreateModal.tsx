@@ -4,6 +4,7 @@ import { useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
+  ChevronDown,
   ChefHat,
   Image as ImageIcon,
   Plus,
@@ -21,9 +22,20 @@ import { supabase } from "../../lib/supabase";
 const ingredientSchema = z.object({
   id: z.string(),
   name: z.string().min(1, "Bitte Namen eingeben"),
-  amount: z.string().min(1, "Bitte Menge eingeben"),
+  amount: z
+    .string()
+    .refine((value) => value.trim().length === 0 || /^\d+([.,]\d+)?$/.test(value.trim()), {
+      message: "Bitte nur Zahlen eingeben",
+    }),
+  amountNote: z.string(),
   unit: z.string().min(1, "Bitte Einheit eingeben"),
-});
+}).refine(
+  (value) => value.amount.trim().length > 0 || value.amountNote.trim().length > 0,
+  {
+    message: "Bitte Menge oder Zusatz eingeben",
+    path: ["amount"],
+  },
+);
 
 const stepSchema = z.object({
   id: z.string(),
@@ -52,6 +64,35 @@ type RecipeCreateModalProps = {
   open: boolean;
 };
 
+const ingredientUnitOptions = [
+  "g",
+  "kg",
+  "mg",
+  "ml",
+  "l",
+  "TL",
+  "EL",
+  "Tasse",
+  "Tassen",
+  "Stk.",
+  "Dose",
+  "Dosen",
+  "Packung",
+  "Packungen",
+  "Scheibe",
+  "Scheiben",
+  "Zehe",
+  "Zehen",
+  "Bund",
+  "Prise",
+  "Handvoll",
+  "Becher",
+  "Glas",
+  "Flasche",
+  "nach Bedarf",
+  "Bedarf",
+];
+
 function createDefaultValues(): RecipeFormValues {
   return {
     title: "",
@@ -67,6 +108,7 @@ function createDefaultValues(): RecipeFormValues {
         id: crypto.randomUUID(),
         name: "",
         amount: "",
+        amountNote: "",
         unit: "",
       },
     ],
@@ -142,7 +184,8 @@ function createValuesFromRecipe(recipe: RecipeDetailData): RecipeFormValues {
         ? recipe.ingredients.map((ingredient) => ({
             id: ingredient.id,
             name: ingredient.name,
-            amount: ingredient.amount,
+            amount: ingredient.amountValue || ingredient.amount,
+            amountNote: ingredient.amountNote,
             unit: ingredient.unit,
           }))
         : [
@@ -150,6 +193,7 @@ function createValuesFromRecipe(recipe: RecipeDetailData): RecipeFormValues {
               id: crypto.randomUUID(),
               name: "",
               amount: "",
+              amountNote: "",
               unit: "",
             },
           ],
@@ -193,6 +237,12 @@ function SectionTitle({
   );
 }
 
+const numberInputClassName =
+  "h-12 w-full rounded-2xl border border-white/10 bg-black/10 px-4 text-[#FFF8EE] outline-none transition-colors duration-300 focus:border-[#D6A84A] [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none";
+
+const selectClassName =
+  "h-12 w-full appearance-none rounded-2xl border border-white/10 bg-[#171411] px-4 pr-11 text-[#FFF8EE] outline-none transition-colors duration-300 focus:border-[#D6A84A]";
+
 export function RecipeCreateModal({
   onClose,
   onCreated,
@@ -233,6 +283,7 @@ export function RecipeCreateModal({
 
   useEffect(() => {
     if (open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSubmitError(null);
       reset(recipe ? createValuesFromRecipe(recipe) : createDefaultValues());
       document.body.style.overflow = "hidden";
@@ -276,7 +327,16 @@ export function RecipeCreateModal({
       const payload = {
         title: values.title,
         description: values.description,
-        ingredients: values.ingredients,
+        ingredients: values.ingredients.map((ingredient) => ({
+          id: ingredient.id,
+          name: ingredient.name,
+          amount: [ingredient.amount.trim(), ingredient.amountNote.trim()]
+            .filter(Boolean)
+            .join(" "),
+          amountNote: ingredient.amountNote,
+          amountValue: ingredient.amount,
+          unit: ingredient.unit,
+        })),
         steps: values.steps,
         imageUrl: values.image_url?.trim() ?? null,
         category: values.category,
@@ -453,6 +513,7 @@ export function RecipeCreateModal({
                                 id: crypto.randomUUID(),
                                 name: "",
                                 amount: "",
+                                amountNote: "",
                                 unit: "",
                               })
                             }
@@ -485,7 +546,7 @@ export function RecipeCreateModal({
                                 ) : null}
                               </div>
 
-                              <div className="grid gap-4 md:grid-cols-[1fr_0.6fr_0.5fr]">
+                              <div className="grid gap-4 md:grid-cols-[1fr_0.5fr_0.7fr_0.6fr]">
                                 <div>
                                   <label className="mb-2 block text-sm font-medium text-[#F6EFE4]">
                                     Name
@@ -516,13 +577,44 @@ export function RecipeCreateModal({
 
                                 <div>
                                   <label className="mb-2 block text-sm font-medium text-[#F6EFE4]">
-                                    Einheit
+                                    Zusatz
                                   </label>
                                   <input
-                                    {...register(`ingredients.${index}.unit`)}
-                                    placeholder="g / ml / Stück"
+                                    {...register(`ingredients.${index}.amountNote`)}
+                                    placeholder="optional"
                                     className="h-12 w-full rounded-2xl border border-white/10 bg-black/10 px-4 text-[#FFF8EE] outline-none placeholder:text-[#8E806F] focus:border-[#D6A84A]"
                                   />
+                                  <p className="mt-2 text-xs text-[#9F917D]">
+                                    z. B. gehäuft, fein gehackt, nach Geschmack
+                                  </p>
+                                </div>
+
+                                <div>
+                                  <label className="mb-2 block text-sm font-medium text-[#F6EFE4]">
+                                    Einheit
+                                  </label>
+                                  <div className="relative">
+                                    <select
+                                      {...register(`ingredients.${index}.unit`)}
+                                      className={selectClassName}
+                                    >
+                                      <option value="" className="bg-[#171411] text-[#8E806F]">
+                                        Einheit wählen
+                                      </option>
+                                      {ingredientUnitOptions.map((unitOption) => (
+                                        <option
+                                          key={unitOption}
+                                          value={unitOption}
+                                          className="bg-[#171411] text-[#FFF8EE]"
+                                        >
+                                          {unitOption}
+                                        </option>
+                                      ))}
+                                    </select>
+                                    <div className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-[#B89A67]">
+                                      <ChevronDown size={16} />
+                                    </div>
+                                  </div>
                                   <FieldError
                                     message={errors.ingredients?.[index]?.unit?.message}
                                   />
@@ -625,22 +717,27 @@ export function RecipeCreateModal({
                                   {...register("prep_time", {
                                     valueAsNumber: true,
                                   })}
-                                  className="h-12 w-full rounded-2xl border border-white/10 bg-black/10 px-4 text-[#FFF8EE] outline-none focus:border-[#D6A84A]"
+                                  className={numberInputClassName}
                                 />
-                                <select
-                                  {...register("prep_time_unit")}
-                                  className="h-12 w-full appearance-none rounded-2xl border border-white/10 bg-[#171411] px-4 text-[#FFF8EE] outline-none transition-colors duration-300 focus:border-[#D6A84A]"
-                                >
-                                  <option value="minutes" className="bg-[#171411] text-[#FFF8EE]">
-                                    Min
-                                  </option>
-                                  <option value="hours" className="bg-[#171411] text-[#FFF8EE]">
-                                    Std
-                                  </option>
-                                  <option value="days" className="bg-[#171411] text-[#FFF8EE]">
-                                    Tage
-                                  </option>
-                                </select>
+                                <div className="relative">
+                                  <select
+                                    {...register("prep_time_unit")}
+                                    className={selectClassName}
+                                  >
+                                    <option value="minutes" className="bg-[#171411] text-[#FFF8EE]">
+                                      Min
+                                    </option>
+                                    <option value="hours" className="bg-[#171411] text-[#FFF8EE]">
+                                      Std
+                                    </option>
+                                    <option value="days" className="bg-[#171411] text-[#FFF8EE]">
+                                      Tage
+                                    </option>
+                                  </select>
+                                  <div className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-[#B89A67]">
+                                    <ChevronDown size={16} />
+                                  </div>
+                                </div>
                               </div>
                               <FieldError message={errors.prep_time?.message} />
                             </div>
@@ -654,7 +751,7 @@ export function RecipeCreateModal({
                                 {...register("servings", {
                                   valueAsNumber: true,
                                 })}
-                                className="h-12 w-full rounded-2xl border border-white/10 bg-black/10 px-4 text-[#FFF8EE] outline-none focus:border-[#D6A84A]"
+                                className={numberInputClassName}
                               />
                               <FieldError message={errors.servings?.message} />
                             </div>
@@ -664,17 +761,22 @@ export function RecipeCreateModal({
                             <label className="mb-2 block text-sm font-medium text-[#F6EFE4]">
                               Sichtbarkeit
                             </label>
-                            <select
-                              {...register("visibility")}
-                              className="h-12 w-full rounded-2xl border border-white/10 bg-black/10 px-4 text-[#FFF8EE] outline-none transition-colors duration-300 focus:border-[#D6A84A]"
-                            >
-                              <option value="private" className="bg-[#171411]">
-                                Privat
-                              </option>
-                              <option value="public" className="bg-[#171411]">
-                                Öffentlich
-                              </option>
-                            </select>
+                            <div className="relative">
+                              <select
+                                {...register("visibility")}
+                                className={selectClassName}
+                              >
+                                <option value="private" className="bg-[#171411]">
+                                  Privat
+                                </option>
+                                <option value="public" className="bg-[#171411]">
+                                  Öffentlich
+                                </option>
+                              </select>
+                              <div className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-[#B89A67]">
+                                <ChevronDown size={16} />
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </section>

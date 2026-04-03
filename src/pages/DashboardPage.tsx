@@ -1,4 +1,5 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
@@ -11,8 +12,6 @@ import {
   Lock,
   MessageSquareText,
   Plus,
-  Sparkles,
-  Star,
   Tag,
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -20,8 +19,9 @@ import { FeedbackModal } from "../components/feedback/FeedbackModal";
 import { NavDrawer, type NavDrawerItem } from "../components/layout/NavDrawer";
 import { RecipeCreateModal } from "../components/recipes/RecipeCreateModal";
 import { useAuth } from "../features/auth/useAuth";
+import { dashboardQueryOptions } from "../features/dashboard/queryOptions";
 import { useProfile } from "../features/profile/useProfile";
-import { supabase } from "../lib/supabase";
+import { recipeDetailQueryOptions } from "../features/recipes/queryOptions";
 
 type StatCardProps = {
   hint: string;
@@ -37,190 +37,13 @@ type ActionCardProps = {
   title: string;
 };
 
-type RecipeRow = Record<string, unknown>;
-
-type RecipePreview = {
-  id: string;
-  sortTimestamp: number;
-  subtitle: string;
-  title: string;
+const EMPTY_STATS = {
+  totalRecipes: 0,
+  publicRecipes: 0,
+  privateRecipes: 0,
+  lastUpdatedLabel: "–",
+  lastUpdatedHint: "Noch keine Rezeptänderung vorhanden.",
 };
-
-type RecipeStatsRow = {
-  created_at: string | null;
-  id: string;
-  is_public: boolean | null;
-  title: string | null;
-  updated_at: string | null;
-};
-
-type DashboardStats = {
-  lastUpdatedHint: string;
-  lastUpdatedLabel: string;
-  privateRecipes: number;
-  publicRecipes: number;
-  totalRecipes: number;
-};
-
-function readString(value: unknown): string | null {
-  return typeof value === "string" && value.trim().length > 0 ? value : null;
-}
-
-function formatRecipeSubtitle(row: RecipeRow): string {
-  const category = readString(row.category) ?? readString(row.category_name);
-  const description =
-    readString(row.description) ??
-    readString(row.summary) ??
-    readString(row.notes);
-
-  if (category && description) {
-    return `${category} • ${description}`;
-  }
-
-  if (category) {
-    return category;
-  }
-
-  if (description) {
-    return description;
-  }
-
-  const createdAt =
-    readString(row.created_at) ??
-    readString(row.updated_at) ??
-    readString(row.inserted_at);
-
-  if (!createdAt) {
-    return "Rezept aus Supabase";
-  }
-
-  const parsedDate = new Date(createdAt);
-
-  if (Number.isNaN(parsedDate.getTime())) {
-    return "Rezept aus Supabase";
-  }
-
-  return `Erstellt am ${parsedDate.toLocaleDateString("de-DE")}`;
-}
-
-function mapRecipeRow(row: RecipeRow, index: number): RecipePreview {
-  const title =
-    readString(row.title) ??
-    readString(row.name) ??
-    readString(row.recipe_name) ??
-    `Rezept ${index + 1}`;
-
-  const id =
-    readString(row.id) ??
-    readString(row.uuid) ??
-    readString(row.slug) ??
-    `${title}-${index}`;
-
-  const dateValue =
-    readString(row.created_at) ??
-    readString(row.updated_at) ??
-    readString(row.inserted_at);
-  const sortTimestamp = dateValue ? new Date(dateValue).getTime() : 0;
-
-  return {
-    id,
-    sortTimestamp: Number.isNaN(sortTimestamp) ? 0 : sortTimestamp,
-    title,
-    subtitle: formatRecipeSubtitle(row),
-  };
-}
-
-function formatRelativeDate(value: string | null): string {
-  if (!value) {
-    return "Noch offen";
-  }
-
-  const parsedDate = new Date(value);
-
-  if (Number.isNaN(parsedDate.getTime())) {
-    return "Noch offen";
-  }
-
-  const now = new Date();
-  const differenceInDays = Math.floor(
-    (now.getTime() - parsedDate.getTime()) / (1000 * 60 * 60 * 24),
-  );
-
-  if (differenceInDays <= 0) {
-    return "Heute";
-  }
-
-  if (differenceInDays === 1) {
-    return "Gestern";
-  }
-
-  if (differenceInDays < 7) {
-    return `Vor ${differenceInDays} Tagen`;
-  }
-
-  return parsedDate.toLocaleDateString("de-DE");
-}
-
-function formatPreciseDate(value: string | null): string {
-  if (!value) {
-    return "Kein Zeitstempel vorhanden";
-  }
-
-  const parsedDate = new Date(value);
-
-  if (Number.isNaN(parsedDate.getTime())) {
-    return "Kein Zeitstempel vorhanden";
-  }
-
-  return parsedDate.toLocaleString("de-DE", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-function buildDashboardStats(rows: RecipeStatsRow[]): DashboardStats {
-  const totalRecipes = rows.length;
-  const publicRecipes = rows.filter((row) => row.is_public === true).length;
-  const privateRecipes = totalRecipes - publicRecipes;
-  const latestRow = rows.reduce<RecipeStatsRow | null>((latest, row) => {
-    const dateValue = row.updated_at ?? row.created_at;
-
-    if (!dateValue) {
-      return latest;
-    }
-
-    const timestamp = new Date(dateValue).getTime();
-
-    if (Number.isNaN(timestamp)) {
-      return latest;
-    }
-
-    if (!latest) {
-      return row;
-    }
-
-    const latestValue = latest.updated_at ?? latest.created_at;
-    const latestTimestamp = latestValue ? new Date(latestValue).getTime() : 0;
-
-    return timestamp > latestTimestamp ? row : latest;
-  }, null);
-
-  const latestDateValue = latestRow?.updated_at ?? latestRow?.created_at ?? null;
-  const latestTitle = readString(latestRow?.title) ?? "Unbenanntes Rezept";
-
-  return {
-    totalRecipes,
-    publicRecipes,
-    privateRecipes,
-    lastUpdatedLabel: formatRelativeDate(latestDateValue),
-    lastUpdatedHint: latestDateValue
-      ? `${latestTitle} · ${formatPreciseDate(latestDateValue)}`
-      : "Noch keine Rezeptänderung vorhanden.",
-  };
-}
 
 function SectionCard({
   children,
@@ -273,7 +96,8 @@ function StatCard({ hint, icon, label, value }: StatCardProps) {
   );
 }
 
-function ActionCard({
+// ActionCard ist vorbereitet für spätere Nutzung (Dashboard-Schnellaktionen)
+function _ActionCard({
   description,
   disabled = false,
   icon,
@@ -315,6 +139,7 @@ function ActionCard({
 }
 
 export function DashboardPage() {
+  const queryClient = useQueryClient();
   const { session, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -325,20 +150,14 @@ export function DashboardPage() {
       ? session.user.user_metadata.full_name
       : "";
   const { profile } = useProfile(userId);
-  const [profileUserName, setProfileUserName] = useState("");
+  const { data, isLoading, error } = useQuery(dashboardQueryOptions(userId));
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isCreateRecipeOpen, setIsCreateRecipeOpen] = useState(false);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
-  const [recentRecipes, setRecentRecipes] = useState<RecipePreview[]>([]);
-  const [isRecipesLoading, setIsRecipesLoading] = useState(true);
-  const [recipesError, setRecipesError] = useState<string | null>(null);
-  const [stats, setStats] = useState<DashboardStats>({
-    totalRecipes: 0,
-    publicRecipes: 0,
-    privateRecipes: 0,
-    lastUpdatedLabel: "Noch offen",
-    lastUpdatedHint: "Noch keine Rezeptänderung vorhanden.",
-  });
+
+  const userName = profile?.username || metadataName;
+  const stats = data?.stats ?? EMPTY_STATS;
+  const recentRecipes = data?.recentRecipes ?? [];
 
   const fadeUp = {
     initial: { opacity: 0, y: 14, filter: "blur(6px)" },
@@ -369,12 +188,7 @@ export function DashboardPage() {
     {
       label: "Einkaufsliste",
       icon: Tag,
-      disabled: true,
-    },
-    {
-      label: "Inspiration",
-      icon: Sparkles,
-      disabled: true,
+      to: "/shopping-list",
     },
     {
       label: "Feedback",
@@ -390,118 +204,23 @@ export function DashboardPage() {
     await signOut();
   }
 
-  async function loadDashboardRecipes() {
-    setIsRecipesLoading(true);
-    setRecipesError(null);
-
-    const [recentRecipesResult, statsResult] = await Promise.all([
-      supabase
-        .from("recipes")
-        .select("*")
-        .or(`user_id.eq.${userId},is_public.eq.true`)
-        .order("created_at", { ascending: false })
-        .limit(3),
-      supabase
-        .from("recipes")
-        .select("id, title, is_public, created_at, updated_at")
-        .or(`user_id.eq.${userId},is_public.eq.true`)
-        .order("created_at", { ascending: false }),
-    ]);
-
-    if (recentRecipesResult.error || statsResult.error) {
-      setRecipesError(
-        recentRecipesResult.error?.message ??
-          statsResult.error?.message ??
-          "Die Rezeptdaten konnten nicht geladen werden.",
-      );
-      setRecentRecipes([]);
-      setStats({
-        totalRecipes: 0,
-        publicRecipes: 0,
-        privateRecipes: 0,
-        lastUpdatedLabel: "Noch offen",
-        lastUpdatedHint: "Noch keine Rezeptänderung vorhanden.",
-      });
-      setIsRecipesLoading(false);
-      return;
-    }
-
-    const recentRows = Array.isArray(recentRecipesResult.data)
-      ? recentRecipesResult.data
-      : [];
-    const statsRows = Array.isArray(statsResult.data) ? statsResult.data : [];
-    const mappedRecipes = recentRows.map(mapRecipeRow);
-
-    setRecentRecipes(mappedRecipes);
-    setStats(buildDashboardStats(statsRows));
-    setIsRecipesLoading(false);
+  function handlePrefetchRecipe(recipeId: string) {
+    if (!userId) return;
+    void queryClient.prefetchQuery(recipeDetailQueryOptions(userId, recipeId));
   }
-
-  useEffect(() => {
-    let isMounted = true;
-
-    async function loadProfileUserName() {
-      if (!userId) {
-        if (isMounted) {
-          setProfileUserName("");
-        }
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("username")
-        .eq("id", userId)
-        .maybeSingle();
-
-      if (!isMounted) {
-        return;
-      }
-
-      if (error) {
-        setProfileUserName("");
-        return;
-      }
-
-      const username =
-        data && typeof data.username === "string" ? data.username.trim() : "";
-
-      setProfileUserName(username);
-    }
-
-    void loadProfileUserName();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [userId]);
-
-  useEffect(() => {
-    let isMounted = true;
-    void (async () => {
-      await loadDashboardRecipes();
-
-      if (!isMounted) {
-        return;
-      }
-    })();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [userId]);
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#0F0E0C] text-white">
       <NavDrawer
-        onCreateRecipe={() => setIsCreateRecipeOpen(true)}
+        _onCreateRecipe={() => setIsCreateRecipeOpen(true)}
         isOpen={isDrawerOpen}
         items={navItems}
         onClose={() => setIsDrawerOpen(false)}
         onLogout={handleLogout}
         onToggle={() => setIsDrawerOpen((previous) => !previous)}
+        userId={userId}
         userEmail={userEmail}
-        userName={profileUserName || metadataName}
+        userName={userName}
         plan={profile?.plan ?? "free"}
         profileTo="/profile"
       />
@@ -510,7 +229,8 @@ export function DashboardPage() {
         open={isCreateRecipeOpen}
         onClose={() => setIsCreateRecipeOpen(false)}
         onCreated={() => {
-          void loadDashboardRecipes();
+          void queryClient.invalidateQueries({ queryKey: ["dashboard", userId] });
+          void queryClient.invalidateQueries({ queryKey: ["recipes", userId] });
         }}
       />
 
@@ -520,7 +240,7 @@ export function DashboardPage() {
         currentPage={`${location.pathname}${location.search}`}
         userId={userId}
         userEmail={userEmail}
-        username={profileUserName || metadataName}
+        username={userName}
       />
 
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(214,168,74,0.10),transparent_18%),radial-gradient(circle_at_16%_18%,rgba(94,71,32,0.09),transparent_22%),radial-gradient(circle_at_84%_22%,rgba(111,123,59,0.07),transparent_20%),linear-gradient(180deg,#0F0E0C_0%,#090806_100%)]" />
@@ -580,17 +300,15 @@ export function DashboardPage() {
             transition={{ delay: 0.06 }}
             className="space-y-6"
           >
-            
-
             <SectionCard title="Letzte Rezepte">
-              {isRecipesLoading ? (
+              {isLoading ? (
                 <div className="rounded-[22px] border border-white/8 bg-white/[0.025] px-4 py-5 text-sm text-[#B7AA96]">
                   Rezepte werden geladen...
                 </div>
-              ) : recipesError ? (
+              ) : error ? (
                 <div className="rounded-[22px] border border-[rgba(214,168,74,0.14)] bg-[rgba(255,255,255,0.025)] px-4 py-5 text-sm leading-6 text-[#D9C9B1]">
                   Die Rezeptdaten konnten nicht geladen werden.
-                  <div className="mt-2 text-[#A99883]">{recipesError}</div>
+                  <div className="mt-2 text-[#A99883]">{error.message}</div>
                 </div>
               ) : recentRecipes.length === 0 ? (
                 <div className="rounded-[22px] border border-white/8 bg-white/[0.025] px-4 py-5 text-sm leading-6 text-[#B7AA96]">
@@ -625,6 +343,9 @@ export function DashboardPage() {
                       <button
                         type="button"
                         onClick={() => navigate(`/recipes/${recipe.id}`)}
+                        onMouseEnter={() => handlePrefetchRecipe(recipe.id)}
+                        onFocus={() => handlePrefetchRecipe(recipe.id)}
+                        onTouchStart={() => handlePrefetchRecipe(recipe.id)}
                         className="rounded-full border border-white/8 bg-white/[0.03] px-4 py-2 text-sm text-[#D6A84A] transition-colors duration-300 hover:border-[#D6A84A]/20 hover:text-[#E9D8B4]"
                       >
                         Öffnen
@@ -641,33 +362,32 @@ export function DashboardPage() {
             transition={{ delay: 0.1 }}
             className="space-y-6"
           >
-
             <SectionCard title="Roadmap">
               <div className="space-y-4">
                 {[
                   {
-                    phase: "Jetzt",
-                    title: "Rezeptbasis steht",
+                    phase: "Stand heute",
+                    title: "Kernflows vollständig",
                     description:
-                      "Dashboard, letzte Rezepte und das Create-Recipe-Modal sind bereits angebunden.",
+                      "Auth, Rezepte, Favoriten, Einkaufsliste, Profil und Feedback sind fertig und benutzbar.",
                   },
                   {
                     phase: "Als Nächstes",
-                    title: "Rezepte-Seite aufbauen",
+                    title: "Testphase starten",
                     description:
-                      "Alle Rezepte listen, filtern und den Detailfluss für einzelne Einträge vorbereiten.",
+                      "RLS-Check aller Tabellen, manuelle Happy-Path- und Fehlertests, Bugfixing aus Tester-Feedback.",
                   },
                   {
                     phase: "Danach",
-                    title: "Favoriten und Kategorien ergänzen",
+                    title: "Technische Verbesserungen",
                     description:
-                      "Persönliche Organisation mit User-Bezug, Filtern und sauberer Strukturierung ausbauen.",
+                      "Dashboard und Profil auf React Query umstellen, Route-Level Code Splitting, Error Boundary einführen.",
                   },
                   {
                     phase: "Später",
-                    title: "Einkaufsliste und Feinschliff",
+                    title: "Inspiration, Bilder und Feinschliff",
                     description:
-                      "Rezepte in Einkaufslisten überführen und den Workspace weiter produktiv ausformen.",
+                      "Inspiration-Bereich mit echten Vorschlägen füllen, Bild-Upload integrieren und UX weiter ausfeilen.",
                   },
                 ].map((item, index) => (
                   <div

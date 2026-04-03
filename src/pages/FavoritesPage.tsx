@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
@@ -7,7 +8,6 @@ import {
   Heart,
   LayoutGrid,
   MessageSquareText,
-  Sparkles,
   Tag,
 } from "lucide-react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
@@ -15,6 +15,7 @@ import { FeedbackModal } from "../components/feedback/FeedbackModal";
 import { NavDrawer, type NavDrawerItem } from "../components/layout/NavDrawer";
 import { RecipeFilters } from "../components/recipes/RecipeFilters";
 import { RecipeOverview } from "../components/recipes/RecipeOverview";
+import { ShoppingListPickerDialog } from "../components/shopping-list/ShoppingListPickerDialog";
 import { useAuth } from "../features/auth/useAuth";
 import { useProfile } from "../features/profile/useProfile";
 import {
@@ -24,11 +25,13 @@ import {
   unlikeRecipe,
 } from "../features/recipes/recipeService";
 import { useFavoriteRecipes } from "../features/recipes/useFavoriteRecipes";
+import { recipeDetailQueryOptions } from "../features/recipes/queryOptions";
 import type {
   RecipeCategorySummary,
   RecipeListItem,
   RecipeSortOption,
 } from "../features/recipes/types";
+import { useShoppingLists } from "../features/shopping-list/useShoppingLists";
 
 const DEFAULT_SORT: RecipeSortOption = "latest";
 const ALL_CATEGORY_KEY = "all";
@@ -133,6 +136,7 @@ function updateParams(
 }
 
 export function FavoritesPage() {
+  const queryClient = useQueryClient();
   const { session, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -141,6 +145,10 @@ export function FavoritesPage() {
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [favoritePendingRecipeId, setFavoritePendingRecipeId] = useState<string | null>(null);
   const [likePendingRecipeId, setLikePendingRecipeId] = useState<string | null>(null);
+  const [shoppingListPendingRecipeId, setShoppingListPendingRecipeId] = useState<string | null>(null);
+  const [isShoppingListDialogOpen, setIsShoppingListDialogOpen] = useState(false);
+  const [shoppingListError, setShoppingListError] = useState<string | null>(null);
+  const [selectedRecipeForShoppingListId, setSelectedRecipeForShoppingListId] = useState<string | null>(null);
   const recipeListRef = useRef<HTMLDivElement | null>(null);
   const hasRestoredScrollRef = useRef(false);
 
@@ -151,7 +159,8 @@ export function FavoritesPage() {
       ? session.user.user_metadata.full_name
       : "";
   const { profile } = useProfile(userId);
-  const { favorites, isLoading, error, reload } = useFavoriteRecipes(userId);
+  const { favorites, isLoading, error } = useFavoriteRecipes(userId);
+  const shoppingLists = useShoppingLists(userId, profile?.plan ?? "free");
 
   const activeCategory =
     searchParams.get("category")?.trim().toLowerCase() || ALL_CATEGORY_KEY;
@@ -209,12 +218,7 @@ export function FavoritesPage() {
     {
       label: "Einkaufsliste",
       icon: Tag,
-      disabled: true,
-    },
-    {
-      label: "Inspiration",
-      icon: Sparkles,
-      disabled: true,
+      to: "/shopping-list",
     },
     {
       label: "Feedback",
@@ -270,7 +274,11 @@ export function FavoritesPage() {
         await likeRecipe(userId, recipeId);
       }
 
-      await reload();
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["favorite-recipes", userId] }),
+        queryClient.invalidateQueries({ queryKey: ["recipes", userId] }),
+        queryClient.invalidateQueries({ queryKey: ["recipe", userId, recipeId] }),
+      ]);
     } finally {
       setLikePendingRecipeId(null);
     }
@@ -292,7 +300,11 @@ export function FavoritesPage() {
         await favoriteRecipe(userId, recipeId);
       }
 
-      await reload();
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["favorite-recipes", userId] }),
+        queryClient.invalidateQueries({ queryKey: ["recipes", userId] }),
+        queryClient.invalidateQueries({ queryKey: ["recipe", userId, recipeId] }),
+      ]);
     } finally {
       setFavoritePendingRecipeId(null);
     }
@@ -308,6 +320,61 @@ export function FavoritesPage() {
     });
   }
 
+  function handlePrefetchRecipe(recipeId: string) {
+    if (!userId) {
+      return;
+    }
+
+    void queryClient.prefetchQuery(recipeDetailQueryOptions(userId, recipeId));
+  }
+
+  function handleOpenShoppingListDialog(recipeId: string) {
+    setShoppingListError(null);
+    setSelectedRecipeForShoppingListId(recipeId);
+    setIsShoppingListDialogOpen(true);
+    handlePrefetchRecipe(recipeId);
+  }
+
+  function handleCreateShoppingList(name: string) {
+    try {
+      const nextList = shoppingLists.createList(name);
+      setShoppingListError(null);
+      return nextList.id;
+    } catch (createListError) {
+      setShoppingListError(
+        createListError instanceof Error
+          ? createListError.message
+          : "Die Liste konnte nicht erstellt werden.",
+      );
+      return null;
+    }
+  }
+
+  async function handleConfirmAddToShoppingList(listId: string, servings: number) {
+    if (!userId || !selectedRecipeForShoppingListId) {
+      return;
+    }
+
+    setShoppingListPendingRecipeId(selectedRecipeForShoppingListId);
+
+    try {
+      const recipeDetail = await queryClient.fetchQuery(
+        recipeDetailQueryOptions(userId, selectedRecipeForShoppingListId),
+      );
+      shoppingLists.addRecipe(listId, recipeDetail, servings);
+      setIsShoppingListDialogOpen(false);
+      setShoppingListError(null);
+    } catch (addToListError) {
+      setShoppingListError(
+        addToListError instanceof Error
+          ? addToListError.message
+          : "Das Rezept konnte nicht zur Einkaufsliste hinzugefügt werden.",
+      );
+    } finally {
+      setShoppingListPendingRecipeId(null);
+    }
+  }
+
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#0F0E0C] text-white">
       <NavDrawer
@@ -316,6 +383,7 @@ export function FavoritesPage() {
         onClose={() => setIsDrawerOpen(false)}
         onLogout={handleLogout}
         onToggle={() => setIsDrawerOpen((previous) => !previous)}
+        userId={userId}
         userEmail={userEmail}
         userName={profile?.username || metadataName}
         plan={profile?.plan ?? "free"}
@@ -448,7 +516,10 @@ export function FavoritesPage() {
             </div>
           ) : (
             <RecipeOverview
+              addToShoppingListPendingRecipeId={shoppingListPendingRecipeId}
               recipes={filteredRecipes}
+              onAddToShoppingList={handleOpenShoppingListDialog}
+              onPrefetchRecipe={handlePrefetchRecipe}
               onSelectRecipe={handleSelectRecipe}
               onToggleFavorite={handleToggleFavorite}
               onToggleLike={handleToggleLike}
@@ -459,6 +530,32 @@ export function FavoritesPage() {
           )}
         </section>
       </div>
+
+      <ShoppingListPickerDialog
+        externalError={shoppingListError}
+        isOpen={isShoppingListDialogOpen}
+        canCreateList={!shoppingLists.hasReachedLimit}
+        listLimit={shoppingLists.maxLists}
+        lists={shoppingLists.lists.map((list) => ({
+          id: list.id,
+          name: list.name,
+          recipeCount: list.recipes.length,
+        }))}
+        onClose={() => {
+          setIsShoppingListDialogOpen(false);
+          setShoppingListError(null);
+        }}
+        onConfirm={handleConfirmAddToShoppingList}
+        onCreateList={handleCreateShoppingList}
+        plan={profile?.plan ?? "free"}
+        recipeServings={
+          favorites.find((recipe) => recipe.id === selectedRecipeForShoppingListId)?.servings ?? 1
+        }
+        recipeTitle={
+          favorites.find((recipe) => recipe.id === selectedRecipeForShoppingListId)?.title ??
+          "Rezept"
+        }
+      />
     </main>
   );
 }

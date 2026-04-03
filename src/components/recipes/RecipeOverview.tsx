@@ -2,9 +2,12 @@ import type { RecipeListItem } from "../../features/recipes/types";
 import { RecipeCard } from "./RecipeCard";
 
 type RecipeOverviewProps = {
+  addToShoppingListPendingRecipeId?: string | null;
   emptyMessage: string;
   favoritePendingRecipeId?: string | null;
   likePendingRecipeId?: string | null;
+  onAddToShoppingList?: (recipeId: string) => void;
+  onPrefetchRecipe?: (recipeId: string) => void;
   onSelectRecipe: (recipeId: string) => void;
   onToggleFavorite: (recipeId: string) => void;
   onToggleLike: (recipeId: string) => void;
@@ -12,9 +15,12 @@ type RecipeOverviewProps = {
 };
 
 export function RecipeOverview({
+  addToShoppingListPendingRecipeId = null,
   emptyMessage,
   favoritePendingRecipeId = null,
   likePendingRecipeId = null,
+  onAddToShoppingList,
+  onPrefetchRecipe,
   onSelectRecipe,
   onToggleFavorite,
   onToggleLike,
@@ -34,7 +40,12 @@ export function RecipeOverview({
         <RecipeCard
           key={recipe.id}
           recipe={recipe}
+          isAddToShoppingListPending={addToShoppingListPendingRecipeId === recipe.id}
           onClick={() => onSelectRecipe(recipe.id)}
+          onAddToShoppingList={
+            onAddToShoppingList ? () => onAddToShoppingList(recipe.id) : undefined
+          }
+          onPrefetch={() => onPrefetchRecipe?.(recipe.id)}
           onToggleFavorite={() => onToggleFavorite(recipe.id)}
           onToggleLike={() => onToggleLike(recipe.id)}
           isFavoritePending={favoritePendingRecipeId === recipe.id}

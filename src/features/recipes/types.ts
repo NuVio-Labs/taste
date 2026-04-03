@@ -1,9 +1,15 @@
 export type RecipeIngredient = {
   amount: string;
+  amountNote: string;
+  amountValue: string;
   id: string;
   name: string;
   unit: string;
 };
+
+export function formatRecipeIngredientAmount(ingredient: RecipeIngredient) {
+  return [ingredient.amountValue, ingredient.amountNote].filter(Boolean).join(" ").trim();
+}
 
 export type RecipeStep = {
   id: string;

@@ -10,7 +10,10 @@ import {
   Mail,
   User,
 } from "lucide-react";
-import { supabase } from "../lib/supabase";
+import {
+  signInWithEmailPassword,
+  signUpWithEmailPassword,
+} from "../features/auth/auth-service";
 
 type LocationState = {
   from?: {
@@ -214,13 +217,13 @@ export function LoginPage() {
   const isLogin = mode === "login";
 
   const title = useMemo(() => {
-    return isLogin ? "" : "";
+    return isLogin ? "Willkommen" : "Zugang intern vorbereiten";
   }, [isLogin]);
 
   const subtitle = useMemo(() => {
     return isLogin
-      ? ""
-      : "";
+      ? "Melde dich mit deinem Testzugang an."
+      : "Interner Sign-up-Flow fuer einzelne Testzugaenge.";
   }, [isLogin]);
 
   function switchMode(nextMode: AuthMode) {
@@ -241,15 +244,7 @@ export function LoginPage() {
     setIsSubmitting(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: loginEmail,
-        password: loginPassword,
-      });
-
-      if (error) {
-        throw error;
-      }
-
+      await signInWithEmailPassword(loginEmail, loginPassword);
       navigate(redirectPath, { replace: true });
     } catch (error) {
       const message =
@@ -269,21 +264,11 @@ export function LoginPage() {
     setIsSubmitting(true);
 
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email: signupEmail,
-        password: signupPassword,
-        options: {
-          data: {
-            full_name: signupName,
-          },
-        },
-      });
-
-      if (error) {
-        throw error;
-      }
-
-      const session = data.session;
+      const session = await signUpWithEmailPassword(
+        signupName,
+        signupEmail,
+        signupPassword,
+      );
 
       if (session) {
         navigate("/dashboard", { replace: true });
@@ -305,18 +290,18 @@ export function LoginPage() {
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#0F0E0C] text-white">
+    <main className="relative h-[100svh] min-h-[100svh] overflow-hidden bg-[#0F0E0C] text-white">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(214,168,74,0.12),transparent_22%),radial-gradient(circle_at_50%_45%,rgba(94,71,32,0.1),transparent_30%),linear-gradient(180deg,#0F0E0C_0%,#090806_100%)]" />
 
       <div className="absolute inset-0 opacity-[0.045] [background-image:linear-gradient(rgba(255,255,255,0.7)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.7)_1px,transparent_1px)] [background-size:72px_72px]" />
 
-      <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-8">
+      <div className="relative z-10 flex h-[100svh] items-center justify-center px-4 py-4">
         <div className="relative w-full max-w-[390px]">
           <div className="absolute inset-0 rounded-[34px] bg-[radial-gradient(circle_at_top,rgba(214,168,74,0.14),transparent_35%)] blur-2xl" />
 
-          <section className="relative overflow-hidden rounded-[34px] border border-white/8 bg-[linear-gradient(180deg,rgba(29,23,19,0.96)_0%,rgba(20,16,13,0.97)_100%)] px-6 pb-7 pt-6 shadow-[0_20px_60px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(255,255,255,0.03)] backdrop-blur-xl sm:px-7 sm:pb-8 sm:pt-7">
+          <section className="relative max-h-[calc(100svh-2rem)] overflow-hidden rounded-[34px] border border-white/8 bg-[linear-gradient(180deg,rgba(29,23,19,0.96)_0%,rgba(20,16,13,0.97)_100%)] px-6 pb-6 pt-5 shadow-[0_20px_60px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(255,255,255,0.03)] backdrop-blur-xl sm:px-7 sm:pb-7 sm:pt-6">
             <div className="relative z-10">
-              <div className="mb-9 flex items-start gap-4">
+              <div className="mb-7 flex items-start gap-4">
                 <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[#E9D8B4]/10 bg-white/[0.03] text-[#E9D8B4] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
                   <ChefHat size={18} />
                 </div>
@@ -331,7 +316,7 @@ export function LoginPage() {
                 </div>
               </div>
 
-              <div className="mb-7">
+              <div className="mb-6">
                 <AnimatePresence mode="wait" initial={false}>
                   <motion.div
                     key={`${mode}-heading`}
@@ -350,7 +335,7 @@ export function LoginPage() {
                 </AnimatePresence>
               </div>
 
-              <div className="mb-7">
+              <div className="mb-6">
                 <div className="relative grid grid-cols-2 rounded-full border border-white/5 bg-white/[0.035] p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
                   <motion.div
                     layout
@@ -400,7 +385,7 @@ export function LoginPage() {
                 </div>
               </div>
 
-              <div className="relative min-h-[360px]">
+              <div className="relative min-h-[332px]">
                 <AnimatePresence mode="wait" custom={direction} initial={false}>
                   {isLogin ? (
                     <motion.form
@@ -436,13 +421,14 @@ export function LoginPage() {
 
                       <motion.div
                         variants={itemVariants}
-                        className="mt-8 flex justify-end"
+                        className="mt-7 flex justify-center"
                       >
                         <button
                           type="button"
-                          className="text-[1rem] text-[#D8C3A0] transition-colors duration-300 hover:text-[#F6EFE4]"
+                          disabled
+                          className="text-center text-[1rem] text-[#D8C3A0] transition-colors duration-300 hover:text-[#F6EFE4]"
                         >
-                          Forgot password?
+                          Passwort-Reset intern vorbereitet
                         </button>
                       </motion.div>
 
@@ -537,7 +523,7 @@ export function LoginPage() {
                 </AnimatePresence>
               </div>
 
-              <div className="relative z-10 mt-7 text-center text-[0.88rem] leading-6 text-[#ffffff]">
+              <div className="relative z-10 mt-4 text-center text-[0.8rem] leading-5 text-[#ffffff]">
                 Mit der Nutzung akzeptierst du die{" "}
                 <Link
                   to="/terms"

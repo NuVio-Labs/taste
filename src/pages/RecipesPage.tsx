@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { BookOpen, Heart, LayoutGrid, MessageSquareText, Plus, Sparkles, Tag } from "lucide-react";
+import { BookOpen, Heart, LayoutGrid, MessageSquareText, Tag } from "lucide-react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { FeedbackModal } from "../components/feedback/FeedbackModal";
 import { NavDrawer, type NavDrawerItem } from "../components/layout/NavDrawer";
 import { RecipeCreateModal } from "../components/recipes/RecipeCreateModal";
 import { RecipeFilters } from "../components/recipes/RecipeFilters";
 import { RecipeOverview } from "../components/recipes/RecipeOverview";
+import { ShoppingListPickerDialog } from "../components/shopping-list/ShoppingListPickerDialog";
 import { useAuth } from "../features/auth/useAuth";
 import { useProfile } from "../features/profile/useProfile";
 import {
@@ -16,11 +18,13 @@ import {
   unlikeRecipe,
 } from "../features/recipes/recipeService";
 import { useRecipes } from "../features/recipes/useRecipes";
+import { recipeDetailQueryOptions } from "../features/recipes/queryOptions";
 import type {
   RecipeCategorySummary,
   RecipeListItem,
   RecipeSortOption,
 } from "../features/recipes/types";
+import { useShoppingLists } from "../features/shopping-list/useShoppingLists";
 
 const DEFAULT_SORT: RecipeSortOption = "latest";
 const ALL_CATEGORY_KEY = "all";
@@ -125,6 +129,7 @@ function updateParams(
 }
 
 export function RecipesPage() {
+  const queryClient = useQueryClient();
   const { session, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -134,6 +139,10 @@ export function RecipesPage() {
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [favoritePendingRecipeId, setFavoritePendingRecipeId] = useState<string | null>(null);
   const [likePendingRecipeId, setLikePendingRecipeId] = useState<string | null>(null);
+  const [shoppingListPendingRecipeId, setShoppingListPendingRecipeId] = useState<string | null>(null);
+  const [isShoppingListDialogOpen, setIsShoppingListDialogOpen] = useState(false);
+  const [shoppingListError, setShoppingListError] = useState<string | null>(null);
+  const [selectedRecipeForShoppingListId, setSelectedRecipeForShoppingListId] = useState<string | null>(null);
   const recipeListRef = useRef<HTMLDivElement | null>(null);
   const hasRestoredScrollRef = useRef(false);
 
@@ -144,7 +153,8 @@ export function RecipesPage() {
       ? session.user.user_metadata.full_name
       : "";
   const { profile } = useProfile(userId);
-  const { recipes, isLoading, error, reload } = useRecipes(userId);
+  const { recipes, isLoading, error } = useRecipes(userId);
+  const shoppingLists = useShoppingLists(userId, profile?.plan ?? "free");
 
   const activeCategory =
     searchParams.get("category")?.trim().toLowerCase() || ALL_CATEGORY_KEY;
@@ -198,12 +208,7 @@ export function RecipesPage() {
     {
       label: "Einkaufsliste",
       icon: Tag,
-      disabled: true,
-    },
-    {
-      label: "Inspiration",
-      icon: Sparkles,
-      disabled: true,
+      to: "/shopping-list",
     },
     {
       label: "Feedback",
@@ -254,7 +259,11 @@ export function RecipesPage() {
         await likeRecipe(userId, recipeId);
       }
 
-      await reload();
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["recipes", userId] }),
+        queryClient.invalidateQueries({ queryKey: ["recipe", userId, recipeId] }),
+        queryClient.invalidateQueries({ queryKey: ["favorite-recipes", userId] }),
+      ]);
     } finally {
       setLikePendingRecipeId(null);
     }
@@ -276,7 +285,11 @@ export function RecipesPage() {
         await favoriteRecipe(userId, recipeId);
       }
 
-      await reload();
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["recipes", userId] }),
+        queryClient.invalidateQueries({ queryKey: ["recipe", userId, recipeId] }),
+        queryClient.invalidateQueries({ queryKey: ["favorite-recipes", userId] }),
+      ]);
     } finally {
       setFavoritePendingRecipeId(null);
     }
@@ -292,15 +305,71 @@ export function RecipesPage() {
     });
   }
 
+  function handlePrefetchRecipe(recipeId: string) {
+    if (!userId) {
+      return;
+    }
+
+    void queryClient.prefetchQuery(recipeDetailQueryOptions(userId, recipeId));
+  }
+
+  function handleOpenShoppingListDialog(recipeId: string) {
+    setShoppingListError(null);
+    setSelectedRecipeForShoppingListId(recipeId);
+    setIsShoppingListDialogOpen(true);
+    handlePrefetchRecipe(recipeId);
+  }
+
+  function handleCreateShoppingList(name: string) {
+    try {
+      const nextList = shoppingLists.createList(name);
+      setShoppingListError(null);
+      return nextList.id;
+    } catch (createListError) {
+      setShoppingListError(
+        createListError instanceof Error
+          ? createListError.message
+          : "Die Liste konnte nicht erstellt werden.",
+      );
+      return null;
+    }
+  }
+
+  async function handleConfirmAddToShoppingList(listId: string, servings: number) {
+    if (!userId || !selectedRecipeForShoppingListId) {
+      return;
+    }
+
+    setShoppingListPendingRecipeId(selectedRecipeForShoppingListId);
+
+    try {
+      const recipeDetail = await queryClient.fetchQuery(
+        recipeDetailQueryOptions(userId, selectedRecipeForShoppingListId),
+      );
+      shoppingLists.addRecipe(listId, recipeDetail, servings);
+      setIsShoppingListDialogOpen(false);
+      setShoppingListError(null);
+    } catch (addToListError) {
+      setShoppingListError(
+        addToListError instanceof Error
+          ? addToListError.message
+          : "Das Rezept konnte nicht zur Einkaufsliste hinzugefügt werden.",
+      );
+    } finally {
+      setShoppingListPendingRecipeId(null);
+    }
+  }
+
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#0F0E0C] text-white">
       <NavDrawer
-        onCreateRecipe={() => setIsCreateRecipeOpen(true)}
+        _onCreateRecipe={() => setIsCreateRecipeOpen(true)}
         isOpen={isDrawerOpen}
         items={navItems}
         onClose={() => setIsDrawerOpen(false)}
         onLogout={handleLogout}
         onToggle={() => setIsDrawerOpen((previous) => !previous)}
+        userId={userId}
         userEmail={userEmail}
         userName={profile?.username || metadataName}
         plan={profile?.plan ?? "free"}
@@ -311,7 +380,8 @@ export function RecipesPage() {
         open={isCreateRecipeOpen}
         onClose={() => setIsCreateRecipeOpen(false)}
         onCreated={() => {
-          void reload();
+          void queryClient.invalidateQueries({ queryKey: ["recipes", userId] });
+          void queryClient.invalidateQueries({ queryKey: ["dashboard", userId] });
         }}
       />
 
@@ -391,7 +461,10 @@ export function RecipesPage() {
             </div>
           ) : (
             <RecipeOverview
+              addToShoppingListPendingRecipeId={shoppingListPendingRecipeId}
               recipes={filteredRecipes}
+              onAddToShoppingList={handleOpenShoppingListDialog}
+              onPrefetchRecipe={handlePrefetchRecipe}
               onSelectRecipe={handleSelectRecipe}
               onToggleFavorite={handleToggleFavorite}
               onToggleLike={handleToggleLike}
@@ -406,6 +479,32 @@ export function RecipesPage() {
           )}
         </section>
       </div>
+
+      <ShoppingListPickerDialog
+        externalError={shoppingListError}
+        isOpen={isShoppingListDialogOpen}
+        canCreateList={!shoppingLists.hasReachedLimit}
+        listLimit={shoppingLists.maxLists}
+        lists={shoppingLists.lists.map((list) => ({
+          id: list.id,
+          name: list.name,
+          recipeCount: list.recipes.length,
+        }))}
+        onClose={() => {
+          setIsShoppingListDialogOpen(false);
+          setShoppingListError(null);
+        }}
+        onConfirm={handleConfirmAddToShoppingList}
+        onCreateList={handleCreateShoppingList}
+        plan={profile?.plan ?? "free"}
+        recipeServings={
+          recipes.find((recipe) => recipe.id === selectedRecipeForShoppingListId)?.servings ?? 1
+        }
+        recipeTitle={
+          recipes.find((recipe) => recipe.id === selectedRecipeForShoppingListId)?.title ??
+          "Rezept"
+        }
+      />
     </main>
   );
 }

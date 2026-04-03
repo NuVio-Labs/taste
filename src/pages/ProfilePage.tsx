@@ -9,7 +9,6 @@ import {
   Mail,
   MessageSquareText,
   Save,
-  Sparkles,
   Tag,
   UserCircle2,
 } from "lucide-react";
@@ -91,12 +90,7 @@ export function ProfilePage() {
       {
         label: "Einkaufsliste",
         icon: Tag,
-        disabled: true,
-      },
-      {
-        label: "Inspiration",
-        icon: Sparkles,
-        disabled: true,
+        to: "/shopping-list",
       },
       {
         label: "Feedback",
@@ -232,12 +226,13 @@ export function ProfilePage() {
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#0F0E0C] text-white">
       <NavDrawer
-        onCreateRecipe={() => navigate("/recipes")}
+        _onCreateRecipe={() => navigate("/recipes")}
         isOpen={isDrawerOpen}
         items={navItems}
         onClose={() => setIsDrawerOpen(false)}
         onLogout={handleLogout}
         onToggle={() => setIsDrawerOpen((previous) => !previous)}
+        userId={userId}
         userEmail={userEmail}
         userName={profile?.username ?? ""}
         plan={profile?.plan ?? "free"}

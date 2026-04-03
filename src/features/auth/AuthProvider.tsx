@@ -22,6 +22,7 @@ type AuthContextValue = {
   signOut: () => Promise<void>;
 };
 
+// eslint-disable-next-line react-refresh/only-export-components -- AuthContext und AuthProvider leben bewusst in derselben Datei
 export const AuthContext = createContext<AuthContextValue | undefined>(
   undefined,
 );

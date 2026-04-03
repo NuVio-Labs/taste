@@ -64,6 +64,8 @@ function mapIngredient(value: unknown, index: number): RecipeIngredient | null {
     id: readString(row.id) ?? `ingredient-${index}`,
     name,
     amount: readString(row.amount) ?? "",
+    amountNote: readString(row.amount_note) ?? "",
+    amountValue: readString(row.amount_value) ?? readString(row.amount) ?? "",
     unit: readString(row.unit) ?? "",
   };
 }
@@ -157,42 +159,23 @@ function mapRecipeListItem(
 }
 
 export async function fetchRecipes(userId: string): Promise<RecipeListItem[]> {
-  const { data: recipeData, error: recipesError } = await supabase
-    .from("recipes")
-    .select(
-      "id, user_id, title, description, image_url, category, prep_time, servings, is_public, created_at, updated_at",
-    )
-    .or(`user_id.eq.${userId},is_public.eq.true`)
-    .order("created_at", { ascending: false });
-
-  if (recipesError) {
-    throw new Error(recipesError.message);
-  }
-
-  const recipeRows = Array.isArray(recipeData) ? recipeData.map((row) => row as RecipeRow) : [];
-  const recipeIds = recipeRows.map((row) => row.id);
-
-  if (recipeIds.length === 0) {
-    return [];
-  }
-
-  const [likesResult, ownLikesResult, ownFavoritesResult] = await Promise.all([
-    supabase.from("recipe_likes").select("recipe_id").in("recipe_id", recipeIds),
+  // Step 1: recipes + own likes + own favorites in parallel
+  // own_likes and own_favorites don't need recipe IDs — fetch all for user upfront
+  const [recipesResult, ownLikesResult, ownFavoritesResult] = await Promise.all([
     supabase
-      .from("recipe_likes")
-      .select("recipe_id")
-      .eq("user_id", userId)
-      .in("recipe_id", recipeIds),
-    supabase
-      .from("recipe_favorites")
-      .select("recipe_id")
-      .eq("user_id", userId)
-      .in("recipe_id", recipeIds),
+      .from("recipes")
+      .select(
+        "id, user_id, title, description, image_url, category, prep_time, servings, is_public, created_at, updated_at",
+      )
+      .or(`user_id.eq.${userId},is_public.eq.true`)
+      .order("created_at", { ascending: false }),
+    supabase.from("recipe_likes").select("recipe_id").eq("user_id", userId),
+    supabase.from("recipe_favorites").select("recipe_id").eq("user_id", userId),
   ]);
 
-  if (likesResult.error || ownLikesResult.error) {
+  if (recipesResult.error || ownLikesResult.error) {
     throw new Error(
-      likesResult.error?.message ??
+      recipesResult.error?.message ??
         ownLikesResult.error?.message ??
         "Die Rezepte konnten nicht geladen werden.",
     );
@@ -202,8 +185,29 @@ export async function fetchRecipes(userId: string): Promise<RecipeListItem[]> {
     throw new Error(ownFavoritesResult.error.message);
   }
 
-  const allLikeRows = Array.isArray(likesResult.data)
-    ? likesResult.data
+  const recipeRows = Array.isArray(recipesResult.data)
+    ? recipesResult.data.map((row) => row as RecipeRow)
+    : [];
+  const recipeIds = recipeRows.map((row) => row.id);
+
+  if (recipeIds.length === 0) {
+    return [];
+  }
+
+  const userIds = Array.from(new Set(recipeRows.map((row) => row.user_id)));
+
+  // Step 2: all like counts + author profiles in parallel (both need data from step 1)
+  const [allLikesResult, profilesResult] = await Promise.all([
+    supabase.from("recipe_likes").select("recipe_id").in("recipe_id", recipeIds),
+    supabase.from("public_profiles").select("id, username").in("id", userIds),
+  ]);
+
+  if (allLikesResult.error) {
+    throw new Error(allLikesResult.error.message ?? "Die Rezepte konnten nicht geladen werden.");
+  }
+
+  const allLikeRows = Array.isArray(allLikesResult.data)
+    ? allLikesResult.data
         .map((entry) => entry as RecipeLikeRow)
         .filter((entry) => typeof entry.recipe_id === "string")
     : [];
@@ -221,13 +225,8 @@ export async function fetchRecipes(userId: string): Promise<RecipeListItem[]> {
   const likeCounts = buildLikeCountMap(allLikeRows);
   const likedRecipeIds = new Set(ownLikeRows.map((entry) => entry.recipe_id));
   const favoriteRecipeIds = new Set(ownFavoriteRows.map((entry) => entry.recipe_id));
-  const userIds = Array.from(new Set(recipeRows.map((row) => row.user_id)));
-  const { data: profileData } = await supabase
-    .from("profiles")
-    .select("id, username")
-    .in("id", userIds);
   const authorNames = buildAuthorMap(
-    Array.isArray(profileData) ? profileData.map((row) => row as ProfileRow) : [],
+    Array.isArray(profilesResult.data) ? profilesResult.data.map((row) => row as ProfileRow) : [],
   );
 
   return recipeRows.map((row) =>
@@ -236,17 +235,23 @@ export async function fetchRecipes(userId: string): Promise<RecipeListItem[]> {
 }
 
 export async function fetchFavoriteRecipes(userId: string): Promise<RecipeListItem[]> {
-  const { data: favoriteData, error: favoritesError } = await supabase
-    .from("recipe_favorites")
-    .select("recipe_id")
-    .eq("user_id", userId);
+  // Step 1: favorites + own likes in parallel
+  // own_likes don't need recipe IDs — fetch all for user upfront
+  const [favoritesResult, ownLikesResult] = await Promise.all([
+    supabase.from("recipe_favorites").select("recipe_id").eq("user_id", userId),
+    supabase.from("recipe_likes").select("recipe_id").eq("user_id", userId),
+  ]);
 
-  if (favoritesError) {
-    throw new Error(favoritesError.message);
+  if (favoritesResult.error) {
+    throw new Error(favoritesResult.error.message);
   }
 
-  const favoriteRows = Array.isArray(favoriteData)
-    ? favoriteData
+  if (ownLikesResult.error) {
+    throw new Error(ownLikesResult.error.message);
+  }
+
+  const favoriteRows = Array.isArray(favoritesResult.data)
+    ? favoritesResult.data
         .map((entry) => entry as RecipeFavoriteRow)
         .filter((entry) => typeof entry.recipe_id === "string")
     : [];
@@ -257,45 +262,44 @@ export async function fetchFavoriteRecipes(userId: string): Promise<RecipeListIt
     return [];
   }
 
-  const { data: recipeData, error: recipesError } = await supabase
-    .from("recipes")
-    .select(
-      "id, user_id, title, description, image_url, category, prep_time, servings, is_public, created_at, updated_at",
-    )
-    .in("id", recipeIds)
-    .or(`user_id.eq.${userId},is_public.eq.true`)
-    .order("created_at", { ascending: false });
-
-  if (recipesError) {
-    throw new Error(recipesError.message);
-  }
-
-  const recipeRows = Array.isArray(recipeData) ? recipeData.map((row) => row as RecipeRow) : [];
-  const visibleRecipeIds = recipeRows.map((row) => row.id);
-
-  if (visibleRecipeIds.length === 0) {
-    return [];
-  }
-
-  const [likesResult, ownLikesResult] = await Promise.all([
-    supabase.from("recipe_likes").select("recipe_id").in("recipe_id", visibleRecipeIds),
+  // Step 2: recipes + all like counts in parallel (both need recipe IDs from step 1)
+  const [recipesResult, allLikesResult] = await Promise.all([
     supabase
-      .from("recipe_likes")
-      .select("recipe_id")
-      .eq("user_id", userId)
-      .in("recipe_id", visibleRecipeIds),
+      .from("recipes")
+      .select(
+        "id, user_id, title, description, image_url, category, prep_time, servings, is_public, created_at, updated_at",
+      )
+      .in("id", recipeIds)
+      .or(`user_id.eq.${userId},is_public.eq.true`)
+      .order("created_at", { ascending: false }),
+    supabase.from("recipe_likes").select("recipe_id").in("recipe_id", recipeIds),
   ]);
 
-  if (likesResult.error || ownLikesResult.error) {
+  if (recipesResult.error || allLikesResult.error) {
     throw new Error(
-      likesResult.error?.message ??
-        ownLikesResult.error?.message ??
+      recipesResult.error?.message ??
+        allLikesResult.error?.message ??
         "Die Favoriten konnten nicht geladen werden.",
     );
   }
 
-  const allLikeRows = Array.isArray(likesResult.data)
-    ? likesResult.data
+  const recipeRows = Array.isArray(recipesResult.data)
+    ? recipesResult.data.map((row) => row as RecipeRow)
+    : [];
+
+  if (recipeRows.length === 0) {
+    return [];
+  }
+
+  // Step 3: author profiles (needs user IDs from step 2)
+  const userIds = Array.from(new Set(recipeRows.map((row) => row.user_id)));
+  const { data: profileData } = await supabase
+    .from("public_profiles")
+    .select("id, username")
+    .in("id", userIds);
+
+  const allLikeRows = Array.isArray(allLikesResult.data)
+    ? allLikesResult.data
         .map((entry) => entry as RecipeLikeRow)
         .filter((entry) => typeof entry.recipe_id === "string")
     : [];
@@ -307,11 +311,6 @@ export async function fetchFavoriteRecipes(userId: string): Promise<RecipeListIt
 
   const likeCounts = buildLikeCountMap(allLikeRows);
   const likedRecipeIds = new Set(ownLikeRows.map((entry) => entry.recipe_id));
-  const userIds = Array.from(new Set(recipeRows.map((row) => row.user_id)));
-  const { data: profileData } = await supabase
-    .from("profiles")
-    .select("id, username")
-    .in("id", userIds);
   const authorNames = buildAuthorMap(
     Array.isArray(profileData) ? profileData.map((row) => row as ProfileRow) : [],
   );
@@ -373,7 +372,7 @@ export async function fetchRecipeById(
   const likedRecipeIds = new Set<string>();
   const likeCounts = new Map<string, number>([[recipeId, likeCountResult.count ?? 0]]);
   const { data: profileData } = await supabase
-    .from("profiles")
+    .from("public_profiles")
     .select("id, username")
     .eq("id", (recipeResult.data as RecipeRow).user_id)
     .maybeSingle();
@@ -427,6 +426,8 @@ function buildRecipePayload(input: SaveRecipeInput, timestamp: string) {
       id: ingredient.id,
       name: ingredient.name.trim(),
       amount: ingredient.amount.trim(),
+      amount_note: ingredient.amountNote.trim(),
+      amount_value: ingredient.amountValue.trim(),
       unit: ingredient.unit.trim(),
     })),
     steps: input.steps.map((step) => ({

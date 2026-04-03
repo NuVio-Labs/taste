@@ -1,11 +1,23 @@
 import { motion } from "framer-motion";
-import { Bookmark, Clock3, Globe2, Lock, ThumbsUp, Users2 } from "lucide-react";
+import {
+  Bookmark,
+  Clock3,
+  Globe2,
+  Lock,
+  Plus,
+  ShoppingCart,
+  ThumbsUp,
+  Users2,
+} from "lucide-react";
 import type { RecipeListItem } from "../../features/recipes/types";
 import { getRecipeCategoryTheme } from "./categoryTheme";
 
 type RecipeCardProps = {
+  isAddToShoppingListPending?: boolean;
   isFavoritePending?: boolean;
   onClick: () => void;
+  onAddToShoppingList?: () => void;
+  onPrefetch?: () => void;
   onToggleFavorite: () => void;
   onToggleLike: () => void;
   isLikePending?: boolean;
@@ -17,8 +29,11 @@ function fallbackLabel(recipe: RecipeListItem) {
 }
 
 export function RecipeCard({
+  isAddToShoppingListPending = false,
   isFavoritePending = false,
   onClick,
+  onAddToShoppingList,
+  onPrefetch,
   onToggleFavorite,
   onToggleLike,
   isLikePending = false,
@@ -32,9 +47,25 @@ export function RecipeCard({
       whileHover={{ y: -2 }}
       transition={{ duration: 0.2 }}
       onClick={onClick}
+      onMouseEnter={onPrefetch}
+      onFocus={onPrefetch}
+      onTouchStart={onPrefetch}
       className="overflow-hidden rounded-[28px] border border-white/8 bg-white/[0.03] text-left shadow-[0_16px_40px_rgba(0,0,0,0.18)] transition-all duration-300 hover:border-[#D6A84A]/18 hover:bg-white/[0.04]"
     >
       <div className={`relative aspect-[16/10] ${categoryTheme.mediaClassName}`}>
+        {onAddToShoppingList ? (
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              onAddToShoppingList();
+            }}
+            disabled={isAddToShoppingListPending}
+            className="absolute right-3 top-3 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#D6A84A]/24 bg-[rgba(15,14,12,0.62)] text-[#FFF1D4] backdrop-blur-md transition-colors duration-300 hover:border-[#D6A84A]/36 hover:bg-[rgba(214,168,74,0.18)] disabled:opacity-60"
+          >
+            <Plus size={16} />
+          </button>
+        ) : null}
         {recipe.imageUrl ? (
           <>
             <img
@@ -76,6 +107,20 @@ export function RecipeCard({
         </p>
 
         <div className="flex flex-wrap gap-2 text-sm text-[#E2D4BE]">
+          {onAddToShoppingList ? (
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onAddToShoppingList();
+              }}
+              disabled={isAddToShoppingListPending}
+              className="inline-flex items-center gap-2 rounded-full border border-[#D6A84A]/24 bg-[rgba(214,168,74,0.1)] px-3 py-1.5 text-[#FFF1D4] transition-colors duration-300 hover:border-[#D6A84A]/36 hover:bg-[rgba(214,168,74,0.14)] disabled:opacity-60"
+            >
+              <ShoppingCart size={14} />
+              Zur Liste
+            </button>
+          ) : null}
           <button
             type="button"
             onClick={(event) => {

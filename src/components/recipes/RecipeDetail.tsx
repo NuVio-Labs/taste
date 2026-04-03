@@ -10,14 +10,19 @@ import {
   Trash2,
   Users2,
 } from "lucide-react";
-import type { RecipeDetailData } from "../../features/recipes/types";
+import {
+  formatRecipeIngredientAmount,
+  type RecipeDetailData,
+} from "../../features/recipes/types";
 import { getRecipeCategoryTheme } from "./categoryTheme";
 
 type RecipeDetailProps = {
+  isAddToShoppingListPending?: boolean;
   canManageRecipe?: boolean;
   isDeleting?: boolean;
   isFavoritePending?: boolean;
   isLikePending?: boolean;
+  onAddToShoppingList: () => void;
   onBack: () => void;
   onDelete: () => void;
   onEdit: () => void;
@@ -27,10 +32,12 @@ type RecipeDetailProps = {
 };
 
 export function RecipeDetail({
+  isAddToShoppingListPending = false,
   canManageRecipe = true,
   isDeleting = false,
   isFavoritePending = false,
   isLikePending = false,
+  onAddToShoppingList,
   onBack,
   onDelete,
   onEdit,
@@ -123,14 +130,14 @@ export function RecipeDetail({
               </button>
               <button
                 type="button"
-                disabled
-                className="inline-flex h-11 items-center gap-2 rounded-full border border-white/8 bg-white/[0.02] px-4 text-sm text-[#B7AA96] opacity-70"
+                onClick={onAddToShoppingList}
+                disabled={isAddToShoppingListPending}
+                className="inline-flex h-11 items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-4 text-sm font-medium text-[#F6EFE4] transition-colors duration-300 hover:border-[#D6A84A]/18 disabled:cursor-not-allowed disabled:opacity-70"
               >
                 <ShoppingCart size={16} />
-                Zur Einkaufsliste hinzufügen
-                <span className="rounded-full border border-white/8 bg-white/[0.04] px-2 py-0.5 text-[0.62rem] uppercase tracking-[0.18em] text-[#B89A67]">
-                  Soon
-                </span>
+                {isAddToShoppingListPending
+                  ? "Wird hinzugefügt..."
+                  : "Zur Einkaufsliste hinzufügen"}
               </button>
               {canManageRecipe ? (
                 <>
@@ -193,7 +200,9 @@ export function RecipeDetail({
                     {ingredient.name}
                   </span>
                   <span className="text-sm text-[#D5C5AF]">
-                    {[ingredient.amount, ingredient.unit].filter(Boolean).join(" ")}
+                    {[formatRecipeIngredientAmount(ingredient), ingredient.unit]
+                      .filter(Boolean)
+                      .join(" ")}
                   </span>
                 </div>
               ))

@@ -73,6 +73,7 @@ export function FeedbackModal({
     return () => {
       document.body.style.overflow = "";
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- currentPage wird nur beim Öffnen gesetzt, kein re-sync gewollt
   }, [open]);
 
   useEffect(() => {
