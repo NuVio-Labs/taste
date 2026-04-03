@@ -11,6 +11,7 @@ import { RecipeOverview } from "../components/recipes/RecipeOverview";
 import { ShoppingListPickerDialog } from "../components/shopping-list/ShoppingListPickerDialog";
 import { RecipeOverviewSkeleton } from "../components/ui/PageSkeletons";
 import { Skeleton } from "../components/ui/Skeleton";
+import { ErrorStateCard } from "../components/ui/StateCard";
 import { useAuth } from "../features/auth/useAuth";
 import { useProfile } from "../features/profile/useProfile";
 import {
@@ -463,10 +464,11 @@ export function RecipesPage() {
           {isLoading ? (
             <RecipeOverviewSkeleton />
           ) : error ? (
-            <div className="rounded-[24px] border border-[rgba(214,168,74,0.14)] bg-[rgba(255,255,255,0.025)] px-4 py-5 text-sm leading-6 text-[#D9C9B1]">
-              Die Rezeptdaten konnten nicht geladen werden.
-              <div className="mt-2 text-[#A99883]">{error}</div>
-            </div>
+            <ErrorStateCard
+              eyebrow="Laden fehlgeschlagen"
+              title="Rezeptdaten konnten nicht geladen werden"
+              description={error}
+            />
           ) : (
             <RecipeOverview
               addToShoppingListPendingRecipeId={shoppingListPendingRecipeId}

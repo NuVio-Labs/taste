@@ -22,6 +22,7 @@ import {
   DashboardRecentRecipesSkeleton,
   DashboardStatsSkeleton,
 } from "../components/ui/PageSkeletons";
+import { EmptyStateCard, ErrorStateCard } from "../components/ui/StateCard";
 import { useAuth } from "../features/auth/useAuth";
 import { dashboardQueryOptions } from "../features/dashboard/queryOptions";
 import { useProfile } from "../features/profile/useProfile";
@@ -315,16 +316,17 @@ export function DashboardPage() {
               {isLoading ? (
                 <DashboardRecentRecipesSkeleton />
               ) : error ? (
-                <div className="rounded-[22px] border border-[rgba(214,168,74,0.14)] bg-[rgba(255,255,255,0.025)] px-4 py-5 text-sm leading-6 text-[#D9C9B1]">
-                  Die Rezeptdaten konnten nicht geladen werden.
-                  <div className="mt-2 text-[#A99883]">{error.message}</div>
-                </div>
+                <ErrorStateCard
+                  eyebrow="Laden fehlgeschlagen"
+                  title="Rezepte konnten nicht geladen werden"
+                  description={error.message}
+                />
               ) : recentRecipes.length === 0 ? (
-                <div className="rounded-[22px] border border-white/8 bg-white/[0.025] px-4 py-5 text-sm leading-6 text-[#B7AA96]">
-                  Noch keine sichtbaren Rezepte vorhanden. Erstelle ein eigenes
-                  Rezept oder veröffentliche bestehende Inhalte, dann erscheint
-                  hier automatisch etwas.
-                </div>
+                <EmptyStateCard
+                  eyebrow="Noch leer"
+                  title="Noch keine sichtbaren Rezepte"
+                  description="Erstelle ein eigenes Rezept oder veröffentliche bestehende Inhalte, dann erscheint hier automatisch etwas."
+                />
               ) : (
                 <div className="space-y-3">
                   {recentRecipes.map((recipe, index) => (

@@ -18,6 +18,7 @@ import { RecipeOverview } from "../components/recipes/RecipeOverview";
 import { ShoppingListPickerDialog } from "../components/shopping-list/ShoppingListPickerDialog";
 import { RecipeOverviewSkeleton } from "../components/ui/PageSkeletons";
 import { Skeleton } from "../components/ui/Skeleton";
+import { EmptyStateCard, ErrorStateCard } from "../components/ui/StateCard";
 import { useAuth } from "../features/auth/useAuth";
 import { useProfile } from "../features/profile/useProfile";
 import {
@@ -477,51 +478,42 @@ export function FavoritesPage() {
           {isLoading ? (
             <RecipeOverviewSkeleton />
           ) : error ? (
-            <div className="rounded-[24px] border border-[rgba(214,168,74,0.14)] bg-[rgba(255,255,255,0.025)] px-4 py-5 text-sm leading-6 text-[#D9C9B1]">
-              Die Favoriten konnten nicht geladen werden.
-              <div className="mt-2 text-[#A99883]">{error}</div>
-            </div>
+            <ErrorStateCard
+              eyebrow="Laden fehlgeschlagen"
+              title="Favoriten konnten nicht geladen werden"
+              description={error}
+            />
           ) : favorites.length === 0 ? (
-            <div className="rounded-[28px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.018))] p-6 shadow-[0_16px_40px_rgba(0,0,0,0.18)]">
-              <p className="text-xs uppercase tracking-[0.24em] text-[#8D7E6E]">
-                Noch leer
-              </p>
-              <h3 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-[#FFF8EE]">
-                Noch keine Favoriten gespeichert
-              </h3>
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-[#B7AA96]">
-                Nutze das Bookmark an einem Rezept, um dir Gerichte gezielt für später
-                zu merken.
-              </p>
-              <button
-                type="button"
-                onClick={() => navigate("/recipes")}
-                className="mt-5 inline-flex items-center gap-2 rounded-full border border-[#E9D8B4]/12 bg-white/[0.03] px-5 py-3 text-sm font-medium text-[#F6EFE4] transition-all duration-300 hover:-translate-y-0.5 hover:border-[#D6A84A]/20"
-              >
-                Rezepte entdecken
-                <ArrowRight size={16} />
-              </button>
-            </div>
+            <EmptyStateCard
+              eyebrow="Noch leer"
+              title="Noch keine Favoriten gespeichert"
+              description="Nutze das Bookmark an einem Rezept, um dir Gerichte gezielt für später zu merken."
+              action={
+                <button
+                  type="button"
+                  onClick={() => navigate("/recipes")}
+                  className="inline-flex items-center gap-2 rounded-full border border-[#E9D8B4]/12 bg-white/[0.03] px-5 py-3 text-sm font-medium text-[#F6EFE4] transition-all duration-300 hover:-translate-y-0.5 hover:border-[#D6A84A]/20"
+                >
+                  Rezepte entdecken
+                  <ArrowRight size={16} />
+                </button>
+              }
+            />
           ) : filteredRecipes.length === 0 ? (
-            <div className="rounded-[28px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.018))] p-6 shadow-[0_16px_40px_rgba(0,0,0,0.18)]">
-              <p className="text-xs uppercase tracking-[0.24em] text-[#8D7E6E]">
-                Kein Treffer
-              </p>
-              <h3 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-[#FFF8EE]">
-                Keine Favoriten passen zu deinem Filter
-              </h3>
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-[#B7AA96]">
-                Passe Suche, Kategorie oder Sortierung an oder setze die Filter direkt
-                zurück.
-              </p>
-              <button
-                type="button"
-                onClick={resetFilters}
-                className="mt-5 inline-flex items-center gap-2 rounded-full border border-[#E9D8B4]/12 bg-white/[0.03] px-5 py-3 text-sm font-medium text-[#F6EFE4] transition-all duration-300 hover:-translate-y-0.5 hover:border-[#D6A84A]/20"
-              >
-                Filter zurücksetzen
-              </button>
-            </div>
+            <EmptyStateCard
+              eyebrow="Kein Treffer"
+              title="Keine Favoriten passen zu deinem Filter"
+              description="Passe Suche, Kategorie oder Sortierung an oder setze die Filter direkt zurück."
+              action={
+                <button
+                  type="button"
+                  onClick={resetFilters}
+                  className="inline-flex items-center gap-2 rounded-full border border-[#E9D8B4]/12 bg-white/[0.03] px-5 py-3 text-sm font-medium text-[#F6EFE4] transition-all duration-300 hover:-translate-y-0.5 hover:border-[#D6A84A]/20"
+                >
+                  Filter zurücksetzen
+                </button>
+              }
+            />
           ) : (
             <RecipeOverview
               addToShoppingListPendingRecipeId={shoppingListPendingRecipeId}

@@ -9,6 +9,7 @@ import { RecipeDetail } from "../components/recipes/RecipeDetail";
 import { RecipeCreateModal } from "../components/recipes/RecipeCreateModal";
 import { ShoppingListPickerDialog } from "../components/shopping-list/ShoppingListPickerDialog";
 import { RecipeDetailSkeleton } from "../components/ui/PageSkeletons";
+import { ErrorStateCard } from "../components/ui/StateCard";
 import { useAuth } from "../features/auth/useAuth";
 import { useProfile } from "../features/profile/useProfile";
 import {
@@ -256,12 +257,11 @@ export function RecipeDetailPage() {
           {isLoading ? (
             <RecipeDetailSkeleton />
           ) : error || !recipe ? (
-            <div className="rounded-[24px] border border-[rgba(214,168,74,0.14)] bg-[rgba(255,255,255,0.025)] px-4 py-5 text-sm leading-6 text-[#D9C9B1]">
-              Das Rezept konnte nicht geladen werden.
-              <div className="mt-2 text-[#A99883]">
-                {error ?? "Rezept nicht gefunden."}
-              </div>
-            </div>
+            <ErrorStateCard
+              eyebrow="Laden fehlgeschlagen"
+              title="Rezept konnte nicht geladen werden"
+              description={error ?? "Rezept nicht gefunden."}
+            />
           ) : (
             <div className="space-y-4">
               {shoppingListSuccess ? (

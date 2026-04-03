@@ -22,6 +22,8 @@ _Zuletzt aktualisiert: 2026-04-03 (Session 4)_
 
 ## Zuletzt abgeschlossen
 
+- P2: Loading-, Empty- und Error-Designs über gemeinsame State-Card-Komponenten vereinheitlicht
+- P2: Einkaufsliste gegen Supabase-Persistenz bewertet und bewusst vorerst bei `localStorage` belassen
 - P2: Rezeptlisten auf serverseitige RPC-Feeds umgestellt, mit Fallback auf die bisherigen Mehrfach-Queries
 - P2: Supabase-CLI-Migrationen mit `npx supabase@latest start` und `npx supabase@latest db reset` erfolgreich verifiziert
 - P2: Supabase-CLI-Migrationssatz um Core-Schema für `profiles`, `public_profiles`, `recipes` und `recipe_likes` ergänzt
@@ -54,8 +56,6 @@ _Zuletzt aktualisiert: 2026-04-03 (Session 4)_
 ### P2
 
 - [ ] Monitoring für DB-Größe und Egress definieren
-- [ ] Evaluieren, ob die Einkaufsliste statt `localStorage` in Supabase persistiert werden soll
-- [ ] Loading-, Empty- und Error-Designs appweit vereinheitlichen
 - [ ] Mobile Navigation und Formularflüsse auf kleinen Screens gezielt prüfen
 - [ ] Sprachkonsistenz auf der Login-Seite bereinigen
 
@@ -76,11 +76,14 @@ _Zuletzt aktualisiert: 2026-04-03 (Session 4)_
 - Deployment hängt weiter an sauber gepflegten Dependency-Versionen, weil Vercel Peer-Konflikte strikt auflöst
 - Wirkung der jüngsten FCP/LCP-Optimierungen muss erst in neuen Vercel-Speed-Insights-Daten bestätigt werden
 - Produktions-DB muss die neuen RPC-Migrationen erhalten; bis dahin greift im Frontend bewusst der Legacy-Fallback
+- Einkaufslisten bleiben vorerst lokal und sind daher bewusst nicht zwischen Geräten synchronisiert
 
 ## Änderungslog
 
 ### 2026-04-03 (Session 4)
 
+- UI: Loading-, Empty- und Error-Zustände in Dashboard, Rezepte, Favoriten, Profil und Rezeptdetail über gemeinsame State-Cards vereinheitlicht
+- Produktentscheidung: Einkaufsliste vorerst nicht nach Supabase migriert; aktueller `localStorage`-Ansatz ist funktional vollständig, UI-nah und im Verhältnis zum Nutzen deutlich einfacher als ein neues RLS- und Sync-Modell
 - Performance: Rezeptlisten über neue Supabase-RPCs serverseitig aggregiert; Frontend-Fallback auf Legacy-Queries bleibt aktiv, bis alle Umgebungen migriert sind
 - Infrastruktur: Supabase-CLI-Migrationen lokal erfolgreich verifiziert; `start` und `db reset` laufen nach Ergänzung des Core-Schemas sauber durch
 - Infrastruktur: fehlende Basismigration für `profiles`, `public_profiles`, `recipes` und `recipe_likes` ergänzt, nachdem `supabase db reset` auf fehlende `public.recipes` gelaufen ist
@@ -131,3 +134,4 @@ _Zuletzt aktualisiert: 2026-04-03 (Session 4)_
 - Erledigte Punkte sofort aus `Offene To-dos` nach `Zuletzt abgeschlossen` oder ins `Änderungslog` verschieben
 - Pro Arbeitssession nur die neuen, relevanten Änderungen im `Änderungslog` ergänzen, keine Dateiliste pflegen
 - Prüflücken nur dann stehen lassen, wenn sie noch wirklich offen sind
+- Bewusst verworfene oder zurückgestellte Optionen kurz mit Begründung dokumentieren, statt sie stillschweigend zu löschen

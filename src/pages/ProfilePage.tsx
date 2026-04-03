@@ -16,6 +16,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { FeedbackModal } from "../components/feedback/FeedbackModal";
 import { NavDrawer, type NavDrawerItem } from "../components/layout/NavDrawer";
 import { ProfileSummarySkeleton } from "../components/ui/PageSkeletons";
+import { ErrorStateCard } from "../components/ui/StateCard";
 import {
   signInWithEmailPassword,
   updateUserEmail,
@@ -283,9 +284,12 @@ export function ProfilePage() {
             {isLoading ? (
               <ProfileSummarySkeleton />
             ) : error ? (
-              <div className="mt-5 rounded-[22px] border border-[rgba(214,168,74,0.14)] bg-[rgba(255,255,255,0.025)] px-4 py-5 text-sm leading-6 text-[#D9C9B1]">
-                Das Profil konnte nicht geladen werden.
-                <div className="mt-2 text-[#A99883]">{error}</div>
+              <div className="mt-5">
+                <ErrorStateCard
+                  eyebrow="Laden fehlgeschlagen"
+                  title="Profil konnte nicht geladen werden"
+                  description={error}
+                />
               </div>
             ) : (
               <div className="mt-5 space-y-4">
