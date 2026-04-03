@@ -35,6 +35,7 @@ export function RecipeFilters({
           className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#8E806F]"
         />
         <input
+          data-testid="recipe-search-input"
           value={searchValue}
           onChange={(event) => onSearchChange(event.target.value)}
           placeholder="Titel, Beschreibung oder Kategorie suchen"

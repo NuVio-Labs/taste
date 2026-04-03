@@ -341,6 +341,7 @@ export function ProfilePage() {
                   Benutzername
                 </label>
                 <input
+                  data-testid="profile-username-input"
                   value={username}
                   onChange={(event) => setUsername(event.target.value)}
                   placeholder="z. B. Axel"
@@ -358,6 +359,7 @@ export function ProfilePage() {
                     className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#8E806F]"
                   />
                   <input
+                    data-testid="profile-avatar-url-input"
                     value={avatarUrl}
                     onChange={(event) => setAvatarUrl(event.target.value)}
                     placeholder="https://..."
@@ -373,7 +375,10 @@ export function ProfilePage() {
               ) : null}
 
               {saveSuccess ? (
-                <div className="rounded-[22px] border border-[rgba(214,168,74,0.18)] bg-[rgba(214,168,74,0.08)] px-4 py-3 text-sm text-[#F6EFE4]">
+                <div
+                  data-testid="profile-save-success"
+                  className="rounded-[22px] border border-[rgba(214,168,74,0.18)] bg-[rgba(214,168,74,0.08)] px-4 py-3 text-sm text-[#F6EFE4]"
+                >
                   {saveSuccess}
                 </div>
               ) : null}
@@ -384,6 +389,7 @@ export function ProfilePage() {
                   onClick={() => {
                     void handleSave();
                   }}
+                  data-testid="profile-save-button"
                   disabled={isSaving}
                   className="inline-flex h-12 items-center justify-center gap-2 rounded-full border border-[#E9D8B4]/12 bg-[#D6A84A] px-5 text-sm font-medium text-[#1A140E] shadow-[0_12px_30px_rgba(214,168,74,0.24)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#DEB457] disabled:cursor-not-allowed disabled:opacity-70"
                 >

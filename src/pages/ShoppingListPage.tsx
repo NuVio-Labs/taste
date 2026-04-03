@@ -372,6 +372,7 @@ export function ShoppingListPage() {
                 className="flex flex-col gap-3 sm:flex-row"
               >
                 <input
+                  data-testid="shopping-list-name-input"
                   value={newListName}
                   onChange={(event) => {
                     setNewListName(event.target.value);
@@ -388,6 +389,7 @@ export function ShoppingListPage() {
                 />
                 <button
                   type="submit"
+                  data-testid="shopping-list-create-button"
                   disabled={shoppingLists.hasReachedLimit || !newListName.trim()}
                   className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full border border-[#D6A84A]/20 bg-[linear-gradient(180deg,rgba(214,168,74,0.18),rgba(214,168,74,0.1))] px-5 text-sm font-semibold text-[#FFF1D4] transition-all duration-300 hover:-translate-y-0.5 hover:border-[#D6A84A]/28 disabled:translate-y-0 disabled:opacity-50 sm:w-auto"
                 >
@@ -431,6 +433,7 @@ export function ShoppingListPage() {
                         <button
                           type="button"
                           onClick={() => shoppingLists.setSelectedListId(list.id)}
+                          data-testid={`shopping-list-select-${list.id}`}
                           className="flex min-w-0 flex-1 items-center gap-3 text-left"
                         >
                           <div className="flex h-8 w-8 items-center justify-center rounded-full border border-[#E9D8B4]/10 bg-white/[0.03] text-xs font-semibold text-[#E9D8B4]">
@@ -505,6 +508,7 @@ export function ShoppingListPage() {
                             <button
                               type="button"
                               onClick={() => shoppingLists.toggleItemChecked(item.key)}
+                              data-testid={`shopping-list-item-toggle-${item.key}`}
                               className={`h-5 w-5 rounded border transition-colors duration-300 ${
                                 item.isChecked
                                   ? "border-[#D6A84A] bg-[#D6A84A]"

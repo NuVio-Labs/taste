@@ -261,6 +261,7 @@ export function DashboardPage() {
           <button
             type="button"
             onClick={() => setIsCreateRecipeOpen(true)}
+            data-testid="open-create-recipe-button"
             className="inline-flex h-12 items-center gap-2 rounded-full border border-[#D6A84A]/20 bg-[linear-gradient(180deg,rgba(214,168,74,0.18),rgba(214,168,74,0.1))] px-5 text-sm font-semibold text-[#FFF1D4] shadow-[0_12px_24px_rgba(214,168,74,0.12),inset_0_1px_0_rgba(255,255,255,0.06)] transition-all duration-300 hover:-translate-y-0.5 hover:border-[#D6A84A]/28 hover:bg-[linear-gradient(180deg,rgba(214,168,74,0.22),rgba(214,168,74,0.12))]"
           >
             <Plus size={16} />

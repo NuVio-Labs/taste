@@ -41,12 +41,22 @@ export function RecipeCard({
 }: RecipeCardProps) {
   const categoryTheme = getRecipeCategoryTheme(recipe.category);
 
+  function handleCardKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      onClick();
+    }
+  }
+
   return (
-    <motion.button
-      type="button"
+    <motion.div
+      role="button"
+      tabIndex={0}
+      aria-label={`Rezept öffnen: ${recipe.title}`}
       whileHover={{ y: -2 }}
       transition={{ duration: 0.2 }}
       onClick={onClick}
+      onKeyDown={handleCardKeyDown}
       onMouseEnter={onPrefetch}
       onFocus={onPrefetch}
       onTouchStart={onPrefetch}
@@ -127,6 +137,8 @@ export function RecipeCard({
               event.stopPropagation();
               onToggleFavorite();
             }}
+            data-testid={`recipe-favorite-button-${recipe.id}`}
+            aria-pressed={recipe.isFavorite}
             disabled={isFavoritePending}
             className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 transition-colors duration-300 ${
               recipe.isFavorite
@@ -145,6 +157,8 @@ export function RecipeCard({
               event.stopPropagation();
               onToggleLike();
             }}
+            data-testid={`recipe-like-button-${recipe.id}`}
+            aria-pressed={recipe.isLiked}
             disabled={isLikePending}
             className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 transition-colors duration-300 ${
               recipe.isLiked
@@ -172,6 +186,6 @@ export function RecipeCard({
           </span>
         </div>
       </div>
-    </motion.button>
+    </motion.div>
   );
 }

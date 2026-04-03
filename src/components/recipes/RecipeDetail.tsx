@@ -84,7 +84,10 @@ export function RecipeDetail({
               >
                 {recipe.category}
               </p>
-              <h1 className="mt-2 text-3xl font-semibold tracking-[-0.05em] text-[#FFF8EE] sm:text-4xl">
+              <h1
+                data-testid="recipe-detail-title"
+                className="mt-2 text-3xl font-semibold tracking-[-0.05em] text-[#FFF8EE] sm:text-4xl"
+              >
                 {recipe.title}
               </h1>
               <p className="mt-3 text-sm text-[#B7AA96]">
@@ -99,6 +102,8 @@ export function RecipeDetail({
               <button
                 type="button"
                 onClick={onToggleFavorite}
+                data-testid="recipe-detail-favorite-button"
+                aria-pressed={recipe.isFavorite}
                 disabled={isFavoritePending}
                 className={`inline-flex h-11 items-center gap-2 rounded-full border px-4 text-sm font-medium transition-colors duration-300 ${
                   recipe.isFavorite
@@ -115,6 +120,8 @@ export function RecipeDetail({
               <button
                 type="button"
                 onClick={onToggleLike}
+                data-testid="recipe-detail-like-button"
+                aria-pressed={recipe.isLiked}
                 disabled={isLikePending}
                 className={`inline-flex h-11 items-center gap-2 rounded-full border px-4 text-sm font-medium transition-colors duration-300 ${
                   recipe.isLiked
@@ -131,6 +138,7 @@ export function RecipeDetail({
               <button
                 type="button"
                 onClick={onAddToShoppingList}
+                data-testid="recipe-detail-add-to-shopping-list-button"
                 disabled={isAddToShoppingListPending}
                 className="inline-flex h-11 items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-4 text-sm font-medium text-[#F6EFE4] transition-colors duration-300 hover:border-[#D6A84A]/18 disabled:cursor-not-allowed disabled:opacity-70"
               >
@@ -144,6 +152,7 @@ export function RecipeDetail({
                   <button
                     type="button"
                     onClick={onEdit}
+                    data-testid="recipe-edit-button"
                     className="inline-flex h-11 items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-4 text-sm font-medium text-[#F6EFE4] transition-colors duration-300 hover:border-[#D6A84A]/18"
                   >
                     <Pencil size={16} />

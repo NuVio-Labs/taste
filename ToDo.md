@@ -1,27 +1,37 @@
 # NuVio Taste
 
-_Zuletzt aktualisiert: 2026-04-03 (Session 2)_
+_Zuletzt aktualisiert: 2026-04-03 (Session 4)_
 
 ---
 
 ## Kurzstatus
 
 - P0 abgeschlossen
-- P1 ca. 70% abgeschlossen
-- Kernfluesse `Auth -> Dashboard -> Rezepte -> Rezeptdetail -> Favoriten -> Einkaufsliste -> Profil -> Feedback` vorhanden und manuell getestet
-- App ist fuer die interne Testphase bereit
+- P1 abgeschlossen
+- Kernflüsse `Auth -> Dashboard -> Rezepte -> Rezeptdetail -> Favoriten -> Einkaufsliste -> Profil -> Feedback` vorhanden und für die interne Testphase abgesichert
+- App ist für die interne Testphase bereit
 
 ## Architekturstand
 
 - Frontend: React 19, TypeScript, Vite, Tailwind CSS 4, Framer Motion
 - Backend: Supabase mit PostgreSQL, Auth und RLS
 - Datenlayer: TanStack React Query v5 in den Kernseiten
-- Routing: React Router v7 mit `React.lazy()` und `Suspense`
+- Routing: React Router v7 mit Data Router (`createBrowserRouter`, `RouterProvider`) plus `React.lazy()` und `Suspense`
 - Fehlerbehandlung: app-weite `ErrorBoundary`
 - Analytics: Vercel Analytics und Speed Insights
 
 ## Zuletzt abgeschlossen
 
+- P1: Playwright-Profil-speichern-Flow abgedeckt
+- P1: Playwright-Einkaufslisten-Flow abgedeckt
+- P1: Playwright-Favoriten-Seiten-Flow abgedeckt
+- P1: Playwright-Rezept-favorisieren-Flow abgedeckt
+- P1: Playwright-Rezept-liken-Flow abgedeckt
+- P1: Playwright-Rezept-bearbeiten-Flow abgedeckt
+- UI: Rezeptkarten semantisch bereinigt, verschachtelte `<button>`-Struktur entfernt
+- P1: Playwright-Rezept-erstellen-Flow abgedeckt
+- P1: Playwright-Login-Flow abgedeckt
+- Infrastruktur: Vercel-Deployment wieder installierbar, ESLint-Konflikt auf kompatible Versionen zurückgesetzt
 - P1: React Router auf Data Router umgestellt
 - P1: Ladezustände auf Skeletons umgestellt
 - P1: Build nach Code Splitting geprüft, keine Chunk-Warnung mehr offen
@@ -29,56 +39,65 @@ _Zuletzt aktualisiert: 2026-04-03 (Session 2)_
 - P1: Rezept-Queries reduziert
 - P1: Dashboard auf React Query umgestellt
 - P1: Profil auf React Query umgestellt
-- P1: Route-Level Code Splitting eingefuehrt
-- P1: App-weite Error Boundary eingefuehrt
+- P1: Route-Level Code Splitting eingeführt
+- P1: App-weite Error Boundary eingeführt
 - P0: Inspiration aus der Navigation entfernt
-- P0: RLS-Check abgeschlossen und `public_profiles`-View eingefuehrt
+- P0: RLS-Check abgeschlossen und `public_profiles`-View eingeführt
 
 ## Offene To-dos
 
-### P1
-
-- [ ] Playwright-Flows fuer Login abdecken
-- [ ] Playwright-Flows fuer Rezept erstellen abdecken
-- [ ] Playwright-Flows fuer Rezept bearbeiten abdecken
-- [ ] Playwright-Flows fuer Rezept liken abdecken
-- [ ] Playwright-Flows fuer Rezept favorisieren abdecken
-- [ ] Playwright-Flows fuer Favoriten-Seite abdecken
-- [ ] Playwright-Flows fuer Einkaufsliste abdecken
-- [ ] Playwright-Flows fuer Profil speichern abdecken
-
 ### P2
 
-- [ ] SQL-Dateien ins Supabase-CLI-Migrationsformat ueberfuehren
-- [ ] View oder RPC fuer effizientere Rezeptlisten pruefen
-- [ ] Monitoring fuer DB-Groesse und Egress definieren
+- [ ] SQL-Dateien ins Supabase-CLI-Migrationsformat überführen
+- [ ] View oder RPC für effizientere Rezeptlisten prüfen
+- [ ] Monitoring für DB-Größe und Egress definieren
 - [ ] Evaluieren, ob die Einkaufsliste statt `localStorage` in Supabase persistiert werden soll
 - [ ] Loading-, Empty- und Error-Designs appweit vereinheitlichen
-- [ ] Mobile Navigation und Formularfluesse auf kleinen Screens gezielt pruefen
+- [ ] Mobile Navigation und Formularflüsse auf kleinen Screens gezielt prüfen
 - [ ] Sprachkonsistenz auf der Login-Seite bereinigen
 
 ### P3
 
-- [ ] Inspiration-Bereich mit echter Logik fuellen
-- [ ] Bild-Upload ueber externen Storage integrieren
+- [ ] Inspiration-Bereich mit echter Logik füllen
+- [ ] Bild-Upload über externen Storage integrieren
 - [ ] Rezeptbilder optimieren
-- [ ] Analytics-Events fuer Kernaktionen definieren
-- [ ] Offline- und Low-Network-Strategien pruefen
+- [ ] Analytics-Events für Kernaktionen definieren
+- [ ] Offline- und Low-Network-Strategien prüfen
 - [ ] Einkaufsliste auf Supabase-Persistenz migrieren
 
-## Aktuelle Risiken und Pruefluecken
+## Aktuelle Risiken und Prüflücken
 
 - Rezeptlisten brauchen weiter mehrere Query-Roundtrips
-- Einkaufsliste ist noch nicht geraeteuebergreifend
-- Es gibt noch keine belastbaren automatisierten E2E-Flows
+- Einkaufsliste ist noch nicht geräteübergreifend
+- E2E-Abdeckung ist für P1 gut, aber noch nicht vollständig CI-orientiert für spätere P2- und P3-Flows
 - Error Boundary wurde noch nicht bewusst manuell getriggert
+- Deployment hängt weiter an sauber gepflegten Dependency-Versionen, weil Vercel Peer-Konflikte strikt auflöst
 
-## Aenderungslog
+## Änderungslog
+
+### 2026-04-03 (Session 4)
+
+- Dokumentation: `ToDo.md` auf aktuellen Projektstand bereinigt und auf sauberen UTF-8-Inhalt mit Umlauten umgestellt
+
+### 2026-04-03 (Session 3)
+
+- P1: Playwright-Profil-Flow erfolgreich geprüft; Benutzername lässt sich speichern und wird wieder geladen
+- P1: Profilspeichern von `upsert` auf gezieltes `update` umgestellt; RLS-Fehler auf `profiles` behoben
+- P1: Playwright-Einkaufslisten-Flow erfolgreich geprüft; Rezept wird einer Liste hinzugefügt und aggregierte Zutat lässt sich abhaken
+- P1: Playwright-Favoriten-Seite erfolgreich geprüft; favorisierte Rezepte erscheinen dort und lassen sich öffnen
+- P1: Playwright-Favoriten-Flow erfolgreich geprüft; Favoriten-Zustand wird in der Detailansicht korrekt umgeschaltet
+- P1: Playwright-Like-Flow erfolgreich geprüft; Like-Zustand wird in der Detailansicht korrekt umgeschaltet
+- P1: Playwright-Bearbeiten-Flow erfolgreich geprüft; Rezepttitel und Beschreibung lassen sich über die Detailansicht aktualisieren
+- UI: Rezeptkarten auf tastaturbedienbare Container umgestellt; HTML-Warnung zu verschachtelten Buttons behoben
+- P1: Playwright-Rezepte-Spec erfolgreich geprüft; darunter auch der Flow zum Erstellen eines neuen Rezepts
+- P1: Playwright-Login-Spec stabilisiert und erfolgreich ausgeführt; 3 Checks grün, erfolgreicher Login weiter per Test-Credentials gesteuert
+- Infrastruktur: Vercel-Installfehler behoben, `eslint` und `@eslint/js` auf kompatible 9er-Versionen zurückgesetzt
+- Infrastruktur: `npm install`, `npm run build` und `npm run lint` erfolgreich geprüft
 
 ### 2026-04-03 (Session 2)
 
 - P1: Routing von `BrowserRouter` plus `<Routes>` auf `createBrowserRouter` plus `RouterProvider` migriert
-- P1: Textbasierte Ladezustände in Dashboard, Rezepte, Favoriten, Profil und Rezeptdetail durch konsistente Skeletons ersetzt
+- P1: textbasierte Ladezustände in Dashboard, Rezepte, Favoriten, Profil und Rezeptdetail durch konsistente Skeletons ersetzt
 - P1: `npm run build` erfolgreich geprüft, keine Chunk-Warnung mehr im aktuellen Stand
 - P1: `reload()` in den Rezept-, Detail- und Favoriten-Flows durch gezielte `invalidateQueries`-Aufrufe ersetzt
 - P1: `fetchRecipes` von 3 auf 2 serielle Gruppen reduziert
@@ -88,16 +107,16 @@ _Zuletzt aktualisiert: 2026-04-03 (Session 2)_
 
 - P0: Dashboard-Roadmap auf aktuellen Stand gebracht
 - P0: Inspiration aus allen Navigationen entfernt, Route aber beibehalten
-- P0: RLS geprueft, `public_profiles`-View fuer Autorennamen eingefuehrt
-- P0: Kernfluesse manuell im Happy Path getestet
+- P0: RLS geprüft, `public_profiles`-View für Autorennamen eingeführt
+- P0: Kernflüsse manuell im Happy Path getestet
 - P1: `useProfile` auf React Query umgestellt
 - P1: Dashboard-Daten in eigene Service- und Query-Optionen extrahiert
-- P1: Alle Seiten in `App.tsx` auf Lazy Loading umgestellt
-- P1: Error Boundary als eigene UI-Komponente eingefuehrt
+- P1: alle Seiten in `App.tsx` auf Lazy Loading umgestellt
+- P1: Error Boundary als eigene UI-Komponente eingeführt
 
-## Pflege-Regel fuer diese Datei
+## Pflege-Regel für diese Datei
 
-- Kurzstatus nur dann anpassen, wenn sich Projektphase oder Reifegrad geaendert hat
-- Erledigte Punkte sofort aus `Offene To-dos` nach `Zuletzt abgeschlossen` oder ins `Aenderungslog` verschieben
-- Pro Arbeitssession nur die neuen, relevanten Aenderungen im `Aenderungslog` ergaenzen, keine Dateiliste pflegen
-- Pruefluecken nur dann stehen lassen, wenn sie noch wirklich offen sind
+- Kurzstatus nur dann anpassen, wenn sich Projektphase oder Reifegrad geändert hat
+- Erledigte Punkte sofort aus `Offene To-dos` nach `Zuletzt abgeschlossen` oder ins `Änderungslog` verschieben
+- Pro Arbeitssession nur die neuen, relevanten Änderungen im `Änderungslog` ergänzen, keine Dateiliste pflegen
+- Prüflücken nur dann stehen lassen, wenn sie noch wirklich offen sind

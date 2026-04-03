@@ -57,7 +57,7 @@ export function ForgotPasswordPage() {
               Intern
             </p>
             <h1 className="mt-2 text-[2.35rem] font-semibold leading-[0.95] tracking-[-0.05em] text-[#FFF8EE]">
-              Reset-Link anfordern
+              <span data-testid="forgot-password-title">Reset-Link anfordern</span>
             </h1>
             <p className="mt-4 text-[1rem] leading-7 text-[#C0B09A]">
               Der Flow ist vorbereitet, aber im Login aktuell absichtlich nicht
@@ -71,6 +71,7 @@ export function ForgotPasswordPage() {
               <div className="relative">
                 <Mail size={18} className="pointer-events-none absolute left-0 top-1/2 -translate-y-1/2 text-[#B7AA96]" />
                 <input
+                  data-testid="forgot-password-email-input"
                   type="email"
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
@@ -85,6 +86,7 @@ export function ForgotPasswordPage() {
 
             <button
               type="submit"
+              data-testid="forgot-password-submit-button"
               disabled={isSubmitting}
               className="flex h-14 w-full items-center justify-center gap-2 rounded-full border border-[#E9D8B4]/12 bg-[#D6A84A] text-[1.08rem] font-medium text-[#1A140E] shadow-[0_12px_30px_rgba(214,168,74,0.24)] transition-all duration-300 hover:translate-y-[-1px] hover:bg-[#DEB457] disabled:translate-y-0 disabled:bg-[#6d5940] disabled:text-[#d7c8ae]"
             >

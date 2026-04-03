@@ -24,6 +24,7 @@ type LocationState = {
 type AuthMode = "login" | "signup";
 
 type AuthFieldProps = {
+  dataTestId?: string;
   icon: ReactNode;
   label: string;
   onChange: (value: string) => void;
@@ -34,6 +35,7 @@ type AuthFieldProps = {
 };
 
 function AuthField({
+  dataTestId,
   icon,
   label,
   onChange,
@@ -63,6 +65,7 @@ function AuthField({
         </div>
 
         <input
+          data-testid={dataTestId}
           type={inputType}
           value={value}
           onChange={(event) => onChange(event.target.value)}
@@ -326,7 +329,7 @@ export function LoginPage() {
                     transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
                   >
                     <h1 className="text-[2.55rem] font-semibold leading-[0.95] tracking-[-0.05em] text-[#FFF8EE]">
-                      {title}
+                      <span data-testid="auth-title">{title}</span>
                     </h1>
                     <p className="mt-4 max-w-[29ch] text-[1.02rem] leading-7 text-[#C0B09A]">
                       {subtitle}
@@ -400,6 +403,7 @@ export function LoginPage() {
                     >
                       <motion.div variants={itemVariants} className="space-y-8">
                         <AuthField
+                          dataTestId="login-email-input"
                           label="E-Mail"
                           type="email"
                           placeholder="name@beispiel.de"
@@ -409,6 +413,7 @@ export function LoginPage() {
                         />
 
                         <AuthField
+                          dataTestId="login-password-input"
                           label="Password"
                           type="password"
                           placeholder="Passwort eingeben"
@@ -423,18 +428,19 @@ export function LoginPage() {
                         variants={itemVariants}
                         className="mt-7 flex justify-center"
                       >
-                        <button
-                          type="button"
-                          disabled
+                        <Link
+                          to="/forgot-password"
+                          data-testid="forgot-password-link"
                           className="text-center text-[1rem] text-[#D8C3A0] transition-colors duration-300 hover:text-[#F6EFE4]"
                         >
-                          Passwort-Reset intern vorbereitet
-                        </button>
+                          Passwort zurücksetzen
+                        </Link>
                       </motion.div>
 
                       {loginError ? (
                         <motion.p
                           variants={itemVariants}
+                          data-testid="login-error"
                           className="mt-5 text-sm leading-6 text-[#f1b6a8]"
                         >
                           {loginError}
@@ -444,6 +450,7 @@ export function LoginPage() {
                       <motion.button
                         variants={itemVariants}
                         type="submit"
+                        data-testid="login-submit-button"
                         disabled={isSubmitting}
                         className="mt-9 flex h-14 w-full items-center justify-center gap-2 rounded-full border border-[#E9D8B4]/12 bg-[#D6A84A] text-[1.08rem] font-medium text-[#1A140E] shadow-[0_12px_30px_rgba(214,168,74,0.24)] transition-all duration-300 hover:translate-y-[-1px] hover:bg-[#DEB457] disabled:translate-y-0 disabled:bg-[#6d5940] disabled:text-[#d7c8ae] disabled:shadow-none"
                       >

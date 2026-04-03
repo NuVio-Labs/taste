@@ -91,7 +91,10 @@ export function ShoppingListPickerDialog({
       />
 
       <div className="fixed inset-0 z-[95] flex items-center justify-center px-4">
-        <div className="w-full max-w-lg rounded-[30px] border border-white/8 bg-[linear-gradient(180deg,rgba(29,23,19,0.98)_0%,rgba(18,15,12,0.98)_100%)] p-6 shadow-[0_30px_80px_rgba(0,0,0,0.55)]">
+        <div
+          data-testid="shopping-list-picker-dialog"
+          className="w-full max-w-lg rounded-[30px] border border-white/8 bg-[linear-gradient(180deg,rgba(29,23,19,0.98)_0%,rgba(18,15,12,0.98)_100%)] p-6 shadow-[0_30px_80px_rgba(0,0,0,0.55)]"
+        >
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-xs uppercase tracking-[0.24em] text-[#B89A67]">
@@ -124,6 +127,7 @@ export function ShoppingListPickerDialog({
                   <button
                     key={list.id}
                     type="button"
+                    data-testid={`shopping-list-picker-option-${list.id}`}
                     onClick={() => {
                       setSelectedListId(list.id);
                       setError(null);
@@ -182,6 +186,7 @@ export function ShoppingListPickerDialog({
               </button>
 
               <input
+                data-testid="shopping-list-picker-servings-input"
                 type="number"
                 min={1}
                 value={servings}
@@ -220,6 +225,7 @@ export function ShoppingListPickerDialog({
 
             <div className="mt-4 flex flex-col gap-3 sm:flex-row">
               <input
+                data-testid="shopping-list-picker-new-list-input"
                 value={newListName}
                 onChange={(event) => setNewListName(event.target.value)}
                 placeholder="z. B. Wocheneinkauf"
@@ -229,6 +235,7 @@ export function ShoppingListPickerDialog({
               <button
                 type="button"
                 onClick={handleCreateList}
+                data-testid="shopping-list-picker-create-list-button"
                 disabled={!canCreateList || !newListName.trim()}
                 className="inline-flex h-12 items-center justify-center gap-2 rounded-full border border-[#D6A84A]/20 bg-[linear-gradient(180deg,rgba(214,168,74,0.18),rgba(214,168,74,0.1))] px-5 text-sm font-semibold text-[#FFF1D4] transition-all duration-300 hover:-translate-y-0.5 hover:border-[#D6A84A]/28 disabled:translate-y-0 disabled:opacity-50"
               >
@@ -255,6 +262,7 @@ export function ShoppingListPickerDialog({
             <button
               type="button"
               onClick={handleConfirm}
+              data-testid="shopping-list-picker-confirm-button"
               className="inline-flex h-12 items-center justify-center rounded-full border border-[#D6A84A]/20 bg-[#D6A84A] px-5 text-sm font-medium text-[#1A140E] transition-all duration-300 hover:bg-[#DEB457]"
             >
               Hinzufügen

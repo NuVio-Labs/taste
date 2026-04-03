@@ -382,6 +382,7 @@ export function RecipeCreateModal({
 
           <div className="fixed inset-0 z-[95] overflow-y-auto px-4 py-6 sm:px-6">
             <motion.div
+              data-testid="recipe-create-modal"
               initial={{ opacity: 0, y: 24, scale: 0.98, filter: "blur(8px)" }}
               animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
               exit={{ opacity: 0, y: 20, scale: 0.98, filter: "blur(8px)" }}
@@ -402,7 +403,10 @@ export function RecipeCreateModal({
                         <p className="text-[0.78rem] font-semibold uppercase tracking-[0.28em] text-[#D8B989]">
                           Nuvio Taste
                         </p>
-                        <h2 className="mt-2 text-2xl font-semibold tracking-[-0.05em] text-[#FFF8EE] sm:text-3xl">
+                        <h2
+                          data-testid="recipe-modal-title"
+                          className="mt-2 text-2xl font-semibold tracking-[-0.05em] text-[#FFF8EE] sm:text-3xl"
+                        >
                           {isEditMode ? "Rezept bearbeiten" : "Neues Rezept erstellen"}
                         </h2>
                         <p className="mt-2 text-sm leading-6 text-[#B7AA96]">
@@ -439,6 +443,7 @@ export function RecipeCreateModal({
                             </label>
                             <input
                               {...register("title")}
+                              data-testid="recipe-title-input"
                               placeholder="z. B. Spaghetti Bolognese"
                               className="h-12 w-full rounded-2xl border border-white/10 bg-black/10 px-4 text-[#FFF8EE] outline-none transition-colors duration-300 placeholder:text-[#8E806F] focus:border-[#D6A84A]"
                             />
@@ -451,6 +456,7 @@ export function RecipeCreateModal({
                             </label>
                             <textarea
                               {...register("description")}
+                              data-testid="recipe-description-input"
                               placeholder="Kurze Beschreibung des Rezepts"
                               rows={4}
                               className="w-full rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-[#FFF8EE] outline-none transition-colors duration-300 placeholder:text-[#8E806F] focus:border-[#D6A84A]"
@@ -553,6 +559,7 @@ export function RecipeCreateModal({
                                   </label>
                                   <input
                                     {...register(`ingredients.${index}.name`)}
+                                    data-testid={index === 0 ? "ingredient-name-input-0" : undefined}
                                     placeholder="z. B. Spaghetti"
                                     className="h-12 w-full rounded-2xl border border-white/10 bg-black/10 px-4 text-[#FFF8EE] outline-none placeholder:text-[#8E806F] focus:border-[#D6A84A]"
                                   />
@@ -567,6 +574,7 @@ export function RecipeCreateModal({
                                   </label>
                                   <input
                                     {...register(`ingredients.${index}.amount`)}
+                                    data-testid={index === 0 ? "ingredient-amount-input-0" : undefined}
                                     placeholder="z. B. 250"
                                     className="h-12 w-full rounded-2xl border border-white/10 bg-black/10 px-4 text-[#FFF8EE] outline-none placeholder:text-[#8E806F] focus:border-[#D6A84A]"
                                   />
@@ -596,6 +604,7 @@ export function RecipeCreateModal({
                                   <div className="relative">
                                     <select
                                       {...register(`ingredients.${index}.unit`)}
+                                      data-testid={index === 0 ? "ingredient-unit-select-0" : undefined}
                                       className={selectClassName}
                                     >
                                       <option value="" className="bg-[#171411] text-[#8E806F]">
@@ -674,6 +683,7 @@ export function RecipeCreateModal({
                                 </label>
                                 <textarea
                                   {...register(`steps.${index}.text`)}
+                                  data-testid={index === 0 ? "step-textarea-0" : undefined}
                                   rows={3}
                                   placeholder="z. B. Nudeln nach Packungsanweisung kochen"
                                   className="w-full rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-[#FFF8EE] outline-none placeholder:text-[#8E806F] focus:border-[#D6A84A]"
@@ -700,6 +710,7 @@ export function RecipeCreateModal({
                             </label>
                             <input
                               {...register("category")}
+                              data-testid="recipe-category-input"
                               placeholder="z. B. Abendessen"
                               className="h-12 w-full rounded-2xl border border-white/10 bg-black/10 px-4 text-[#FFF8EE] outline-none placeholder:text-[#8E806F] focus:border-[#D6A84A]"
                             />
@@ -717,11 +728,13 @@ export function RecipeCreateModal({
                                   {...register("prep_time", {
                                     valueAsNumber: true,
                                   })}
+                                  data-testid="recipe-prep-time-input"
                                   className={numberInputClassName}
                                 />
                                 <div className="relative">
                                   <select
                                     {...register("prep_time_unit")}
+                                    data-testid="recipe-prep-time-unit-select"
                                     className={selectClassName}
                                   >
                                     <option value="minutes" className="bg-[#171411] text-[#FFF8EE]">
@@ -751,6 +764,7 @@ export function RecipeCreateModal({
                                 {...register("servings", {
                                   valueAsNumber: true,
                                 })}
+                                data-testid="recipe-servings-input"
                                 className={numberInputClassName}
                               />
                               <FieldError message={errors.servings?.message} />
@@ -764,6 +778,7 @@ export function RecipeCreateModal({
                             <div className="relative">
                               <select
                                 {...register("visibility")}
+                                data-testid="recipe-visibility-select"
                                 className={selectClassName}
                               >
                                 <option value="private" className="bg-[#171411]">
@@ -804,6 +819,7 @@ export function RecipeCreateModal({
 
                     <button
                       type="submit"
+                      data-testid="recipe-submit-button"
                       disabled={isSubmitting}
                       className="inline-flex h-12 items-center justify-center gap-2 rounded-full border border-[#E9D8B4]/12 bg-[#D6A84A] px-5 text-sm font-medium text-[#1A140E] shadow-[0_12px_30px_rgba(214,168,74,0.24)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#DEB457] disabled:cursor-not-allowed disabled:opacity-70"
                     >
