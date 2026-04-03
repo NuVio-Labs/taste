@@ -22,6 +22,9 @@ _Zuletzt aktualisiert: 2026-04-03 (Session 2)_
 
 ## Zuletzt abgeschlossen
 
+- P1: React Router auf Data Router umgestellt
+- P1: Ladezustände auf Skeletons umgestellt
+- P1: Build nach Code Splitting geprüft, keine Chunk-Warnung mehr offen
 - P1: Query-Invalidierungsstrategie vereinheitlicht
 - P1: Rezept-Queries reduziert
 - P1: Dashboard auf React Query umgestellt
@@ -35,9 +38,6 @@ _Zuletzt aktualisiert: 2026-04-03 (Session 2)_
 
 ### P1
 
-- [ ] Ladezustaende als Skeletons vereinheitlichen
-- [ ] React Router Data Router pruefen und ggf. migrieren
-- [ ] Chunk-Warnung im Build nach Code Splitting verifizieren und beheben
 - [ ] Playwright-Flows fuer Login abdecken
 - [ ] Playwright-Flows fuer Rezept erstellen abdecken
 - [ ] Playwright-Flows fuer Rezept bearbeiten abdecken
@@ -68,17 +68,18 @@ _Zuletzt aktualisiert: 2026-04-03 (Session 2)_
 
 ## Aktuelle Risiken und Pruefluecken
 
-- Uneinheitliche Loading States wirken noch unpolished
 - Rezeptlisten brauchen weiter mehrere Query-Roundtrips
 - Einkaufsliste ist noch nicht geraeteuebergreifend
 - Es gibt noch keine belastbaren automatisierten E2E-Flows
-- `npm run build` wurde nach den letzten groesseren Aenderungen noch nicht explizit verifiziert
 - Error Boundary wurde noch nicht bewusst manuell getriggert
 
 ## Aenderungslog
 
 ### 2026-04-03 (Session 2)
 
+- P1: Routing von `BrowserRouter` plus `<Routes>` auf `createBrowserRouter` plus `RouterProvider` migriert
+- P1: Textbasierte Ladezustände in Dashboard, Rezepte, Favoriten, Profil und Rezeptdetail durch konsistente Skeletons ersetzt
+- P1: `npm run build` erfolgreich geprüft, keine Chunk-Warnung mehr im aktuellen Stand
 - P1: `reload()` in den Rezept-, Detail- und Favoriten-Flows durch gezielte `invalidateQueries`-Aufrufe ersetzt
 - P1: `fetchRecipes` von 3 auf 2 serielle Gruppen reduziert
 - P1: `fetchFavoriteRecipes` von 4 auf 3 serielle Gruppen reduziert

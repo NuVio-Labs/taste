@@ -53,4 +53,11 @@ export default tseslint.config(
       "no-console": "off",
     },
   },
+
+  {
+    files: ["src/router.tsx"],
+    rules: {
+      "react-refresh/only-export-components": "off",
+    },
+  },
 );

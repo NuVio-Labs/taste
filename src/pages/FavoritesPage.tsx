@@ -16,6 +16,8 @@ import { NavDrawer, type NavDrawerItem } from "../components/layout/NavDrawer";
 import { RecipeFilters } from "../components/recipes/RecipeFilters";
 import { RecipeOverview } from "../components/recipes/RecipeOverview";
 import { ShoppingListPickerDialog } from "../components/shopping-list/ShoppingListPickerDialog";
+import { RecipeOverviewSkeleton } from "../components/ui/PageSkeletons";
+import { Skeleton } from "../components/ui/Skeleton";
 import { useAuth } from "../features/auth/useAuth";
 import { useProfile } from "../features/profile/useProfile";
 import {
@@ -442,16 +444,24 @@ export function FavoritesPage() {
               <p className="text-xs uppercase tracking-[0.24em] text-[#8D7E6E]">
                 Deine Merkliste
               </p>
-              <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-[#FFF8EE]">
-                {filteredRecipes.length} gespeicherte Rezepte
-              </h2>
+              {isLoading ? (
+                <Skeleton className="mt-2 h-8 w-64 rounded-full" />
+              ) : (
+                <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-[#FFF8EE]">
+                  {filteredRecipes.length} gespeicherte Rezepte
+                </h2>
+              )}
             </div>
             <div className="flex flex-wrap items-center gap-3">
-              <p className="text-sm text-[#B7AA96]">
-                Filter aktiv:{" "}
-                {categories.find((entry) => entry.key === activeCategory)?.label ??
-                  "Alle Favoriten"}
-              </p>
+              {isLoading ? (
+                <Skeleton className="h-4 w-44 rounded-full" />
+              ) : (
+                <p className="text-sm text-[#B7AA96]">
+                  Filter aktiv:{" "}
+                  {categories.find((entry) => entry.key === activeCategory)?.label ??
+                    "Alle Favoriten"}
+                </p>
+              )}
               {hasActiveFilters ? (
                 <button
                   type="button"
@@ -465,9 +475,7 @@ export function FavoritesPage() {
           </div>
 
           {isLoading ? (
-            <div className="rounded-[24px] border border-white/8 bg-white/[0.025] px-4 py-5 text-sm text-[#B7AA96]">
-              Favoriten werden geladen...
-            </div>
+            <RecipeOverviewSkeleton />
           ) : error ? (
             <div className="rounded-[24px] border border-[rgba(214,168,74,0.14)] bg-[rgba(255,255,255,0.025)] px-4 py-5 text-sm leading-6 text-[#D9C9B1]">
               Die Favoriten konnten nicht geladen werden.

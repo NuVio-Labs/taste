@@ -18,6 +18,10 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { FeedbackModal } from "../components/feedback/FeedbackModal";
 import { NavDrawer, type NavDrawerItem } from "../components/layout/NavDrawer";
 import { RecipeCreateModal } from "../components/recipes/RecipeCreateModal";
+import {
+  DashboardRecentRecipesSkeleton,
+  DashboardStatsSkeleton,
+} from "../components/ui/PageSkeletons";
 import { useAuth } from "../features/auth/useAuth";
 import { dashboardQueryOptions } from "../features/dashboard/queryOptions";
 import { useProfile } from "../features/profile/useProfile";
@@ -268,30 +272,36 @@ export function DashboardPage() {
           {...fadeUp}
           className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
         >
-          <StatCard
-            label="Rezepte"
-            value={String(stats.totalRecipes)}
-            hint="Gesamtzahl aller aktuell gespeicherten Rezepte in deiner Sammlung."
-            icon={<BookOpen size={18} />}
-          />
-          <StatCard
-            label="Privat"
-            value={String(stats.privateRecipes)}
-            hint="Rezepte, die derzeit nur in deinem persönlichen Bereich sichtbar sind."
-            icon={<Lock size={18} />}
-          />
-          <StatCard
-            label="Öffentlich"
-            value={String(stats.publicRecipes)}
-            hint="Bereits freigegebene Rezepte mit aktivierter öffentlicher Sichtbarkeit."
-            icon={<Globe2 size={18} />}
-          />
-          <StatCard
-            label="Letztes Update"
-            value={stats.lastUpdatedLabel}
-            hint={stats.lastUpdatedHint}
-            icon={<Clock3 size={18} />}
-          />
+          {isLoading ? (
+            <DashboardStatsSkeleton />
+          ) : (
+            <>
+              <StatCard
+                label="Rezepte"
+                value={String(stats.totalRecipes)}
+                hint="Gesamtzahl aller aktuell gespeicherten Rezepte in deiner Sammlung."
+                icon={<BookOpen size={18} />}
+              />
+              <StatCard
+                label="Privat"
+                value={String(stats.privateRecipes)}
+                hint="Rezepte, die derzeit nur in deinem persönlichen Bereich sichtbar sind."
+                icon={<Lock size={18} />}
+              />
+              <StatCard
+                label="Öffentlich"
+                value={String(stats.publicRecipes)}
+                hint="Bereits freigegebene Rezepte mit aktivierter öffentlicher Sichtbarkeit."
+                icon={<Globe2 size={18} />}
+              />
+              <StatCard
+                label="Letztes Update"
+                value={stats.lastUpdatedLabel}
+                hint={stats.lastUpdatedHint}
+                icon={<Clock3 size={18} />}
+              />
+            </>
+          )}
         </motion.section>
 
         <div className="grid gap-6 xl:grid-cols-[1.35fr_0.95fr]">
@@ -302,9 +312,7 @@ export function DashboardPage() {
           >
             <SectionCard title="Letzte Rezepte">
               {isLoading ? (
-                <div className="rounded-[22px] border border-white/8 bg-white/[0.025] px-4 py-5 text-sm text-[#B7AA96]">
-                  Rezepte werden geladen...
-                </div>
+                <DashboardRecentRecipesSkeleton />
               ) : error ? (
                 <div className="rounded-[22px] border border-[rgba(214,168,74,0.14)] bg-[rgba(255,255,255,0.025)] px-4 py-5 text-sm leading-6 text-[#D9C9B1]">
                   Die Rezeptdaten konnten nicht geladen werden.

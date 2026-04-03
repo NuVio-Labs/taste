@@ -8,6 +8,7 @@ import { NavDrawer, type NavDrawerItem } from "../components/layout/NavDrawer";
 import { RecipeDetail } from "../components/recipes/RecipeDetail";
 import { RecipeCreateModal } from "../components/recipes/RecipeCreateModal";
 import { ShoppingListPickerDialog } from "../components/shopping-list/ShoppingListPickerDialog";
+import { RecipeDetailSkeleton } from "../components/ui/PageSkeletons";
 import { useAuth } from "../features/auth/useAuth";
 import { useProfile } from "../features/profile/useProfile";
 import {
@@ -253,9 +254,7 @@ export function RecipeDetailPage() {
           transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
         >
           {isLoading ? (
-            <div className="rounded-[24px] border border-white/8 bg-white/[0.025] px-4 py-5 text-sm text-[#B7AA96]">
-              Rezept wird geladen...
-            </div>
+            <RecipeDetailSkeleton />
           ) : error || !recipe ? (
             <div className="rounded-[24px] border border-[rgba(214,168,74,0.14)] bg-[rgba(255,255,255,0.025)] px-4 py-5 text-sm leading-6 text-[#D9C9B1]">
               Das Rezept konnte nicht geladen werden.
