@@ -153,10 +153,22 @@ Rezeptzutaten werden beim Hinzufügen auf die gewünschten Portionen skaliert un
 
 ## Supabase
 
-SQL-Dateien liegen unter `supabase/`. Tabellen:
+Die Datenbankänderungen liegen jetzt im Supabase-CLI-Format unter `supabase/migrations/`.
+Lokale Konfiguration liegt in `supabase/config.toml`.
 
+Wichtige Befehle:
+
+```bash
+npx supabase@latest start
+npx supabase@latest db reset
+npx supabase@latest migration up
+```
+
+Aktuell abgedeckte Tabellen und Objekte:
+
+- `profiles` + `public_profiles`
 - `recipes` + `recipe_likes` + `recipe_favorites`
-- `profiles`
 - `feedback`
 
-RLS ist für `feedback` und `recipe_favorites` bereits konfiguriert.
+RLS ist für `profiles`, `recipes`, `recipe_likes`, `recipe_favorites` und `feedback` konfiguriert.
+Zusätzlich liefern RPCs `get_recipe_feed()` und `get_favorite_recipe_feed()` die Rezeptlisten jetzt serverseitig aggregiert aus.

@@ -22,6 +22,10 @@ _Zuletzt aktualisiert: 2026-04-03 (Session 4)_
 
 ## Zuletzt abgeschlossen
 
+- P2: Rezeptlisten auf serverseitige RPC-Feeds umgestellt, mit Fallback auf die bisherigen Mehrfach-Queries
+- P2: Supabase-CLI-Migrationen mit `npx supabase@latest start` und `npx supabase@latest db reset` erfolgreich verifiziert
+- P2: Supabase-CLI-Migrationssatz um Core-Schema für `profiles`, `public_profiles`, `recipes` und `recipe_likes` ergänzt
+- P2: lose Supabase-SQL-Dateien in `supabase/config.toml` plus `supabase/migrations/` überführt
 - Performance: Login-Initial-Render vereinfacht, externe Font-Blocker entfernt und Speed-Insights-Routen an React Router angebunden
 - P1: Playwright-Profil-speichern-Flow abgedeckt
 - P1: Playwright-Einkaufslisten-Flow abgedeckt
@@ -49,8 +53,6 @@ _Zuletzt aktualisiert: 2026-04-03 (Session 4)_
 
 ### P2
 
-- [ ] SQL-Dateien ins Supabase-CLI-Migrationsformat überführen
-- [ ] View oder RPC für effizientere Rezeptlisten prüfen
 - [ ] Monitoring für DB-Größe und Egress definieren
 - [ ] Evaluieren, ob die Einkaufsliste statt `localStorage` in Supabase persistiert werden soll
 - [ ] Loading-, Empty- und Error-Designs appweit vereinheitlichen
@@ -68,17 +70,21 @@ _Zuletzt aktualisiert: 2026-04-03 (Session 4)_
 
 ## Aktuelle Risiken und Prüflücken
 
-- Rezeptlisten brauchen weiter mehrere Query-Roundtrips
 - Einkaufsliste ist noch nicht geräteübergreifend
 - E2E-Abdeckung ist für P1 gut, aber noch nicht vollständig CI-orientiert für spätere P2- und P3-Flows
 - Error Boundary wurde noch nicht bewusst manuell getriggert
 - Deployment hängt weiter an sauber gepflegten Dependency-Versionen, weil Vercel Peer-Konflikte strikt auflöst
 - Wirkung der jüngsten FCP/LCP-Optimierungen muss erst in neuen Vercel-Speed-Insights-Daten bestätigt werden
+- Produktions-DB muss die neuen RPC-Migrationen erhalten; bis dahin greift im Frontend bewusst der Legacy-Fallback
 
 ## Änderungslog
 
 ### 2026-04-03 (Session 4)
 
+- Performance: Rezeptlisten über neue Supabase-RPCs serverseitig aggregiert; Frontend-Fallback auf Legacy-Queries bleibt aktiv, bis alle Umgebungen migriert sind
+- Infrastruktur: Supabase-CLI-Migrationen lokal erfolgreich verifiziert; `start` und `db reset` laufen nach Ergänzung des Core-Schemas sauber durch
+- Infrastruktur: fehlende Basismigration für `profiles`, `public_profiles`, `recipes` und `recipe_likes` ergänzt, nachdem `supabase db reset` auf fehlende `public.recipes` gelaufen ist
+- Infrastruktur: Supabase-Ordner auf CLI-Format umgestellt; `config.toml` ergänzt und lose SQL-Dateien in timestamped Migrationen überführt
 - Performance: Login-Seite für den ersten Render entschärft; Google-Font-Blocker entfernt und schwere Hintergrundeffekte reduziert
 - Analytics: Vercel Speed Insights an React Router gebunden, damit Seiten nicht mehr als `Unknown` aggregiert werden
 - Routing: Öffentliche Auth-Seiten rendern ohne vorgelagerten Session-Loader und kommen schneller zum ersten Paint

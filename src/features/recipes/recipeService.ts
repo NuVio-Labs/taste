@@ -7,6 +7,7 @@ import type {
 } from "./types";
 
 type RecipeRow = {
+  author_name?: string | null;
   category: string | null;
   created_at: string | null;
   description: string | null;
@@ -35,9 +36,27 @@ type ProfileRow = {
   username: string | null;
 };
 
+type RecipeFeedRow = RecipeRow & {
+  author_name: string | null;
+  is_favorite: boolean | null;
+  is_liked: boolean | null;
+  like_count: number | null;
+};
+
 function isMissingFavoritesTableError(error: { message?: string } | null | undefined) {
   const message = error?.message?.toLowerCase() ?? "";
   return message.includes("recipe_favorites") && message.includes("could not find the table");
+}
+
+function isMissingRecipeFeedFunctionError(error: { message?: string } | null | undefined) {
+  const message = error?.message?.toLowerCase() ?? "";
+  return (
+    message.includes("get_recipe_feed") ||
+    message.includes("get_favorite_recipe_feed")
+  ) && (
+    message.includes("does not exist") ||
+    message.includes("could not find the function")
+  );
 }
 
 function readString(value: unknown): string | null {
@@ -158,7 +177,27 @@ function mapRecipeListItem(
   };
 }
 
-export async function fetchRecipes(userId: string): Promise<RecipeListItem[]> {
+function mapRecipeFeedListItem(row: RecipeFeedRow): RecipeListItem {
+  return {
+    authorName: readString(row.author_name) ?? "Unbekannter Nutzer",
+    id: row.id,
+    title: readString(row.title) ?? "Unbenanntes Rezept",
+    description: readString(row.description) ?? "Keine Beschreibung vorhanden.",
+    imageUrl: readString(row.image_url),
+    category: readString(row.category) ?? "Ohne Kategorie",
+    prepTime: readNumber(row.prep_time),
+    servings: readNumber(row.servings),
+    isFavorite: row.is_favorite === true,
+    isPublic: row.is_public === true,
+    likeCount: readNumber(row.like_count) ?? 0,
+    isLiked: row.is_liked === true,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    userId: row.user_id,
+  };
+}
+
+async function fetchRecipesLegacy(userId: string): Promise<RecipeListItem[]> {
   // Step 1: recipes + own likes + own favorites in parallel
   // own_likes and own_favorites don't need recipe IDs — fetch all for user upfront
   const [recipesResult, ownLikesResult, ownFavoritesResult] = await Promise.all([
@@ -234,7 +273,7 @@ export async function fetchRecipes(userId: string): Promise<RecipeListItem[]> {
   );
 }
 
-export async function fetchFavoriteRecipes(userId: string): Promise<RecipeListItem[]> {
+async function fetchFavoriteRecipesLegacy(userId: string): Promise<RecipeListItem[]> {
   // Step 1: favorites + own likes in parallel
   // own_likes don't need recipe IDs — fetch all for user upfront
   const [favoritesResult, ownLikesResult] = await Promise.all([
@@ -318,6 +357,38 @@ export async function fetchFavoriteRecipes(userId: string): Promise<RecipeListIt
   return recipeRows.map((row) =>
     mapRecipeListItem(row, favoriteRecipeIds, likedRecipeIds, likeCounts, authorNames),
   );
+}
+
+export async function fetchRecipes(userId: string): Promise<RecipeListItem[]> {
+  const { data, error } = await supabase.rpc("get_recipe_feed");
+
+  if (error) {
+    if (isMissingRecipeFeedFunctionError(error)) {
+      return fetchRecipesLegacy(userId);
+    }
+
+    throw new Error(error.message ?? "Die Rezepte konnten nicht geladen werden.");
+  }
+
+  return Array.isArray(data)
+    ? data.map((row) => mapRecipeFeedListItem(row as RecipeFeedRow))
+    : [];
+}
+
+export async function fetchFavoriteRecipes(userId: string): Promise<RecipeListItem[]> {
+  const { data, error } = await supabase.rpc("get_favorite_recipe_feed");
+
+  if (error) {
+    if (isMissingRecipeFeedFunctionError(error)) {
+      return fetchFavoriteRecipesLegacy(userId);
+    }
+
+    throw new Error(error.message ?? "Die Favoriten konnten nicht geladen werden.");
+  }
+
+  return Array.isArray(data)
+    ? data.map((row) => mapRecipeFeedListItem(row as RecipeFeedRow))
+    : [];
 }
 
 export async function fetchRecipeById(
