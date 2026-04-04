@@ -258,6 +258,39 @@ export function toggleShoppingListItemChecked(
   return nextLists;
 }
 
+export function resetShoppingListChecks(userId: string, listId: string) {
+  const existing = loadShoppingLists(userId);
+  const nextLists = existing.map((list) =>
+    list.id === listId
+      ? {
+          ...list,
+          checkedItemKeys: [],
+          updatedAt: new Date().toISOString(),
+        }
+      : list,
+  );
+
+  saveShoppingLists(userId, nextLists);
+  return nextLists;
+}
+
+export function clearShoppingList(userId: string, listId: string) {
+  const existing = loadShoppingLists(userId);
+  const nextLists = existing.map((list) =>
+    list.id === listId
+      ? {
+          ...list,
+          checkedItemKeys: [],
+          recipes: [],
+          updatedAt: new Date().toISOString(),
+        }
+      : list,
+  );
+
+  saveShoppingLists(userId, nextLists);
+  return nextLists;
+}
+
 export function updateShoppingListRecipeServings(
   userId: string,
   listId: string,
@@ -398,7 +431,13 @@ export function aggregateShoppingListItems(list: ShoppingList) {
         unit: value.unit,
       };
     })
-    .sort((left, right) => left.displayName.localeCompare(right.displayName, "de"));
+    .sort((left, right) => {
+      if (left.isChecked !== right.isChecked) {
+        return left.isChecked ? 1 : -1;
+      }
+
+      return left.displayName.localeCompare(right.displayName, "de");
+    });
 
   return items;
 }

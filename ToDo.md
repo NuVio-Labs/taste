@@ -1,6 +1,6 @@
 # NuVio Taste
 
-_Zuletzt aktualisiert: 2026-04-04 (Session 6)_
+_Zuletzt aktualisiert: 2026-04-04 (Session 7)_
 
 ---
 
@@ -22,6 +22,7 @@ _Zuletzt aktualisiert: 2026-04-04 (Session 6)_
 
 ## Zuletzt abgeschlossen
 
+- P2: Einkaufsliste um Completion-Flow ergänzt: abgehakte Zutaten wandern ans Ende, werden deutlicher durchgestrichen und können nach vollständigem Abarbeiten gesammelt zurückgesetzt oder geleert werden
 - P2: Dashboard-Rezeptstatus als Filecontainer mit Reitern für öffentliche und private Rezepte neu aufgebaut
 - P2: Dashboard-CTA `Anzeigen` mit Sichtbarkeitsfilter an die Rezepte-Seite angebunden
 - P2: Zutaten-Erfassung und Einkaufslisten-Aggregation für freie Einheiten, `nach Bedarf`, Singular/Plural und typische Varianten robuster gemacht
@@ -84,6 +85,13 @@ _Zuletzt aktualisiert: 2026-04-04 (Session 6)_
 - Einkaufslisten bleiben vorerst lokal und sind daher bewusst nicht zwischen Geräten synchronisiert
 
 ## Änderungslog
+
+### 2026-04-04 (Session 7)
+
+- UX: Einkaufsliste sortiert abgehakte Zutaten nun automatisch ans Ende, damit offene Punkte beim Einkaufen oben bleiben
+- UI: abgehakte Zutaten und ihre Quellen werden konsequenter durchgestrichen dargestellt
+- UX: beim Übergang auf `alle Zutaten abgehakt` erscheint ein Abschlussdialog für `Haken zurücksetzen` oder `Liste leeren`
+- Verifikation: Shopping-List-Unit-Tests auf Completion-Flow erweitert und Build erfolgreich geprüft
 
 ### 2026-04-04 (Session 6)
 

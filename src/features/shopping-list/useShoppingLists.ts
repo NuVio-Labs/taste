@@ -3,11 +3,13 @@ import type { RecipeDetailData } from "../recipes/types";
 import {
   addRecipeToShoppingList,
   aggregateShoppingListItems,
+  clearShoppingList,
   createShoppingList,
   deleteShoppingList,
   getMaxShoppingListsForPlan,
   loadShoppingLists,
   renameShoppingList,
+  resetShoppingListChecks,
   removeRecipeFromShoppingList,
   toggleShoppingListItemChecked,
   updateShoppingListRecipeServings,
@@ -21,6 +23,7 @@ type UseShoppingListsResult = {
     targetServings: number,
   ) => void;
   aggregatedItems: ReturnType<typeof aggregateShoppingListItems>;
+  clearSelectedList: () => void;
   createList: (name: string) => ShoppingList;
   deleteList: (listId: string) => void;
   hasReachedLimit: boolean;
@@ -28,6 +31,7 @@ type UseShoppingListsResult = {
   maxLists: number;
   renameList: (listId: string, name: string) => void;
   removeRecipe: (listId: string, shoppingListRecipeId: string) => void;
+  resetSelectedListChecks: () => void;
   selectedList: ShoppingList | null;
   selectedListId: string | null;
   setSelectedListId: (listId: string) => void;
@@ -150,9 +154,28 @@ export function useShoppingLists(
     setLists(nextLists);
   }
 
+  function resetSelectedListChecks() {
+    if (!selectedList) {
+      return;
+    }
+
+    const nextLists = resetShoppingListChecks(userId, selectedList.id);
+    setLists(nextLists);
+  }
+
+  function clearSelectedList() {
+    if (!selectedList) {
+      return;
+    }
+
+    const nextLists = clearShoppingList(userId, selectedList.id);
+    setLists(nextLists);
+  }
+
   return {
     addRecipe,
     aggregatedItems,
+    clearSelectedList,
     createList,
     deleteList,
     hasReachedLimit: lists.length >= maxLists,
@@ -160,6 +183,7 @@ export function useShoppingLists(
     maxLists,
     renameList,
     removeRecipe,
+    resetSelectedListChecks,
     selectedList,
     selectedListId: selectedList?.id ?? null,
     setSelectedListId,

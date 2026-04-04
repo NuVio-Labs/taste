@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
@@ -11,8 +11,10 @@ import {
   LayoutGrid,
   MessageSquareText,
   Pencil,
+  RotateCcw,
   Tag,
   Trash2,
+  X,
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { FeedbackModal } from "../components/feedback/FeedbackModal";
@@ -51,6 +53,8 @@ export function ShoppingListPage() {
   const [shoppingListError, setShoppingListError] = useState<string | null>(null);
   const [selectedRecipeForShoppingListId, setSelectedRecipeForShoppingListId] = useState<string | null>(null);
   const [selectedListForEditId, setSelectedListForEditId] = useState<string | null>(null);
+  const [isCompletionDialogOpen, setIsCompletionDialogOpen] = useState(false);
+  const hadIncompleteItemsRef = useRef(false);
 
   const userId = session?.user.id ?? "";
   const userEmail = session?.user.email ?? "";
@@ -62,6 +66,31 @@ export function ShoppingListPage() {
   const { recipes, reload } = useRecipes(userId);
   const shoppingLists = useShoppingLists(userId, profile?.plan ?? "free");
   const previewRecipes = useMemo(() => recipes.slice(0, 4), [recipes]);
+  const hasCompletedAllItems =
+    shoppingLists.aggregatedItems.length > 0 &&
+    shoppingLists.aggregatedItems.every((item) => item.isChecked);
+
+  useEffect(() => {
+    if (shoppingLists.aggregatedItems.length === 0) {
+      hadIncompleteItemsRef.current = false;
+      if (isCompletionDialogOpen) {
+        setIsCompletionDialogOpen(false);
+      }
+      return;
+    }
+
+    const hasUncheckedItems = shoppingLists.aggregatedItems.some((item) => !item.isChecked);
+
+    if (hasUncheckedItems) {
+      hadIncompleteItemsRef.current = true;
+      return;
+    }
+
+    if (hadIncompleteItemsRef.current && hasCompletedAllItems) {
+      setIsCompletionDialogOpen(true);
+      hadIncompleteItemsRef.current = false;
+    }
+  }, [hasCompletedAllItems, isCompletionDialogOpen, shoppingLists.aggregatedItems]);
 
   const navItems: NavDrawerItem[] = useMemo(
     () => [
@@ -169,6 +198,21 @@ export function ShoppingListPage() {
     shoppingLists.removeRecipe(selectedListForEditId, shoppingListRecipeId);
     setListError(null);
     setListSuccess("Rezept wurde aus der Liste entfernt.");
+  }
+
+  function handleResetCompletedList() {
+    shoppingLists.resetSelectedListChecks();
+    setIsCompletionDialogOpen(false);
+    setListError(null);
+    setListSuccess("Alle Haken wurden zurückgesetzt.");
+  }
+
+  function handleClearCompletedList() {
+    shoppingLists.clearSelectedList();
+    setOpenItemKey(null);
+    setIsCompletionDialogOpen(false);
+    setListError(null);
+    setListSuccess("Die Liste wurde geleert.");
   }
 
   async function handleToggleLike(recipeId: string) {
@@ -542,7 +586,13 @@ export function ShoppingListPage() {
                               </div>
 
                               <div className="flex items-center gap-3">
-                                <span className="text-sm text-[#D5C5AF]">
+                                <span
+                                  className={`text-sm ${
+                                    item.isChecked
+                                      ? "text-[#8E806F] line-through"
+                                      : "text-[#D5C5AF]"
+                                  }`}
+                                >
                                   {[item.amountDisplay, item.unit].filter(Boolean).join(" ")}
                                 </span>
                                 <ChevronDown
@@ -561,17 +611,35 @@ export function ShoppingListPage() {
                                 {item.sources.map((source) => (
                                   <div
                                     key={`${source.recipeId}-${source.ingredientId}`}
-                                    className="flex items-center justify-between gap-4 rounded-[18px] border border-white/8 bg-white/[0.02] px-3 py-3 text-sm"
+                                    className={`flex items-center justify-between gap-4 rounded-[18px] border border-white/8 px-3 py-3 text-sm ${
+                                      item.isChecked ? "bg-white/[0.015]" : "bg-white/[0.02]"
+                                    }`}
                                   >
                                     <div className="min-w-0">
-                                      <span className="block truncate text-[#FFF8EE]">
+                                      <span
+                                        className={`block truncate ${
+                                          item.isChecked
+                                            ? "text-[#8E806F] line-through"
+                                            : "text-[#FFF8EE]"
+                                        }`}
+                                      >
                                         {source.recipeTitle}
                                       </span>
-                                      <span className="block text-xs text-[#A99883]">
+                                      <span
+                                        className={`block text-xs ${
+                                          item.isChecked ? "text-[#7F7365]" : "text-[#A99883]"
+                                        }`}
+                                      >
                                         {source.ingredientName}
                                       </span>
                                     </div>
-                                    <span className="text-[#C9B79F]">
+                                    <span
+                                      className={`${
+                                        item.isChecked
+                                          ? "text-[#8E806F] line-through"
+                                          : "text-[#C9B79F]"
+                                      }`}
+                                    >
                                       {[source.amountDisplay, source.unit]
                                         .filter(Boolean)
                                         .join(" ")}
@@ -665,6 +733,72 @@ export function ShoppingListPage() {
         onRenameList={handleRenameList}
         onUpdateRecipeServings={handleUpdateRecipeServings}
       />
+
+      {isCompletionDialogOpen && shoppingLists.selectedList ? (
+        <>
+          <motion.button
+            type="button"
+            aria-label="Dialog schließen"
+            onClick={() => setIsCompletionDialogOpen(false)}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[90] bg-black/60 backdrop-blur-[3px]"
+          />
+
+          <div className="fixed inset-0 z-[95] flex items-center justify-center px-4 py-6 sm:px-6">
+            <motion.div
+              initial={{ opacity: 0, y: 20, scale: 0.98, filter: "blur(8px)" }}
+              animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
+              exit={{ opacity: 0, y: 16, scale: 0.98, filter: "blur(8px)" }}
+              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+              className="w-full max-w-lg rounded-[30px] border border-white/8 bg-[linear-gradient(180deg,rgba(29,23,19,0.98)_0%,rgba(18,15,12,0.98)_100%)] p-5 shadow-[0_30px_80px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(255,255,255,0.03)] sm:p-6"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-[0.78rem] font-semibold uppercase tracking-[0.28em] text-[#D8B989]">
+                    Einkaufsliste
+                  </p>
+                  <h3 className="mt-2 text-2xl font-semibold tracking-[-0.05em] text-[#FFF8EE]">
+                    Liste abgearbeitet
+                  </h3>
+                  <p className="mt-3 text-sm leading-6 text-[#B7AA96]">
+                    Alle Zutaten in „{shoppingLists.selectedList.name}“ sind abgehakt. Möchtest du
+                    die Liste leeren oder nur die Haken zurücksetzen?
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setIsCompletionDialogOpen(false)}
+                  className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/8 bg-white/[0.03] text-[#CDB99B] transition-all duration-300 hover:border-[#D6A84A]/18 hover:text-[#FFF8EE]"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={handleResetCompletedList}
+                  className="inline-flex h-12 items-center justify-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-5 text-sm font-medium text-[#F6EFE4] transition-all duration-300 hover:border-[#D6A84A]/18"
+                >
+                  <RotateCcw size={16} />
+                  Haken zurücksetzen
+                </button>
+                <button
+                  type="button"
+                  onClick={handleClearCompletedList}
+                  className="inline-flex h-12 items-center justify-center gap-2 rounded-full border border-[#D6A84A]/20 bg-[linear-gradient(180deg,rgba(214,168,74,0.18),rgba(214,168,74,0.1))] px-5 text-sm font-semibold text-[#FFF1D4] transition-all duration-300 hover:-translate-y-0.5 hover:border-[#D6A84A]/28"
+                >
+                  <Trash2 size={16} />
+                  Liste leeren
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        </>
+      ) : null}
     </main>
   );
 }

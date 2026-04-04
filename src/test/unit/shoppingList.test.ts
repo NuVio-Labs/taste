@@ -4,8 +4,10 @@ import {
   deleteShoppingList,
   renameShoppingList,
   loadShoppingLists,
+  clearShoppingList,
   getMaxShoppingListsForPlan,
   addRecipeToShoppingList,
+  resetShoppingListChecks,
   toggleShoppingListItemChecked,
   aggregateShoppingListItems,
 } from "../../features/shopping-list/storage";
@@ -278,6 +280,26 @@ describe("aggregateShoppingListItems", () => {
     expect(nudeln?.isChecked).toBe(true);
   });
 
+  it("sortiert abgehakte Einträge ans Ende", () => {
+    const list = createShoppingList(TEST_USER_ID, "Sort by checked", "free");
+    addRecipeToShoppingList(TEST_USER_ID, list.id, mockRecipe, 2);
+    const initialLists = loadShoppingLists(TEST_USER_ID);
+    const targetList = initialLists.find((l) => l.id === list.id);
+    if (!targetList) throw new Error("Liste nicht gefunden");
+
+    const items = aggregateShoppingListItems(targetList);
+    const nudelnKey = items.find((i) => i.displayName === "Nudeln")?.key ?? "";
+    toggleShoppingListItemChecked(TEST_USER_ID, list.id, nudelnKey);
+
+    const updatedList = loadShoppingLists(TEST_USER_ID).find((l) => l.id === list.id);
+    if (!updatedList) throw new Error("Liste nicht gefunden");
+
+    const reorderedItems = aggregateShoppingListItems(updatedList);
+    expect(reorderedItems[0]?.displayName).toBe("Salz");
+    expect(reorderedItems[1]?.displayName).toBe("Nudeln");
+    expect(reorderedItems[1]?.isChecked).toBe(true);
+  });
+
   it("führt Stück-Angaben mit unterschiedlichen Schreibweisen zusammen", () => {
     const list = createShoppingList(TEST_USER_ID, "Einheiten", "free");
     const recipe = {
@@ -420,5 +442,30 @@ describe("aggregateShoppingListItems", () => {
     expect(tomaten?.unit).toBe("Dose");
     expect(tomaten?.sourceCount).toBe(2);
     expect(tomaten?.sources[1]?.ingredientName).toBe("stückige Tomate");
+  });
+});
+
+describe("shopping list completion actions", () => {
+  it("setzt alle Haken einer Liste zurück", () => {
+    const list = createShoppingList(TEST_USER_ID, "Reset", "free");
+    addRecipeToShoppingList(TEST_USER_ID, list.id, mockRecipe, 2);
+    toggleShoppingListItemChecked(TEST_USER_ID, list.id, "nudeln__g");
+    toggleShoppingListItemChecked(TEST_USER_ID, list.id, "salz__tl");
+
+    const updatedLists = resetShoppingListChecks(TEST_USER_ID, list.id);
+    const updatedList = updatedLists.find((l) => l.id === list.id);
+    expect(updatedList?.checkedItemKeys).toEqual([]);
+    expect(updatedList?.recipes.length).toBe(1);
+  });
+
+  it("leert eine abgearbeitete Liste vollständig", () => {
+    const list = createShoppingList(TEST_USER_ID, "Clear", "free");
+    addRecipeToShoppingList(TEST_USER_ID, list.id, mockRecipe, 2);
+    toggleShoppingListItemChecked(TEST_USER_ID, list.id, "nudeln__g");
+
+    const updatedLists = clearShoppingList(TEST_USER_ID, list.id);
+    const updatedList = updatedLists.find((l) => l.id === list.id);
+    expect(updatedList?.checkedItemKeys).toEqual([]);
+    expect(updatedList?.recipes).toEqual([]);
   });
 });
