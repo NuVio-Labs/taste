@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
+  Bookmark,
   BookOpen,
   KeyRound,
-  Heart,
   Image as ImageIcon,
   LayoutGrid,
   Mail,
@@ -86,7 +86,7 @@ export function ProfilePage() {
       },
       {
         label: "Favoriten",
-        icon: Heart,
+        icon: Bookmark,
         to: "/favorites",
       },
       {

@@ -4,8 +4,8 @@ import { motion } from "framer-motion";
 import {
   ArrowRight,
   BookMarked,
+  Bookmark,
   BookOpen,
-  Heart,
   LayoutGrid,
   MessageSquareText,
   Tag,
@@ -215,7 +215,7 @@ export function FavoritesPage() {
     },
     {
       label: "Favoriten",
-      icon: Heart,
+      icon: Bookmark,
       to: "/favorites",
     },
     {

@@ -1,6 +1,6 @@
 # NuVio Taste
 
-_Zuletzt aktualisiert: 2026-04-04 (Session 8)_
+_Zuletzt aktualisiert: 2026-04-04 (Session 9)_
 
 ---
 
@@ -88,6 +88,10 @@ _Zuletzt aktualisiert: 2026-04-04 (Session 8)_
 - Einkaufslisten bleiben vorerst lokal und sind daher bewusst nicht zwischen Geräten synchronisiert
 
 ## Änderungslog
+
+### 2026-04-04 (Session 9)
+
+- UI: Favoriten-Icon im Nav Drawer auf das tatsächliche Bookmark-Symbol vereinheitlicht, damit geschlossene und geöffnete Navigation dieselbe visuelle Sprache verwenden
 
 ### 2026-04-04 (Session 8)
 

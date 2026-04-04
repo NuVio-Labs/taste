@@ -3,11 +3,11 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
+  Bookmark,
   BookOpen,
   ChefHat,
   Clock3,
   Globe2,
-  Heart,
   LayoutGrid,
   Lock,
   MessageSquareText,
@@ -292,7 +292,7 @@ export function DashboardPage() {
     },
     {
       label: "Favoriten",
-      icon: Heart,
+      icon: Bookmark,
       to: "/favorites",
     },
     {

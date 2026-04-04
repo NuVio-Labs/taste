@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { BookOpen, Heart, LayoutGrid, MessageSquareText, Tag } from "lucide-react";
+import { Bookmark, BookOpen, LayoutGrid, MessageSquareText, Tag } from "lucide-react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { FeedbackModal } from "../components/feedback/FeedbackModal";
 import { NavDrawer, type NavDrawerItem } from "../components/layout/NavDrawer";
@@ -65,7 +65,7 @@ export function RecipeDetailPage() {
       },
       {
         label: "Favoriten",
-        icon: Heart,
+        icon: Bookmark,
         to: "/favorites",
       },
       {

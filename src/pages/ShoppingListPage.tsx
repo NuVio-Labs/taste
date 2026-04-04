@@ -3,11 +3,11 @@ import { useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
   CheckCircle2,
+  Bookmark,
   BookOpen,
   ChevronDown,
   ClipboardList,
   FolderPlus,
-  Heart,
   LayoutGrid,
   MessageSquareText,
   Pencil,
@@ -106,7 +106,7 @@ export function ShoppingListPage() {
       },
       {
         label: "Favoriten",
-        icon: Heart,
+        icon: Bookmark,
         to: "/favorites",
       },
       {
