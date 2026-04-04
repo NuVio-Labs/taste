@@ -3,6 +3,11 @@ import {
   type RecipeDetailData,
   type RecipeIngredient,
 } from "../recipes/types";
+import {
+  createNormalizedIngredientKey,
+  normalizeIngredientName,
+  normalizeIngredientUnit,
+} from "../recipes/ingredientNormalization";
 import type {
   AggregatedShoppingListItem,
   AggregatedShoppingListItemSource,
@@ -15,42 +20,6 @@ const STORAGE_PREFIX = "taste.shopping-lists";
 
 function getStorageKey(userId: string) {
   return `${STORAGE_PREFIX}.${userId}`;
-}
-
-function slugifyIngredient(value: string) {
-  return value.trim().toLowerCase().replace(/\s+/g, " ");
-}
-
-function normalizeIngredientAlias(value: string) {
-  const base = slugifyIngredient(value)
-    .replace(/[.,]/g, "")
-    .replace(/\((.*?)\)/g, "")
-    .trim();
-
-  const aliases = new Map<string, string>([
-    ["zwiebeln", "zwiebel"],
-    ["rote zwiebeln", "rote zwiebel"],
-    ["frühlingszwiebeln", "frühlingszwiebel"],
-    ["tomaten", "tomate"],
-    ["stückige tomaten", "tomaten stueckig"],
-    ["gehackte tomaten", "tomaten stueckig"],
-    ["passierte tomaten", "tomaten passiert"],
-    ["paprikas", "paprika"],
-    ["rote paprikas", "rote paprika"],
-    ["gelbe paprikas", "gelbe paprika"],
-    ["grüne paprikas", "gruene paprika"],
-    ["nudel", "nudeln"],
-    ["spaghetti", "nudeln spaghetti"],
-    ["penne", "nudeln penne"],
-    ["paradeiser", "tomate"],
-    ["kartoffeln", "kartoffel"],
-    ["karotten", "karotte"],
-    ["möhren", "karotte"],
-    ["moehren", "karotte"],
-    ["knoblauchzehen", "knoblauchzehe"],
-  ]);
-
-  return aliases.get(base) ?? base;
 }
 
 function createListId() {
@@ -116,7 +85,7 @@ function normalizeIngredients(ingredients: RecipeIngredient[]) {
       amountNote: ingredient.amountNote.trim(),
       amountValue: ingredient.amountValue.trim(),
       name: ingredient.name.trim(),
-      unit: ingredient.unit.trim(),
+      unit: normalizeIngredientUnit(ingredient.unit),
     }));
 }
 
@@ -354,6 +323,7 @@ export function aggregateShoppingListItems(list: ShoppingList) {
   const bucket = new Map<
     string,
     {
+      displayName: string;
       name: string;
       numericTotal: number;
       numericValuesCount: number;
@@ -370,12 +340,14 @@ export function aggregateShoppingListItems(list: ShoppingList) {
         continue;
       }
 
-      const unit = ingredient.unit.trim();
-      const key = `${normalizeIngredientAlias(ingredientName)}__${slugifyIngredient(unit)}`;
+      const normalizedName = normalizeIngredientName(ingredientName);
+      const unit = normalizeIngredientUnit(ingredient.unit);
+      const key = createNormalizedIngredientKey(ingredientName, unit);
       const parsedAmount = parseNumericAmount(ingredient.amountValue);
       const source: AggregatedShoppingListItemSource = {
         amountDisplay: formatRecipeIngredientAmount(ingredient),
         ingredientId: ingredient.id,
+        ingredientName,
         recipeId: recipe.recipeId,
         recipeTitle: recipe.recipeTitle,
         unit,
@@ -395,7 +367,8 @@ export function aggregateShoppingListItems(list: ShoppingList) {
       }
 
       bucket.set(key, {
-        name: ingredientName,
+        displayName: ingredientName,
+        name: normalizedName,
         numericTotal: parsedAmount ?? 0,
         numericValuesCount: parsedAmount !== null ? 1 : 0,
         sources: [source],
@@ -416,15 +389,16 @@ export function aggregateShoppingListItems(list: ShoppingList) {
 
       return {
         amountDisplay,
+        displayName: value.displayName,
         isChecked: list.checkedItemKeys.includes(key),
         key,
-        name: value.name,
+        normalizedName: value.name,
         sourceCount: value.sources.length,
         sources: value.sources,
         unit: value.unit,
       };
     })
-    .sort((left, right) => left.name.localeCompare(right.name, "de"));
+    .sort((left, right) => left.displayName.localeCompare(right.displayName, "de"));
 
   return items;
 }

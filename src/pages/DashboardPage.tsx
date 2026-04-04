@@ -35,6 +35,8 @@ type StatCardProps = {
   value: string;
 };
 
+type RecipeVisibilityFilter = "public" | "private";
+
 type ActionCardProps = {
   description: string;
   disabled?: boolean;
@@ -101,6 +103,107 @@ function StatCard({ hint, icon, label, value }: StatCardProps) {
   );
 }
 
+function RecipeVisibilityCard({
+  activeFilter,
+  onOpenRecipes,
+  onChange,
+  privateRecipes,
+  publicRecipes,
+}: {
+  activeFilter: RecipeVisibilityFilter;
+  onOpenRecipes: () => void;
+  onChange: (filter: RecipeVisibilityFilter) => void;
+  privateRecipes: number;
+  publicRecipes: number;
+}) {
+  const filterConfig =
+    activeFilter === "public"
+      ? {
+          description:
+            "Bereits freigegebene Rezepte mit aktivierter öffentlicher Sichtbarkeit.",
+          icon: <Globe2 size={18} />,
+          label: "Öffentlich",
+          value: String(publicRecipes),
+        }
+      : {
+          description:
+            "Rezepte, die derzeit nur in deinem persönlichen Bereich sichtbar sind.",
+          icon: <Lock size={18} />,
+          label: "Privat",
+          value: String(privateRecipes),
+        };
+
+  return (
+    <motion.div
+      whileHover={{ y: -2 }}
+      transition={{ duration: 0.2 }}
+      className="relative pt-3"
+    >
+      <div className="relative">
+        <div className="relative z-10 flex items-end gap-0 overflow-x-auto px-0 pb-0">
+          {[
+            { id: "public" as const, label: "Öffentliche Rezepte" },
+            { id: "private" as const, label: "Private Rezepte" },
+          ].map((pill) => {
+            const isActive = activeFilter === pill.id;
+            const isFirst = pill.id === "public";
+
+            return (
+              <button
+                key={pill.id}
+                type="button"
+                onClick={() => onChange(pill.id)}
+                className={`relative -mb-px shrink-0 rounded-t-[22px] border px-4 py-3 text-sm font-medium transition-all duration-300 sm:px-5 ${
+                  isActive
+                    ? "z-20 border-[#D6A84A]/26 border-b-[rgba(34,27,19,0.96)] bg-[linear-gradient(180deg,rgba(214,168,74,0.24),rgba(90,67,27,0.34))] text-[#FFF3DA] shadow-none"
+                    : "border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))] text-[#BDAA8F] hover:border-[#D6A84A]/14 hover:text-[#FFF8EE]"
+                } ${isFirst ? "ml-0" : "-ml-px"}`}
+              >
+                {pill.label}
+                {isActive ? (
+                  <span className="absolute left-0 right-0 top-0 h-px bg-white/10" />
+                ) : null}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="relative -mt-px overflow-hidden rounded-[30px] rounded-tl-none border border-white/8 bg-[linear-gradient(180deg,rgba(64,48,22,0.34),rgba(34,27,19,0.96)_14%,rgba(18,15,12,0.98)_100%)] p-5 shadow-[0_16px_40px_rgba(0,0,0,0.24),inset_0_1px_0_rgba(255,255,255,0.03)] sm:p-6">
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-8 bg-[linear-gradient(180deg,rgba(214,168,74,0.08),rgba(214,168,74,0.02),transparent)]" />
+
+          <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-2xl border border-[#E9D8B4]/10 bg-white/[0.03] text-[#E9D8B4]">
+            {filterConfig.icon}
+          </div>
+
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-xs uppercase tracking-[0.24em] text-[#8D7E6E]">
+              {filterConfig.label}
+            </p>
+            <div className="mt-3 flex w-full items-center justify-between gap-3">
+              <div className="text-4xl font-semibold tracking-[-0.05em] text-[#FFF8EE]">
+                {filterConfig.value}
+              </div>
+              <button
+                type="button"
+                onClick={onOpenRecipes}
+                className="inline-flex h-9 items-center rounded-full border border-[#D6A84A]/18 bg-[linear-gradient(180deg,rgba(214,168,74,0.16),rgba(214,168,74,0.08))] px-4 text-sm font-medium text-[#FFF1D4] transition-all duration-300 hover:border-[#D6A84A]/28 hover:bg-[linear-gradient(180deg,rgba(214,168,74,0.2),rgba(214,168,74,0.1))]"
+              >
+                Anzeigen
+              </button>
+            </div>
+          </div>
+
+            <p className="max-w-md text-sm leading-6 text-[#B7AA96]">
+              {filterConfig.description}
+            </p>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
 // ActionCard ist vorbereitet für spätere Nutzung (Dashboard-Schnellaktionen)
 function _ActionCard({
   description,
@@ -159,6 +262,8 @@ export function DashboardPage() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isCreateRecipeOpen, setIsCreateRecipeOpen] = useState(false);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+  const [activeRecipeVisibility, setActiveRecipeVisibility] =
+    useState<RecipeVisibilityFilter>("public");
 
   const userName = profile?.username || metadataName;
   const stats = data?.stats ?? EMPTY_STATS;
@@ -272,29 +377,20 @@ export function DashboardPage() {
 
         <motion.section
           {...fadeUp}
-          className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
+          className="mb-6 grid gap-4 xl:grid-cols-[minmax(0,1.7fr)_minmax(18rem,0.8fr)]"
         >
           {isLoading ? (
             <DashboardStatsSkeleton />
           ) : (
             <>
-              <StatCard
-                label="Rezepte"
-                value={String(stats.totalRecipes)}
-                hint="Gesamtzahl aller aktuell gespeicherten Rezepte in deiner Sammlung."
-                icon={<BookOpen size={18} />}
-              />
-              <StatCard
-                label="Privat"
-                value={String(stats.privateRecipes)}
-                hint="Rezepte, die derzeit nur in deinem persönlichen Bereich sichtbar sind."
-                icon={<Lock size={18} />}
-              />
-              <StatCard
-                label="Öffentlich"
-                value={String(stats.publicRecipes)}
-                hint="Bereits freigegebene Rezepte mit aktivierter öffentlicher Sichtbarkeit."
-                icon={<Globe2 size={18} />}
+              <RecipeVisibilityCard
+                activeFilter={activeRecipeVisibility}
+                onOpenRecipes={() =>
+                  navigate(`/recipes?visibility=${activeRecipeVisibility}`)
+                }
+                onChange={setActiveRecipeVisibility}
+                privateRecipes={stats.privateRecipes}
+                publicRecipes={stats.publicRecipes}
               />
               <StatCard
                 label="Letztes Update"
@@ -378,27 +474,27 @@ export function DashboardPage() {
                 {[
                   {
                     phase: "Stand heute",
-                    title: "Kernflows vollständig",
+                    title: "Kernflüsse und Dashboard verfeinert",
                     description:
-                      "Auth, Rezepte, Favoriten, Einkaufsliste, Profil und Feedback sind fertig und benutzbar.",
+                      "Auth, Rezepte, Favoriten, Einkaufsliste, Profil und Feedback sind benutzbar. Dashboard-Status und Rezeptsicht sind inzwischen enger mit den echten Workflows verbunden.",
                   },
                   {
                     phase: "Als Nächstes",
-                    title: "Testphase starten",
+                    title: "P2 sauber abschließen",
                     description:
-                      "RLS-Check aller Tabellen, manuelle Happy-Path- und Fehlertests, Bugfixing aus Tester-Feedback.",
+                      "Monitoring für DB-Größe und Egress festziehen, kleine Screen-Größen gezielt prüfen und verbleibende Sprachkonsistenz im Auth-Bereich bereinigen.",
                   },
                   {
                     phase: "Danach",
-                    title: "Technische Verbesserungen",
+                    title: "Produktlogik ausbauen",
                     description:
-                      "Dashboard und Profil auf React Query umstellen, Route-Level Code Splitting, Error Boundary einführen.",
+                      "Analytics-Events für Kernaktionen definieren, Inspiration mit echter Logik füllen und Offline- bzw. Low-Network-Verhalten bewerten.",
                   },
                   {
                     phase: "Später",
-                    title: "Inspiration, Bilder und Feinschliff",
+                    title: "Medien und Sync erweitern",
                     description:
-                      "Inspiration-Bereich mit echten Vorschlägen füllen, Bild-Upload integrieren und UX weiter ausfeilen.",
+                      "Bild-Upload, Bildoptimierung und eine mögliche Supabase-Persistenz der Einkaufsliste nachziehen, sobald der Produktkern stabil genug ist.",
                   },
                 ].map((item, index) => (
                   <div

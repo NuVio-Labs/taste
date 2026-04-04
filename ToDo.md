@@ -1,6 +1,6 @@
 # NuVio Taste
 
-_Zuletzt aktualisiert: 2026-04-03 (Session 4)_
+_Zuletzt aktualisiert: 2026-04-04 (Session 6)_
 
 ---
 
@@ -22,6 +22,10 @@ _Zuletzt aktualisiert: 2026-04-03 (Session 4)_
 
 ## Zuletzt abgeschlossen
 
+- P2: Dashboard-Rezeptstatus als Filecontainer mit Reitern für öffentliche und private Rezepte neu aufgebaut
+- P2: Dashboard-CTA `Anzeigen` mit Sichtbarkeitsfilter an die Rezepte-Seite angebunden
+- P2: Zutaten-Erfassung und Einkaufslisten-Aggregation für freie Einheiten, `nach Bedarf`, Singular/Plural und typische Varianten robuster gemacht
+- P2: Zutaten-Normalisierung in gemeinsame Utility ausgelagert und zwischen Formular, Persistenz und Einkaufsliste vereinheitlicht
 - P2: Loading-, Empty- und Error-Designs über gemeinsame State-Card-Komponenten vereinheitlicht
 - P2: Einkaufsliste gegen Supabase-Persistenz bewertet und bewusst vorerst bei `localStorage` belassen
 - P2: Rezeptlisten auf serverseitige RPC-Feeds umgestellt, mit Fallback auf die bisherigen Mehrfach-Queries
@@ -71,6 +75,7 @@ _Zuletzt aktualisiert: 2026-04-03 (Session 4)_
 ## Aktuelle Risiken und Prüflücken
 
 - Einkaufsliste ist noch nicht geräteübergreifend
+- Zutaten-Normalisierung ist bewusst regelbasiert und deckt typische deutsche Küchenfälle ab, aber noch keine echte NLP-/Lemmatisierungs-Pipeline
 - E2E-Abdeckung ist für P1 gut, aber noch nicht vollständig CI-orientiert für spätere P2- und P3-Flows
 - Error Boundary wurde noch nicht bewusst manuell getriggert
 - Deployment hängt weiter an sauber gepflegten Dependency-Versionen, weil Vercel Peer-Konflikte strikt auflöst
@@ -80,6 +85,21 @@ _Zuletzt aktualisiert: 2026-04-03 (Session 4)_
 
 ## Änderungslog
 
+### 2026-04-04 (Session 6)
+
+- UI: Dashboard-Statblock für Rezepte durch einen ordnerartigen Filecontainer mit Reitern für `Öffentliche Rezepte` und `Private Rezepte` ersetzt
+- UI: Filecontainer mehrfach geometrisch und visuell nachgeschärft, bis Tabs, linke Kante und Containerkörper sauber ineinander greifen
+- UX: CTA `Anzeigen` direkt an den aktiven Dashboard-Reiter gebunden und neben der Kennzahl positioniert
+- Routing: Dashboard navigiert nun mit URL-Parametern auf die Rezepte-Seite, sodass `Anzeigen` abhängig vom aktiven Reiter direkt öffentliche oder private Rezepte öffnet
+- Filterlogik: Rezepte-Seite um Sichtbarkeitsfilter `public`/`private` erweitert; Kategorien und Ergebnisliste reagieren konsistent auf den aktiven Sichtbarkeitsmodus
+
+### 2026-04-04 (Session 5)
+
+- P2: Zutatenformular für optionale Mengen und freie Einheiten angepasst; Fälle wie `Stk.`, `Prise` und `nach Bedarf` lassen sich jetzt sauber erfassen
+- P2: Einkaufslisten-Aggregation um heuristische Zutaten-Normalisierung ergänzt, damit typische Singular-/Plural- und Variantenfälle wie `Tomate`/`Tomaten` oder `gehackte`/`stückige Tomaten` zusammengeführt werden
+- P2: Anzeige und Logik in der Einkaufsliste getrennt; Aggregation läuft über normalisierte Schlüssel, UI zeigt weiterhin stabile Anzeigenamen und die originale Rezept-Zutat je Quelle
+- Architektur: Zutaten-Normalisierung in gemeinsame Utility extrahiert und in Formular, Persistenz und Einkaufsliste wiederverwendet
+- Verifikation: Shopping-List-Unit-Tests grün und Produktions-Build erfolgreich
 ### 2026-04-03 (Session 4)
 
 - UI: Loading-, Empty- und Error-Zustände in Dashboard, Rezepte, Favoriten, Profil und Rezeptdetail über gemeinsame State-Cards vereinheitlicht

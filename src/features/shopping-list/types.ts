@@ -22,6 +22,7 @@ export type ShoppingList = {
 export type AggregatedShoppingListItemSource = {
   amountDisplay: string;
   ingredientId: string;
+  ingredientName: string;
   recipeId: string;
   recipeTitle: string;
   unit: string;
@@ -29,9 +30,10 @@ export type AggregatedShoppingListItemSource = {
 
 export type AggregatedShoppingListItem = {
   amountDisplay: string;
+  displayName: string;
   isChecked: boolean;
   key: string;
-  name: string;
+  normalizedName: string;
   sourceCount: number;
   sources: AggregatedShoppingListItemSource[];
   unit: string;

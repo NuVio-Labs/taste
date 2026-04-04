@@ -16,6 +16,7 @@ import {
   createRecipe,
   updateRecipe,
 } from "../../features/recipes/recipeService";
+import { normalizeIngredientUnit } from "../../features/recipes/ingredientNormalization";
 import type { RecipeDetailData } from "../../features/recipes/types";
 import { supabase } from "../../lib/supabase";
 
@@ -28,11 +29,14 @@ const ingredientSchema = z.object({
       message: "Bitte nur Zahlen eingeben",
     }),
   amountNote: z.string(),
-  unit: z.string().min(1, "Bitte Einheit eingeben"),
+  unit: z.string(),
 }).refine(
-  (value) => value.amount.trim().length > 0 || value.amountNote.trim().length > 0,
+  (value) =>
+    value.amount.trim().length > 0 ||
+    value.amountNote.trim().length > 0 ||
+    value.unit.trim().length > 0,
   {
-    message: "Bitte Menge oder Zusatz eingeben",
+    message: "Bitte Menge, Einheit oder Zusatz eingeben",
     path: ["amount"],
   },
 );
@@ -73,16 +77,11 @@ const ingredientUnitOptions = [
   "TL",
   "EL",
   "Tasse",
-  "Tassen",
   "Stk.",
   "Dose",
-  "Dosen",
   "Packung",
-  "Packungen",
   "Scheibe",
-  "Scheiben",
   "Zehe",
-  "Zehen",
   "Bund",
   "Prise",
   "Handvoll",
@@ -90,7 +89,6 @@ const ingredientUnitOptions = [
   "Glas",
   "Flasche",
   "nach Bedarf",
-  "Bedarf",
 ];
 
 function createDefaultValues(): RecipeFormValues {
@@ -329,13 +327,13 @@ export function RecipeCreateModal({
         description: values.description,
         ingredients: values.ingredients.map((ingredient) => ({
           id: ingredient.id,
-          name: ingredient.name,
+          name: ingredient.name.trim(),
           amount: [ingredient.amount.trim(), ingredient.amountNote.trim()]
             .filter(Boolean)
             .join(" "),
-          amountNote: ingredient.amountNote,
-          amountValue: ingredient.amount,
-          unit: ingredient.unit,
+          amountNote: ingredient.amountNote.trim(),
+          amountValue: ingredient.amount.trim(),
+          unit: normalizeIngredientUnit(ingredient.unit),
         })),
         steps: values.steps,
         imageUrl: values.image_url?.trim() ?? null,
@@ -510,7 +508,7 @@ export function RecipeCreateModal({
                         <div className="mb-4 flex items-center justify-between gap-4">
                           <SectionTitle
                             title="Zutaten"
-                            subtitle="Wird als jsonb Array gespeichert"
+                            subtitle="Mengen sind optional. Beispiele: 2 Stk., 1 Prise, nach Bedarf."
                           />
                           <button
                             type="button"
@@ -531,6 +529,12 @@ export function RecipeCreateModal({
                         </div>
 
                         <div className="space-y-4">
+                          <datalist id="ingredient-unit-options">
+                            {ingredientUnitOptions.map((unitOption) => (
+                              <option key={unitOption} value={unitOption} />
+                            ))}
+                          </datalist>
+
                           {ingredientFields.map((field, index) => (
                             <div
                               key={field.id}
@@ -552,7 +556,7 @@ export function RecipeCreateModal({
                                 ) : null}
                               </div>
 
-                              <div className="grid gap-4 md:grid-cols-[1fr_0.5fr_0.7fr_0.6fr]">
+                              <div className="grid gap-4 md:grid-cols-[1fr_0.5fr_0.7fr_0.8fr]">
                                 <div>
                                   <label className="mb-2 block text-sm font-medium text-[#F6EFE4]">
                                     Name
@@ -575,7 +579,7 @@ export function RecipeCreateModal({
                                   <input
                                     {...register(`ingredients.${index}.amount`)}
                                     data-testid={index === 0 ? "ingredient-amount-input-0" : undefined}
-                                    placeholder="z. B. 250"
+                                    placeholder="z. B. 250 oder leer"
                                     className="h-12 w-full rounded-2xl border border-white/10 bg-black/10 px-4 text-[#FFF8EE] outline-none placeholder:text-[#8E806F] focus:border-[#D6A84A]"
                                   />
                                   <FieldError
@@ -601,29 +605,16 @@ export function RecipeCreateModal({
                                   <label className="mb-2 block text-sm font-medium text-[#F6EFE4]">
                                     Einheit
                                   </label>
-                                  <div className="relative">
-                                    <select
-                                      {...register(`ingredients.${index}.unit`)}
-                                      data-testid={index === 0 ? "ingredient-unit-select-0" : undefined}
-                                      className={selectClassName}
-                                    >
-                                      <option value="" className="bg-[#171411] text-[#8E806F]">
-                                        Einheit wählen
-                                      </option>
-                                      {ingredientUnitOptions.map((unitOption) => (
-                                        <option
-                                          key={unitOption}
-                                          value={unitOption}
-                                          className="bg-[#171411] text-[#FFF8EE]"
-                                        >
-                                          {unitOption}
-                                        </option>
-                                      ))}
-                                    </select>
-                                    <div className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-[#B89A67]">
-                                      <ChevronDown size={16} />
-                                    </div>
-                                  </div>
+                                  <input
+                                    {...register(`ingredients.${index}.unit`)}
+                                    list="ingredient-unit-options"
+                                    data-testid={index === 0 ? "ingredient-unit-select-0" : undefined}
+                                    placeholder="z. B. Stk., Prise, nach Bedarf"
+                                    className="h-12 w-full rounded-2xl border border-white/10 bg-black/10 px-4 text-[#FFF8EE] outline-none placeholder:text-[#8E806F] focus:border-[#D6A84A]"
+                                  />
+                                  <p className="mt-2 text-xs text-[#9F917D]">
+                                    Freitext erlaubt. Vorschläge erscheinen beim Tippen.
+                                  </p>
                                   <FieldError
                                     message={errors.ingredients?.[index]?.unit?.message}
                                   />

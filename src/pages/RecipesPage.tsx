@@ -32,6 +32,9 @@ import { useShoppingLists } from "../features/shopping-list/useShoppingLists";
 const DEFAULT_SORT: RecipeSortOption = "latest";
 const ALL_CATEGORY_KEY = "all";
 const SCROLL_STORAGE_KEY = "recipes-scroll-position";
+const DEFAULT_VISIBILITY = "all";
+
+type RecipeVisibilityFilter = "all" | "public" | "private";
 
 function normalizeCategoryKey(value: string) {
   return value.trim().toLowerCase();
@@ -71,13 +74,19 @@ function buildCategorySummary(recipes: RecipeListItem[]): RecipeCategorySummary[
 
 function filterRecipes(
   recipes: RecipeListItem[],
+  userId: string,
   category: string,
   search: string,
   sort: RecipeSortOption,
+  visibility: RecipeVisibilityFilter,
 ) {
   const normalizedSearch = search.trim().toLowerCase();
 
   const filtered = recipes.filter((recipe) => {
+    if (!matchesRecipeVisibility(recipe, userId, visibility)) {
+      return false;
+    }
+
     const matchesCategory =
       category === ALL_CATEGORY_KEY ||
       normalizeCategoryKey(recipe.category) === category;
@@ -131,6 +140,18 @@ function updateParams(
   params.set(key, value);
 }
 
+function matchesRecipeVisibility(
+  recipe: RecipeListItem,
+  userId: string,
+  visibility: RecipeVisibilityFilter,
+) {
+  return (
+    visibility === "all" ||
+    (visibility === "public" && recipe.isPublic) ||
+    (visibility === "private" && recipe.userId === userId && !recipe.isPublic)
+  );
+}
+
 export function RecipesPage() {
   const queryClient = useQueryClient();
   const { session, signOut } = useAuth();
@@ -163,12 +184,48 @@ export function RecipesPage() {
     searchParams.get("category")?.trim().toLowerCase() || ALL_CATEGORY_KEY;
   const searchValue = searchParams.get("q") ?? "";
   const sortValue = (searchParams.get("sort") as RecipeSortOption) || DEFAULT_SORT;
+  const visibilityParam = searchParams.get("visibility");
+  const visibilityFilter: RecipeVisibilityFilter =
+    visibilityParam === "public" || visibilityParam === "private"
+      ? visibilityParam
+      : DEFAULT_VISIBILITY;
 
-  const categories = useMemo(() => buildCategorySummary(recipes), [recipes]);
-  const filteredRecipes = useMemo(
-    () => filterRecipes(recipes, activeCategory, searchValue, sortValue),
-    [activeCategory, recipes, searchValue, sortValue],
+  const visibilityScopedRecipes = useMemo(
+    () => recipes.filter((recipe) => matchesRecipeVisibility(recipe, userId, visibilityFilter)),
+    [recipes, userId, visibilityFilter],
   );
+  const categories = useMemo(
+    () => buildCategorySummary(visibilityScopedRecipes),
+    [visibilityScopedRecipes],
+  );
+  const filteredRecipes = useMemo(
+    () =>
+      filterRecipes(
+        recipes,
+        userId,
+        activeCategory,
+        searchValue,
+        sortValue,
+        visibilityFilter,
+      ),
+    [activeCategory, recipes, searchValue, sortValue, userId, visibilityFilter],
+  );
+  const activeVisibilityLabel =
+    visibilityFilter === "public"
+      ? "Öffentliche Rezepte"
+      : visibilityFilter === "private"
+        ? "Private Rezepte"
+        : "Alle Rezepte";
+  const activeCategoryLabel =
+    categories.find((entry) => entry.key === activeCategory)?.label ?? "Alle Rezepte";
+  const activeFilterLabel =
+    visibilityFilter === "all" && activeCategoryLabel === "Alle Rezepte"
+      ? "Alle Rezepte"
+      : visibilityFilter === "all"
+        ? activeCategoryLabel
+        : activeCategoryLabel === "Alle Rezepte"
+          ? activeVisibilityLabel
+          : `${activeVisibilityLabel} • ${activeCategoryLabel}`;
 
   useEffect(() => {
     if (isLoading || hasRestoredScrollRef.current) {
@@ -454,9 +511,7 @@ export function RecipesPage() {
               <Skeleton className="h-4 w-44 rounded-full" />
             ) : (
               <p className="text-sm text-[#B7AA96]">
-                Filter aktiv:{" "}
-                {categories.find((entry) => entry.key === activeCategory)?.label ??
-                  "Alle Rezepte"}
+                Filter aktiv: {activeFilterLabel}
               </p>
             )}
           </div>

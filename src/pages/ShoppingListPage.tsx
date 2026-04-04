@@ -533,7 +533,7 @@ export function ShoppingListPage() {
                                       : "text-[#FFF8EE]"
                                   }`}
                                 >
-                                  {item.name}
+                                  {item.displayName}
                                 </p>
                                 <p className="text-xs text-[#A99883]">
                                   {item.sourceCount} Quelle
@@ -563,9 +563,14 @@ export function ShoppingListPage() {
                                     key={`${source.recipeId}-${source.ingredientId}`}
                                     className="flex items-center justify-between gap-4 rounded-[18px] border border-white/8 bg-white/[0.02] px-3 py-3 text-sm"
                                   >
-                                    <span className="text-[#FFF8EE]">
-                                      {source.recipeTitle}
-                                    </span>
+                                    <div className="min-w-0">
+                                      <span className="block truncate text-[#FFF8EE]">
+                                        {source.recipeTitle}
+                                      </span>
+                                      <span className="block text-xs text-[#A99883]">
+                                        {source.ingredientName}
+                                      </span>
+                                    </div>
                                     <span className="text-[#C9B79F]">
                                       {[source.amountDisplay, source.unit]
                                         .filter(Boolean)

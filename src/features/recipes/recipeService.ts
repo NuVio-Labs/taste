@@ -1,4 +1,5 @@
 import { supabase } from "../../lib/supabase";
+import { normalizeIngredientUnit } from "./ingredientNormalization";
 import type {
   RecipeDetailData,
   RecipeIngredient,
@@ -85,7 +86,7 @@ function mapIngredient(value: unknown, index: number): RecipeIngredient | null {
     amount: readString(row.amount) ?? "",
     amountNote: readString(row.amount_note) ?? "",
     amountValue: readString(row.amount_value) ?? readString(row.amount) ?? "",
-    unit: readString(row.unit) ?? "",
+    unit: normalizeIngredientUnit(readString(row.unit) ?? ""),
   };
 }
 
@@ -499,7 +500,7 @@ function buildRecipePayload(input: SaveRecipeInput, timestamp: string) {
       amount: ingredient.amount.trim(),
       amount_note: ingredient.amountNote.trim(),
       amount_value: ingredient.amountValue.trim(),
-      unit: ingredient.unit.trim(),
+      unit: normalizeIngredientUnit(ingredient.unit),
     })),
     steps: input.steps.map((step) => ({
       id: step.id,

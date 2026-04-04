@@ -237,7 +237,7 @@ describe("aggregateShoppingListItems", () => {
     if (!addedList2) throw new Error("Liste nicht gefunden");
     const items = aggregateShoppingListItems(addedList2);
 
-    const nudeln = items.find((i) => i.name === "Nudeln");
+    const nudeln = items.find((i) => i.displayName === "Nudeln");
     // 200 + 200 = 400
     expect(nudeln?.amountDisplay).toBe("400");
     expect(nudeln?.sourceCount).toBe(2);
@@ -254,7 +254,7 @@ describe("aggregateShoppingListItems", () => {
     if (!targetList) throw new Error("Liste nicht gefunden");
 
     const items = aggregateShoppingListItems(targetList);
-    const names = items.map((i) => i.name);
+    const names = items.map((i) => i.displayName);
     expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b, "de")));
   });
 
@@ -266,7 +266,7 @@ describe("aggregateShoppingListItems", () => {
     if (!targetList) throw new Error("Liste nicht gefunden");
 
     const items = aggregateShoppingListItems(targetList);
-    const nudelnKey = items.find((i) => i.name === "Nudeln")?.key ?? "";
+    const nudelnKey = items.find((i) => i.displayName === "Nudeln")?.key ?? "";
 
     toggleShoppingListItemChecked(TEST_USER_ID, list.id, nudelnKey);
     const updatedLists = loadShoppingLists(TEST_USER_ID);
@@ -274,7 +274,151 @@ describe("aggregateShoppingListItems", () => {
     if (!updatedList) throw new Error("Liste nicht gefunden");
 
     const itemsAfter = aggregateShoppingListItems(updatedList);
-    const nudeln = itemsAfter.find((i) => i.name === "Nudeln");
+    const nudeln = itemsAfter.find((i) => i.displayName === "Nudeln");
     expect(nudeln?.isChecked).toBe(true);
+  });
+
+  it("führt Stück-Angaben mit unterschiedlichen Schreibweisen zusammen", () => {
+    const list = createShoppingList(TEST_USER_ID, "Einheiten", "free");
+    const recipe = {
+      id: "recipe-units",
+      title: "Gemüse",
+      servings: 2,
+      ingredients: [
+        {
+          id: "ing-1",
+          name: "Zwiebeln",
+          amount: "2",
+          amountValue: "2",
+          amountNote: "",
+          unit: "Stk.",
+        },
+        {
+          id: "ing-2",
+          name: "Zwiebel",
+          amount: "1",
+          amountValue: "1",
+          amountNote: "",
+          unit: "Stück",
+        },
+      ],
+    };
+
+    const updatedLists = addRecipeToShoppingList(TEST_USER_ID, list.id, recipe, 2);
+    const updatedList = updatedLists.find((l) => l.id === list.id);
+    if (!updatedList) throw new Error("Liste nicht gefunden");
+
+    const items = aggregateShoppingListItems(updatedList);
+    const zwiebel = items.find((i) => i.displayName === "Zwiebeln");
+    expect(zwiebel?.amountDisplay).toBe("3");
+    expect(zwiebel?.unit).toBe("Stk.");
+    expect(zwiebel?.sourceCount).toBe(2);
+    expect(zwiebel?.normalizedName).toBe("zwiebel");
+    expect(zwiebel?.sources[0]?.ingredientName).toBe("Zwiebeln");
+  });
+
+  it("behält Einträge ohne numerische Menge über die Einheit in der Liste", () => {
+    const list = createShoppingList(TEST_USER_ID, "Bedarf", "free");
+    const recipe = {
+      id: "recipe-needs",
+      title: "Salat",
+      servings: 2,
+      ingredients: [
+        {
+          id: "ing-1",
+          name: "Salz",
+          amount: "",
+          amountValue: "",
+          amountNote: "",
+          unit: "nach Bedarf",
+        },
+      ],
+    };
+
+    const updatedLists = addRecipeToShoppingList(TEST_USER_ID, list.id, recipe, 2);
+    const updatedList = updatedLists.find((l) => l.id === list.id);
+    if (!updatedList) throw new Error("Liste nicht gefunden");
+
+    const items = aggregateShoppingListItems(updatedList);
+    const salz = items.find((i) => i.displayName === "Salz");
+    expect(salz?.amountDisplay).toBe("");
+    expect(salz?.unit).toBe("nach Bedarf");
+    expect(salz?.sourceCount).toBe(1);
+  });
+
+  it("führt Singular und Plural bei typischen Zutaten heuristisch zusammen", () => {
+    const list = createShoppingList(TEST_USER_ID, "Lemmata", "free");
+    const recipe = {
+      id: "recipe-lemma",
+      title: "Suppe",
+      servings: 2,
+      ingredients: [
+        {
+          id: "ing-1",
+          name: "Tomaten",
+          amount: "2",
+          amountValue: "2",
+          amountNote: "",
+          unit: "Stk.",
+        },
+        {
+          id: "ing-2",
+          name: "Tomate",
+          amount: "1",
+          amountValue: "1",
+          amountNote: "",
+          unit: "Stück",
+        },
+      ],
+    };
+
+    const updatedLists = addRecipeToShoppingList(TEST_USER_ID, list.id, recipe, 2);
+    const updatedList = updatedLists.find((l) => l.id === list.id);
+    if (!updatedList) throw new Error("Liste nicht gefunden");
+
+    const items = aggregateShoppingListItems(updatedList);
+    const tomate = items.find((i) => i.displayName === "Tomaten");
+    expect(tomate?.amountDisplay).toBe("3");
+    expect(tomate?.unit).toBe("Stk.");
+    expect(tomate?.sourceCount).toBe(2);
+    expect(tomate?.normalizedName).toBe("tomate");
+  });
+
+  it("normalisiert beschreibende Varianten wie gehackte und stückige Tomaten", () => {
+    const list = createShoppingList(TEST_USER_ID, "Varianten", "free");
+    const recipe = {
+      id: "recipe-variants",
+      title: "Sauce",
+      servings: 2,
+      ingredients: [
+        {
+          id: "ing-1",
+          name: "gehackte Tomaten",
+          amount: "1",
+          amountValue: "1",
+          amountNote: "",
+          unit: "Dose",
+        },
+        {
+          id: "ing-2",
+          name: "stückige Tomate",
+          amount: "2",
+          amountValue: "2",
+          amountNote: "",
+          unit: "Dosen",
+        },
+      ],
+    };
+
+    const updatedLists = addRecipeToShoppingList(TEST_USER_ID, list.id, recipe, 2);
+    const updatedList = updatedLists.find((l) => l.id === list.id);
+    if (!updatedList) throw new Error("Liste nicht gefunden");
+
+    const items = aggregateShoppingListItems(updatedList);
+    const tomaten = items.find((i) => i.displayName === "gehackte Tomaten");
+    expect(tomaten?.amountDisplay).toBe("3");
+    expect(tomaten?.unit).toBe("Dose");
+    expect(tomaten?.sourceCount).toBe(2);
+    expect(tomaten?.sources[1]?.ingredientName).toBe("stückige Tomate");
   });
 });
