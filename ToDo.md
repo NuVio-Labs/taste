@@ -64,6 +64,8 @@ _Zuletzt aktualisiert: 2026-04-04 (Session 8)_
 - [ ] Monitoring für DB-Größe und Egress definieren
 - [ ] Mobile Navigation und Formularflüsse auf kleinen Screens gezielt prüfen
 - [ ] Sprachkonsistenz auf der Login-Seite bereinigen
+- [ ] Neue Dashboard- und Einkaufslisten-UX im Browser manuell gegenprüfen (Filecontainer, Sichtbarkeits-Navigation, Completion-Dialog)
+- [ ] E2E-Abdeckung für Dashboard-Sichtbarkeitsfilter und Einkaufslisten-Completion-Flow ergänzen
 
 ### P3
 
