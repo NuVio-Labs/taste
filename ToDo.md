@@ -1,6 +1,6 @@
 # NuVio Taste
 
-_Zuletzt aktualisiert: 2026-04-04 (Session 7)_
+_Zuletzt aktualisiert: 2026-04-04 (Session 8)_
 
 ---
 
@@ -22,6 +22,7 @@ _Zuletzt aktualisiert: 2026-04-04 (Session 7)_
 
 ## Zuletzt abgeschlossen
 
+- Infrastruktur: Repository-Zeilenenden über `.gitattributes` vereinheitlicht und lokale Git-Konfiguration für konsistente `LF`-Behandlung nachgeschärft
 - P2: Einkaufsliste um Completion-Flow ergänzt: abgehakte Zutaten wandern ans Ende, werden deutlicher durchgestrichen und können nach vollständigem Abarbeiten gesammelt zurückgesetzt oder geleert werden
 - P2: Dashboard-Rezeptstatus als Filecontainer mit Reitern für öffentliche und private Rezepte neu aufgebaut
 - P2: Dashboard-CTA `Anzeigen` mit Sichtbarkeitsfilter an die Rezepte-Seite angebunden
@@ -85,6 +86,11 @@ _Zuletzt aktualisiert: 2026-04-04 (Session 7)_
 - Einkaufslisten bleiben vorerst lokal und sind daher bewusst nicht zwischen Geräten synchronisiert
 
 ## Änderungslog
+
+### 2026-04-04 (Session 8)
+
+- Infrastruktur: `.gitattributes` ergänzt, damit Code- und Textdateien im Repository konsistent mit `LF` geführt werden
+- Git-Setup: repo-lokale Line-Ending-Konfiguration nachgezogen, um wiederkehrende CRLF/LF-Warnungen im Projekt zu vermeiden
 
 ### 2026-04-04 (Session 7)
 
