@@ -764,7 +764,7 @@ export function ShoppingListPage() {
                   </h3>
                   <p className="mt-3 text-sm leading-6 text-[#B7AA96]">
                     Alle Zutaten in „{shoppingLists.selectedList.name}“ sind abgehakt. Möchtest du
-                    die Liste leeren oder nur die Haken zurücksetzen?
+                    die Liste leeren oder nur die Liste zurücksetzen?
                   </p>
                 </div>
 
@@ -784,7 +784,7 @@ export function ShoppingListPage() {
                   className="inline-flex h-12 items-center justify-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-5 text-sm font-medium text-[#F6EFE4] transition-all duration-300 hover:border-[#D6A84A]/18"
                 >
                   <RotateCcw size={16} />
-                  Haken zurücksetzen
+                  Liste zurücksetzen
                 </button>
                 <button
                   type="button"
