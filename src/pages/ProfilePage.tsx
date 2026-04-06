@@ -263,8 +263,7 @@ export function ProfilePage() {
             Profileinstellungen
           </h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-[#B7AA96] sm:text-base">
-            Hier kannst du dein Profil für NuVio Taste verwalten. Die Änderungen
-            werden direkt in deiner `profiles`-Tabelle in Supabase gespeichert.
+            Hier kannst du dein Profil für NuVio Taste verwalten.
           </p>
         </motion.section>
 
