@@ -54,14 +54,15 @@ export async function saveProfile(
   input: { avatarUrl: string | null; username: string },
 ) {
   const payload = {
+    id: userId,
+    plan: "free" as const,
     username: input.username.trim(),
     avatar_url: input.avatarUrl?.trim() ? input.avatarUrl.trim() : null,
   };
 
   const { error } = await supabase
     .from("profiles")
-    .update(payload)
-    .eq("id", userId);
+    .upsert(payload, { onConflict: "id" });
 
   if (error) {
     throw new Error(error.message);

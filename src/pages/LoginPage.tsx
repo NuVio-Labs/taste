@@ -23,6 +23,8 @@ type LocationState = {
 
 type AuthMode = "login" | "signup";
 
+const MIN_PASSWORD_LENGTH = 6;
+
 type AuthFieldProps = {
   dataTestId?: string;
   icon: ReactNode;
@@ -142,6 +144,44 @@ const itemVariants = {
   },
 };
 
+function isValidEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+function mapAuthErrorMessage(error: unknown) {
+  if (!(error instanceof Error)) {
+    return "Etwas ist schiefgelaufen. Bitte versuche es erneut.";
+  }
+
+  const message = error.message.toLowerCase();
+
+  if (message.includes("invalid login credentials")) {
+    return "E-Mail oder Passwort sind nicht korrekt.";
+  }
+
+  if (message.includes("user already registered")) {
+    return "Diese E-Mail ist bereits registriert.";
+  }
+
+  if (message.includes("password should be at least")) {
+    return `Bitte wähle ein Passwort mit mindestens ${MIN_PASSWORD_LENGTH} Zeichen.`;
+  }
+
+  if (message.includes("unable to validate email address")) {
+    return "Bitte gib eine gültige E-Mail-Adresse ein.";
+  }
+
+  if (message.includes("signup is disabled")) {
+    return "Registrierungen sind aktuell nicht verfügbar.";
+  }
+
+  if (message.includes("network")) {
+    return "Die Verbindung ist fehlgeschlagen. Bitte versuche es erneut.";
+  }
+
+  return "Die Anfrage konnte nicht verarbeitet werden. Bitte versuche es erneut.";
+}
+
 export function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -156,19 +196,20 @@ export function LoginPage() {
   const [signupName, setSignupName] = useState("");
   const [signupEmail, setSignupEmail] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
+  const [signupPasswordConfirm, setSignupPasswordConfirm] = useState("");
 
   const redirectPath =
     (location.state as LocationState | null)?.from?.pathname ?? "/dashboard";
   const isLogin = mode === "login";
 
   const title = useMemo(() => {
-    return isLogin ? "Willkommen" : "Zugang intern vorbereiten";
+    return isLogin ? "Willkommen" : "Konto erstellen";
   }, [isLogin]);
 
   const subtitle = useMemo(() => {
     return isLogin
-      ? "Melde dich mit deinem Testzugang an."
-      : "Interner Sign-up-Flow fuer einzelne Testzugaenge.";
+      ? "Melde dich mit deinem Taste Konto an."
+      : "Erstelle dein Konto und starte mit dem Free-Plan.";
   }, [isLogin]);
 
   function switchMode(nextMode: AuthMode) {
@@ -188,15 +229,25 @@ export function LoginPage() {
     setLoginError(null);
     setIsSubmitting(true);
 
+    const trimmedEmail = loginEmail.trim();
+
+    if (!isValidEmail(trimmedEmail)) {
+      setLoginError("Bitte gib eine gültige E-Mail-Adresse ein.");
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (!loginPassword) {
+      setLoginError("Bitte gib dein Passwort ein.");
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
-      await signInWithEmailPassword(loginEmail, loginPassword);
+      await signInWithEmailPassword(trimmedEmail, loginPassword);
       navigate(redirectPath, { replace: true });
     } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Die Anmeldung ist fehlgeschlagen. Bitte prüfe deine Eingaben.";
-      setLoginError(message);
+      setLoginError(mapAuthErrorMessage(error));
     } finally {
       setIsSubmitting(false);
     }
@@ -208,27 +259,52 @@ export function LoginPage() {
     setSignUpSuccess(null);
     setIsSubmitting(true);
 
-    try {
-      const session = await signUpWithEmailPassword(
-        signupName,
-        signupEmail,
-        signupPassword,
+    const trimmedName = signupName.trim();
+    const trimmedEmail = signupEmail.trim();
+
+    if (!trimmedName) {
+      setSignUpError("Bitte gib deinen Namen ein.");
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (!isValidEmail(trimmedEmail)) {
+      setSignUpError("Bitte gib eine gültige E-Mail-Adresse ein.");
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (signupPassword.length < MIN_PASSWORD_LENGTH) {
+      setSignUpError(
+        `Bitte gib ein gültiges Passwort mit mindestens ${MIN_PASSWORD_LENGTH} Zeichen ein.`,
       );
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (signupPassword !== signupPasswordConfirm) {
+      setSignUpError("Die Passwörter stimmen nicht überein.");
+      setIsSubmitting(false);
+      return;
+    }
+
+    try {
+      const session = await signUpWithEmailPassword(trimmedName, trimmedEmail, signupPassword);
 
       if (session) {
-        navigate("/dashboard", { replace: true });
+        setSignupName("");
+        setSignupEmail("");
+        setSignupPassword("");
+        setSignupPasswordConfirm("");
+        navigate(redirectPath, { replace: true });
         return;
       }
 
       setSignUpSuccess(
-        "Account erstellt. Prüfe dein Postfach, falls eine E-Mail-Bestätigung aktiviert ist.",
+        "Dein Konto wurde erstellt. Prüfe dein Postfach, um dein Konto zu bestätigen.",
       );
     } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Die Registrierung ist fehlgeschlagen. Bitte prüfe deine Eingaben.";
-      setSignUpError(message);
+      setSignUpError(mapAuthErrorMessage(error));
     } finally {
       setIsSubmitting(false);
     }
@@ -256,7 +332,7 @@ export function LoginPage() {
                     NuvioLabs Taste
                   </p>
                   <p className="mt-1 text-[0.96rem] text-[#B7AA96]">
-                    Culinary workspace 
+                    Culinary workspace
                   </p>
                 </div>
               </div>
@@ -313,24 +389,18 @@ export function LoginPage() {
                   <button
                     type="button"
                     onClick={() => switchMode("signup")}
-                    disabled
                     className={`relative z-20 rounded-full px-5 py-3 text-[1.05rem] font-medium transition-colors duration-300 ${
                       !isLogin
                         ? "text-[#FFF8EE]"
-                        : "text-[#8F806F]"
+                        : "text-[#8F806F] hover:text-[#CDB99B]"
                     }`}
                   >
-                    <span className="inline-flex items-center gap-2">
-                      Sign Up
-                      <span className="rounded-full border border-white/8 bg-white/[0.04] px-2 py-0.5 text-[0.62rem] uppercase tracking-[0.18em] text-[#B89A67]">
-                        Soon
-                      </span>
-                    </span>
+                    Registrieren
                   </button>
                 </div>
               </div>
 
-              <div className="relative min-h-[332px]">
+              <div className="relative min-h-[420px]">
                 <AnimatePresence mode="wait" custom={direction} initial={false}>
                   {isLogin ? (
                     <motion.form
@@ -356,7 +426,7 @@ export function LoginPage() {
 
                         <AuthField
                           dataTestId="login-password-input"
-                          label="Password"
+                          label="Passwort"
                           type="password"
                           placeholder="Passwort eingeben"
                           icon={<LockKeyhole size={18} />}
@@ -430,12 +500,22 @@ export function LoginPage() {
                         />
 
                         <AuthField
-                          label="Password"
+                          label="Passwort"
                           type="password"
                           placeholder="Mindestens 6 Zeichen"
                           icon={<LockKeyhole size={18} />}
                           value={signupPassword}
                           onChange={setSignupPassword}
+                          showPasswordToggle
+                        />
+
+                        <AuthField
+                          label="Passwort wiederholen"
+                          type="password"
+                          placeholder="Passwort bestätigen"
+                          icon={<LockKeyhole size={18} />}
+                          value={signupPasswordConfirm}
+                          onChange={setSignupPasswordConfirm}
                           showPasswordToggle
                         />
                       </motion.div>
@@ -464,7 +544,7 @@ export function LoginPage() {
                         disabled={isSubmitting}
                         className="mt-9 flex h-14 w-full items-center justify-center gap-2 rounded-full border border-[#E9D8B4]/12 bg-[#D6A84A] text-[1.08rem] font-medium text-[#1A140E] shadow-[0_12px_30px_rgba(214,168,74,0.24)] transition-all duration-300 hover:translate-y-[-1px] hover:bg-[#DEB457] disabled:translate-y-0 disabled:bg-[#6d5940] disabled:text-[#d7c8ae] disabled:shadow-none"
                       >
-                        {isSubmitting ? "Bitte warten" : "Sign Up"}
+                        {isSubmitting ? "Bitte warten" : "Registrieren"}
                         <ArrowRight size={18} />
                       </motion.button>
                     </motion.form>

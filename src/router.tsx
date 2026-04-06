@@ -6,6 +6,7 @@ import {
 import AppShell, { AppLoadingScreen } from "./App";
 import { useAuth } from "./features/auth/useAuth";
 import { ProtectedRoute } from "./routes/ProtectedRoute";
+import { ProRoute } from "./routes/ProRoute";
 import { PublicOnlyRoute } from "./routes/PublicOnlyRoute";
 
 const DashboardPage = lazy(() =>
@@ -112,12 +113,18 @@ export const router = createBrowserRouter([
         element: <ProtectedRoute />,
         children: [
           { path: "dashboard", element: <DashboardPage /> },
-          { path: "favorites", element: <FavoritesPage /> },
+          {
+            element: <ProRoute feature="favorites" />,
+            children: [{ path: "favorites", element: <FavoritesPage /> }],
+          },
           { path: "inspiration", element: <InspirationPage /> },
           { path: "profile", element: <ProfilePage /> },
           { path: "recipes", element: <RecipesPage /> },
           { path: "recipes/:id", element: <RecipeDetailPage /> },
-          { path: "shopping-list", element: <ShoppingListPage /> },
+          {
+            element: <ProRoute feature="shopping_list" />,
+            children: [{ path: "shopping-list", element: <ShoppingListPage /> }],
+          },
         ],
       },
       { path: "privacy", element: <PrivacyPage /> },

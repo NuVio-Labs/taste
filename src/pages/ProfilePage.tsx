@@ -1,28 +1,35 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
+  ArrowRight,
   Bookmark,
   BookOpen,
   KeyRound,
   Image as ImageIcon,
   LayoutGrid,
+  Lock,
   Mail,
   MessageSquareText,
   Save,
+  ShoppingCart,
+  Sparkles,
   Tag,
   UserCircle2,
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { FeedbackModal } from "../components/feedback/FeedbackModal";
 import { NavDrawer, type NavDrawerItem } from "../components/layout/NavDrawer";
+import { buildAppNavItems } from "../components/layout/navItems";
 import { ProfileSummarySkeleton } from "../components/ui/PageSkeletons";
 import { ErrorStateCard } from "../components/ui/StateCard";
+import { UpgradePrompt } from "../components/ui/UpgradePrompt";
 import {
   signInWithEmailPassword,
   updateUserEmail,
   updateUserPassword,
 } from "../features/auth/auth-service";
 import { useAuth } from "../features/auth/useAuth";
+import { canAccess } from "../features/plan/entitlements";
 import { saveProfile } from "../features/profile/profileService";
 import { useProfile } from "../features/profile/useProfile";
 
@@ -52,6 +59,7 @@ export function ProfilePage() {
   const location = useLocation();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+  const [isUpgradePromptOpen, setIsUpgradePromptOpen] = useState(false);
   const [username, setUsername] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -72,38 +80,21 @@ export function ProfilePage() {
   const userEmail = session?.user.email ?? "";
   const { profile, isLoading, error, reload } = useProfile(userId);
 
+  const plan = profile?.plan ?? "free";
+  const hasFavoritesAccess = canAccess(plan, "favorites");
+  const hasShoppingListAccess = canAccess(plan, "shopping_list");
+
   const navItems: NavDrawerItem[] = useMemo(
-    () => [
-      {
-        label: "Dashboard",
-        icon: LayoutGrid,
-        to: "/dashboard",
-      },
-      {
-        label: "Rezepte",
-        icon: BookOpen,
-        to: "/recipes",
-      },
-      {
-        label: "Favoriten",
-        icon: Bookmark,
-        to: "/favorites",
-      },
-      {
-        label: "Einkaufsliste",
-        icon: Tag,
-        to: "/shopping-list",
-      },
-      {
-        label: "Feedback",
-        icon: MessageSquareText,
-        onSelect: () => {
+    () =>
+      buildAppNavItems({
+        plan,
+        onOpenUpgrade: () => setIsUpgradePromptOpen(true),
+        onOpenFeedback: () => {
           setIsDrawerOpen(false);
           setIsFeedbackOpen(true);
         },
-      },
-    ],
-    [],
+      }),
+    [plan],
   );
 
   useEffect(() => {
@@ -237,7 +228,7 @@ export function ProfilePage() {
         userId={userId}
         userEmail={userEmail}
         userName={profile?.username ?? ""}
-        plan={profile?.plan ?? "free"}
+        plan={plan}
         profileTo="/profile"
       />
 
@@ -248,6 +239,11 @@ export function ProfilePage() {
         userId={userId}
         userEmail={userEmail}
         username={profile?.username ?? ""}
+      />
+
+      <UpgradePrompt
+        isOpen={isUpgradePromptOpen}
+        onClose={() => setIsUpgradePromptOpen(false)}
       />
 
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(214,168,74,0.10),transparent_18%),radial-gradient(circle_at_16%_18%,rgba(94,71,32,0.09),transparent_22%),radial-gradient(circle_at_84%_22%,rgba(111,123,59,0.07),transparent_20%),linear-gradient(180deg,#0F0E0C_0%,#090806_100%)]" />
@@ -271,6 +267,68 @@ export function ProfilePage() {
             werden direkt in deiner `profiles`-Tabelle in Supabase gespeichert.
           </p>
         </motion.section>
+
+        {/* Plan section — always visible, prominent for free users */}
+        <motion.div
+          initial={{ opacity: 0, y: 10, filter: "blur(4px)" }}
+          animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+          transition={{ duration: 0.38, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
+          className="mt-6"
+        >
+          {plan === "pro" ? (
+            <div className="flex items-center gap-4 rounded-[28px] border border-[#D6A84A]/18 bg-[linear-gradient(180deg,rgba(214,168,74,0.1),rgba(214,168,74,0.04))] px-5 py-4 shadow-[0_10px_30px_rgba(214,168,74,0.06),inset_0_1px_0_rgba(255,255,255,0.04)]">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-[#D6A84A]/20 bg-[#D6A84A]/12 text-[#D6A84A]">
+                <Sparkles size={17} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs uppercase tracking-[0.24em] text-[#B89A67]">Dein Plan</p>
+                <p className="mt-0.5 text-sm font-semibold text-[#FFF8EE]">
+                  Pro — alle Features freigeschaltet
+                </p>
+              </div>
+              <span className="rounded-full border border-[#D6A84A]/20 bg-[#D6A84A]/12 px-3 py-1 text-[0.7rem] font-semibold uppercase tracking-[0.18em] text-[#F6D78E]">
+                Pro
+              </span>
+            </div>
+          ) : (
+            <div className="rounded-[28px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.015))] px-5 py-4 shadow-[0_10px_30px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.03)]">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-white/8 bg-white/[0.03] text-[#8D7E6E]">
+                    <Lock size={16} />
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.24em] text-[#8D7E6E]">Dein Plan</p>
+                    <p className="mt-0.5 text-sm font-semibold text-[#D5C5AF]">
+                      Free — Rezepte entdecken und verwalten
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex items-center gap-3 text-sm text-[#8D7E6E]">
+                    <span className="flex items-center gap-1.5">
+                      <Bookmark size={13} className="opacity-50" />
+                      Favoriten
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <ShoppingCart size={13} className="opacity-50" />
+                      Einkaufsliste
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsUpgradePromptOpen(true)}
+                    className="inline-flex items-center gap-2 rounded-full border border-[#D6A84A]/22 bg-[linear-gradient(180deg,rgba(214,168,74,0.16),rgba(214,168,74,0.08))] px-4 py-2 text-sm font-semibold text-[#FFF1D4] transition-all duration-300 hover:-translate-y-0.5 hover:border-[#D6A84A]/30"
+                  >
+                    Pro entdecken
+                    <ArrowRight size={14} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </motion.div>
 
         <div className="mt-6 grid gap-6 xl:grid-cols-[0.85fr_1.15fr]">
           <section className="rounded-[30px] border border-white/8 bg-white/[0.03] p-6">

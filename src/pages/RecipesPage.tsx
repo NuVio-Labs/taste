@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Bookmark, BookOpen, LayoutGrid, MessageSquareText, Tag } from "lucide-react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { FeedbackModal } from "../components/feedback/FeedbackModal";
 import { NavDrawer, type NavDrawerItem } from "../components/layout/NavDrawer";
+import { buildAppNavItems } from "../components/layout/navItems";
 import { RecipeCreateModal } from "../components/recipes/RecipeCreateModal";
 import { RecipeFilters } from "../components/recipes/RecipeFilters";
 import { RecipeOverview } from "../components/recipes/RecipeOverview";
@@ -12,7 +12,9 @@ import { ShoppingListPickerDialog } from "../components/shopping-list/ShoppingLi
 import { RecipeOverviewSkeleton } from "../components/ui/PageSkeletons";
 import { Skeleton } from "../components/ui/Skeleton";
 import { ErrorStateCard } from "../components/ui/StateCard";
+import { UpgradePrompt } from "../components/ui/UpgradePrompt";
 import { useAuth } from "../features/auth/useAuth";
+import { canAccess } from "../features/plan/entitlements";
 import { useProfile } from "../features/profile/useProfile";
 import {
   favoriteRecipe,
@@ -161,6 +163,7 @@ export function RecipesPage() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isCreateRecipeOpen, setIsCreateRecipeOpen] = useState(false);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+  const [isUpgradePromptOpen, setIsUpgradePromptOpen] = useState(false);
   const [favoritePendingRecipeId, setFavoritePendingRecipeId] = useState<string | null>(null);
   const [likePendingRecipeId, setLikePendingRecipeId] = useState<string | null>(null);
   const [shoppingListPendingRecipeId, setShoppingListPendingRecipeId] = useState<string | null>(null);
@@ -177,8 +180,11 @@ export function RecipesPage() {
       ? session.user.user_metadata.full_name
       : "";
   const { profile } = useProfile(userId);
+  const plan = profile?.plan ?? "free";
+  const hasFavoritesAccess = canAccess(plan, "favorites");
+  const hasShoppingListAccess = canAccess(plan, "shopping_list");
   const { recipes, isLoading, error } = useRecipes(userId);
-  const shoppingLists = useShoppingLists(userId, profile?.plan ?? "free");
+  const shoppingLists = useShoppingLists(userId, plan);
 
   const activeCategory =
     searchParams.get("category")?.trim().toLowerCase() || ALL_CATEGORY_KEY;
@@ -249,36 +255,18 @@ export function RecipesPage() {
     hasRestoredScrollRef.current = true;
   }, [isLoading]);
 
-  const navItems: NavDrawerItem[] = [
-    {
-      label: "Dashboard",
-      icon: LayoutGrid,
-      to: "/dashboard",
-    },
-    {
-      label: "Rezepte",
-      icon: BookOpen,
-      to: "/recipes",
-    },
-    {
-      label: "Favoriten",
-      icon: Bookmark,
-      to: "/favorites",
-    },
-    {
-      label: "Einkaufsliste",
-      icon: Tag,
-      to: "/shopping-list",
-    },
-    {
-      label: "Feedback",
-      icon: MessageSquareText,
-      onSelect: () => {
-        setIsDrawerOpen(false);
-        setIsFeedbackOpen(true);
-      },
-    },
-  ];
+  const navItems: NavDrawerItem[] = useMemo(
+    () =>
+      buildAppNavItems({
+        plan,
+        onOpenUpgrade: () => setIsUpgradePromptOpen(true),
+        onOpenFeedback: () => {
+          setIsDrawerOpen(false);
+          setIsFeedbackOpen(true);
+        },
+      }),
+    [plan],
+  );
 
   function setCategory(categoryKey: string) {
     const nextParams = new URLSearchParams(searchParams);
@@ -330,6 +318,11 @@ export function RecipesPage() {
   }
 
   async function handleToggleFavorite(recipeId: string) {
+    if (!hasFavoritesAccess) {
+      setIsUpgradePromptOpen(true);
+      return;
+    }
+
     const recipe = recipes.find((entry) => entry.id === recipeId);
 
     if (!userId || !recipe || favoritePendingRecipeId) {
@@ -374,6 +367,11 @@ export function RecipesPage() {
   }
 
   function handleOpenShoppingListDialog(recipeId: string) {
+    if (!hasShoppingListAccess) {
+      setIsUpgradePromptOpen(true);
+      return;
+    }
+
     setShoppingListError(null);
     setSelectedRecipeForShoppingListId(recipeId);
     setIsShoppingListDialogOpen(true);
@@ -432,7 +430,7 @@ export function RecipesPage() {
         userId={userId}
         userEmail={userEmail}
         userName={profile?.username || metadataName}
-        plan={profile?.plan ?? "free"}
+        plan={plan}
         profileTo="/profile"
       />
 
@@ -452,6 +450,11 @@ export function RecipesPage() {
         userId={userId}
         userEmail={userEmail}
         username={profile?.username || metadataName}
+      />
+
+      <UpgradePrompt
+        isOpen={isUpgradePromptOpen}
+        onClose={() => setIsUpgradePromptOpen(false)}
       />
 
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(214,168,74,0.10),transparent_18%),radial-gradient(circle_at_16%_18%,rgba(94,71,32,0.09),transparent_22%),radial-gradient(circle_at_84%_22%,rgba(111,123,59,0.07),transparent_20%),linear-gradient(180deg,#0F0E0C_0%,#090806_100%)]" />
@@ -561,7 +564,7 @@ export function RecipesPage() {
         }}
         onConfirm={handleConfirmAddToShoppingList}
         onCreateList={handleCreateShoppingList}
-        plan={profile?.plan ?? "free"}
+        plan={plan}
         recipeServings={
           recipes.find((recipe) => recipe.id === selectedRecipeForShoppingListId)?.servings ?? 1
         }

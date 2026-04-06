@@ -12,19 +12,23 @@ import {
   Lock,
   MessageSquareText,
   Plus,
+  ShoppingCart,
   Tag,
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { FeedbackModal } from "../components/feedback/FeedbackModal";
 import { NavDrawer, type NavDrawerItem } from "../components/layout/NavDrawer";
+import { buildAppNavItems } from "../components/layout/navItems";
 import { RecipeCreateModal } from "../components/recipes/RecipeCreateModal";
 import {
   DashboardRecentRecipesSkeleton,
   DashboardStatsSkeleton,
 } from "../components/ui/PageSkeletons";
 import { EmptyStateCard, ErrorStateCard } from "../components/ui/StateCard";
+import { UpgradePrompt } from "../components/ui/UpgradePrompt";
 import { useAuth } from "../features/auth/useAuth";
 import { dashboardQueryOptions } from "../features/dashboard/queryOptions";
+import { canAccess } from "../features/plan/entitlements";
 import { useProfile } from "../features/profile/useProfile";
 import { recipeDetailQueryOptions } from "../features/recipes/queryOptions";
 
@@ -262,9 +266,11 @@ export function DashboardPage() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isCreateRecipeOpen, setIsCreateRecipeOpen] = useState(false);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+  const [isUpgradePromptOpen, setIsUpgradePromptOpen] = useState(false);
   const [activeRecipeVisibility, setActiveRecipeVisibility] =
     useState<RecipeVisibilityFilter>("public");
 
+  const plan = profile?.plan ?? "free";
   const userName = profile?.username || metadataName;
   const stats = data?.stats ?? EMPTY_STATS;
   const recentRecipes = data?.recentRecipes ?? [];
@@ -279,36 +285,14 @@ export function DashboardPage() {
     },
   };
 
-  const navItems: NavDrawerItem[] = [
-    {
-      label: "Dashboard",
-      icon: LayoutGrid,
-      to: "/dashboard",
+  const navItems: NavDrawerItem[] = buildAppNavItems({
+    plan,
+    onOpenUpgrade: () => setIsUpgradePromptOpen(true),
+    onOpenFeedback: () => {
+      setIsDrawerOpen(false);
+      setIsFeedbackOpen(true);
     },
-    {
-      label: "Rezepte",
-      icon: BookOpen,
-      to: "/recipes",
-    },
-    {
-      label: "Favoriten",
-      icon: Bookmark,
-      to: "/favorites",
-    },
-    {
-      label: "Einkaufsliste",
-      icon: Tag,
-      to: "/shopping-list",
-    },
-    {
-      label: "Feedback",
-      icon: MessageSquareText,
-      onSelect: () => {
-        setIsDrawerOpen(false);
-        setIsFeedbackOpen(true);
-      },
-    },
-  ];
+  });
 
   async function handleLogout() {
     await signOut();
@@ -331,7 +315,7 @@ export function DashboardPage() {
         userId={userId}
         userEmail={userEmail}
         userName={userName}
-        plan={profile?.plan ?? "free"}
+        plan={plan}
         profileTo="/profile"
       />
 
@@ -351,6 +335,11 @@ export function DashboardPage() {
         userId={userId}
         userEmail={userEmail}
         username={userName}
+      />
+
+      <UpgradePrompt
+        isOpen={isUpgradePromptOpen}
+        onClose={() => setIsUpgradePromptOpen(false)}
       />
 
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(214,168,74,0.10),transparent_18%),radial-gradient(circle_at_16%_18%,rgba(94,71,32,0.09),transparent_22%),radial-gradient(circle_at_84%_22%,rgba(111,123,59,0.07),transparent_20%),linear-gradient(180deg,#0F0E0C_0%,#090806_100%)]" />
@@ -469,64 +458,74 @@ export function DashboardPage() {
             transition={{ delay: 0.1 }}
             className="space-y-6"
           >
-            <SectionCard title="Roadmap">
-              <div className="space-y-4">
-                {[
-                  {
-                    phase: "Stand heute",
-                    title: "Kernflüsse und Dashboard verfeinert",
-                    description:
-                      "Auth, Rezepte, Favoriten, Einkaufsliste, Profil und Feedback sind benutzbar. Dashboard-Status und Rezeptsicht sind inzwischen enger mit den echten Workflows verbunden.",
-                  },
-                  {
-                    phase: "Als Nächstes",
-                    title: "P2 sauber abschließen",
-                    description:
-                      "Monitoring für DB-Größe und Egress festziehen, kleine Screen-Größen gezielt prüfen und verbleibende Sprachkonsistenz im Auth-Bereich bereinigen.",
-                  },
-                  {
-                    phase: "Danach",
-                    title: "Produktlogik ausbauen",
-                    description:
-                      "Analytics-Events für Kernaktionen definieren, Inspiration mit echter Logik füllen und Offline- bzw. Low-Network-Verhalten bewerten.",
-                  },
-                  {
-                    phase: "Später",
-                    title: "Medien und Sync erweitern",
-                    description:
-                      "Bild-Upload, Bildoptimierung und eine mögliche Supabase-Persistenz der Einkaufsliste nachziehen, sobald der Produktkern stabil genug ist.",
-                  },
-                ].map((item, index) => (
-                  <div
-                    key={item.title}
-                    className="rounded-[22px] border border-white/8 bg-white/[0.025] px-4 py-4"
+            {plan === "pro" ? (
+              <SectionCard eyebrow="Dein Bereich" title="Persönlicher Bereich">
+                <div className="space-y-3">
+                  <button
+                    type="button"
+                    onClick={() => navigate("/favorites")}
+                    className="group flex w-full items-center gap-4 rounded-[22px] border border-white/8 bg-white/[0.025] px-4 py-4 text-left transition-all duration-300 hover:border-[#D6A84A]/18 hover:bg-white/[0.035]"
                   >
-                    <div className="flex items-start gap-3">
-                      <div className="flex flex-col items-center">
-                        <div className="mt-0.5 flex h-7 w-7 items-center justify-center rounded-full border border-[#E9D8B4]/10 bg-white/[0.03] text-xs font-semibold text-[#E9D8B4]">
-                          {index + 1}
-                        </div>
-                        {index < 3 ? (
-                          <div className="mt-2 h-8 w-px bg-white/10" />
-                        ) : null}
-                      </div>
-
-                      <div className="min-w-0">
-                        <p className="text-[0.7rem] font-semibold uppercase tracking-[0.24em] text-[#B89A67]">
-                          {item.phase}
-                        </p>
-                        <h3 className="mt-2 text-sm font-semibold text-[#F6EFE4]">
-                          {item.title}
-                        </h3>
-                        <p className="mt-2 text-sm leading-6 text-[#D5C5AF]">
-                          {item.description}
-                        </p>
-                      </div>
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-[#E9D8B4]/10 bg-white/[0.03] text-[#E9D8B4]">
+                      <Bookmark size={16} />
                     </div>
-                  </div>
-                ))}
-              </div>
-            </SectionCard>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-[#FFF8EE]">Gespeicherte Favoriten</p>
+                      <p className="mt-0.5 text-xs text-[#A99883]">Deine Lieblingsrezepte im Überblick</p>
+                    </div>
+                    <ArrowRight size={15} className="shrink-0 text-[#D6A84A] transition-transform duration-300 group-hover:translate-x-1" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => navigate("/shopping-list")}
+                    className="group flex w-full items-center gap-4 rounded-[22px] border border-white/8 bg-white/[0.025] px-4 py-4 text-left transition-all duration-300 hover:border-[#D6A84A]/18 hover:bg-white/[0.035]"
+                  >
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-[#E9D8B4]/10 bg-white/[0.03] text-[#E9D8B4]">
+                      <ShoppingCart size={16} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-[#FFF8EE]">Einkaufsliste planen</p>
+                      <p className="mt-0.5 text-xs text-[#A99883]">Zutaten direkt aus Rezepten sammeln</p>
+                    </div>
+                    <ArrowRight size={15} className="shrink-0 text-[#D6A84A] transition-transform duration-300 group-hover:translate-x-1" />
+                  </button>
+                </div>
+              </SectionCard>
+            ) : (
+              <SectionCard eyebrow="Nur mit Pro" title="Persönlicher Bereich">
+                <div className="space-y-3">
+                  <p className="text-sm leading-6 text-[#B7AA96]">
+                    Speichere Lieblingsrezepte, plane deinen Einkauf und greife
+                    jederzeit auf deinen persönlichen Bereich zu.
+                  </p>
+
+                  {[
+                    { icon: Bookmark, text: "Favoriten speichern und wiederfinden" },
+                    { icon: ShoppingCart, text: "Einkaufslisten aus Rezepten erstellen" },
+                  ].map(({ icon: Icon, text }) => (
+                    <div
+                      key={text}
+                      className="flex items-center gap-3 rounded-[18px] border border-white/8 bg-white/[0.015] px-4 py-3 opacity-60"
+                    >
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-[#E9D8B4]/10 bg-white/[0.03] text-[#8D7E6E]">
+                        <Icon size={14} />
+                      </div>
+                      <p className="text-sm text-[#8D7E6E]">{text}</p>
+                    </div>
+                  ))}
+
+                  <button
+                    type="button"
+                    onClick={() => setIsUpgradePromptOpen(true)}
+                    className="mt-1 inline-flex h-10 w-full items-center justify-center gap-2 rounded-full border border-[#D6A84A]/20 bg-[linear-gradient(180deg,rgba(214,168,74,0.14),rgba(214,168,74,0.07))] text-sm font-semibold text-[#FFF1D4] transition-all duration-300 hover:-translate-y-0.5 hover:border-[#D6A84A]/28"
+                  >
+                    Pro entdecken
+                  </button>
+                </div>
+              </SectionCard>
+            )}
+
           </motion.aside>
         </div>
       </div>

@@ -18,6 +18,8 @@ export type NavDrawerItem = {
   disabled?: boolean;
   icon: React.ElementType;
   label: string;
+  /** When true: item is visible but requires Pro. Renders a Pro badge and calls onSelect instead of navigating. */
+  locked?: boolean;
   onSelect?: () => void;
   to?: string;
 };
@@ -219,6 +221,30 @@ export function NavDrawer({
 
                     <span className="rounded-full border border-white/8 bg-white/[0.03] px-2.5 py-1 text-[0.68rem] uppercase tracking-[0.18em] text-[#8D7E6E]">
                       Soon
+                    </span>
+                  </button>
+                );
+              }
+
+              if (item.locked) {
+                return (
+                  <button
+                    key={item.label}
+                    type="button"
+                    onClick={() => item.onSelect?.()}
+                    className="group flex w-full items-center justify-between rounded-[22px] border border-white/6 bg-white/[0.02] px-4 py-3 text-left transition-all duration-300 hover:border-[#D6A84A]/12 hover:bg-white/[0.03]"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/8 bg-white/[0.025] text-[#A7906C] transition-all duration-300 group-hover:border-[#D6A84A]/14 group-hover:text-[#E9D8B4]">
+                        <Icon size={17} />
+                      </div>
+                      <span className="text-[0.98rem] font-medium text-[#C8B79F] transition-colors duration-300 group-hover:text-[#D1C0A8]">
+                        {item.label}
+                      </span>
+                    </div>
+
+                    <span className="rounded-full border border-[#D6A84A]/18 bg-[#D6A84A]/10 px-2.5 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-[#F6D78E]">
+                      Pro
                     </span>
                   </button>
                 );

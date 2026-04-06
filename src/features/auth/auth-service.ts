@@ -1,4 +1,4 @@
-import type { Session } from "@supabase/supabase-js";
+import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "../../lib/supabase";
 
 export async function getCurrentSession(): Promise<Session | null> {
@@ -41,7 +41,42 @@ export async function signUpWithEmailPassword(
     throw error;
   }
 
+  if (data.user && data.session) {
+    await ensureProfileForUser(data.user);
+  }
+
   return data.session;
+}
+
+function buildProfileUsername(user: User): string {
+  const metadataName =
+    typeof user.user_metadata.full_name === "string"
+      ? user.user_metadata.full_name.trim()
+      : "";
+
+  if (metadataName) {
+    return metadataName;
+  }
+
+  const emailPrefix = user.email?.split("@")[0]?.trim() ?? "";
+  return emailPrefix;
+}
+
+export async function ensureProfileForUser(user: User): Promise<void> {
+  const { error } = await supabase.from("profiles").upsert(
+    {
+      id: user.id,
+      username: buildProfileUsername(user),
+      plan: "free",
+    },
+    {
+      onConflict: "id",
+    },
+  );
+
+  if (error) {
+    throw error;
+  }
 }
 
 export async function signOutUser(): Promise<void> {

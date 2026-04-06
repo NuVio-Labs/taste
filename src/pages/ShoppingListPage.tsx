@@ -2,27 +2,29 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
-  CheckCircle2,
+  ArrowRight,
   Bookmark,
   BookOpen,
+  CheckCircle2,
   ChevronDown,
   ClipboardList,
   FolderPlus,
-  LayoutGrid,
-  MessageSquareText,
   Pencil,
   RotateCcw,
-  Tag,
+  ShoppingCart,
   Trash2,
   X,
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { FeedbackModal } from "../components/feedback/FeedbackModal";
 import { NavDrawer, type NavDrawerItem } from "../components/layout/NavDrawer";
+import { buildAppNavItems } from "../components/layout/navItems";
 import { RecipeOverview } from "../components/recipes/RecipeOverview";
 import { ShoppingListEditDialog } from "../components/shopping-list/ShoppingListEditDialog";
 import { ShoppingListPickerDialog } from "../components/shopping-list/ShoppingListPickerDialog";
+import { UpgradePrompt } from "../components/ui/UpgradePrompt";
 import { useAuth } from "../features/auth/useAuth";
+import { canAccess } from "../features/plan/entitlements";
 import { useProfile } from "../features/profile/useProfile";
 import {
   favoriteRecipe,
@@ -41,6 +43,7 @@ export function ShoppingListPage() {
   const location = useLocation();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+  const [isUpgradePromptOpen, setIsUpgradePromptOpen] = useState(false);
   const [newListName, setNewListName] = useState("");
   const [openItemKey, setOpenItemKey] = useState<string | null>(null);
   const [listError, setListError] = useState<string | null>(null);
@@ -63,8 +66,11 @@ export function ShoppingListPage() {
       ? session.user.user_metadata.full_name
       : "";
   const { profile } = useProfile(userId);
+  const plan = profile?.plan ?? "free";
+  const hasShoppingListAccess = canAccess(plan, "shopping_list");
+  const hasFavoritesAccess = canAccess(plan, "favorites");
   const { recipes, reload } = useRecipes(userId);
-  const shoppingLists = useShoppingLists(userId, profile?.plan ?? "free");
+  const shoppingLists = useShoppingLists(userId, plan);
   const previewRecipes = useMemo(() => recipes.slice(0, 4), [recipes]);
   const hasCompletedAllItems =
     shoppingLists.aggregatedItems.length > 0 &&
@@ -93,37 +99,16 @@ export function ShoppingListPage() {
   }, [hasCompletedAllItems, isCompletionDialogOpen, shoppingLists.aggregatedItems]);
 
   const navItems: NavDrawerItem[] = useMemo(
-    () => [
-      {
-        label: "Dashboard",
-        icon: LayoutGrid,
-        to: "/dashboard",
-      },
-      {
-        label: "Rezepte",
-        icon: BookOpen,
-        to: "/recipes",
-      },
-      {
-        label: "Favoriten",
-        icon: Bookmark,
-        to: "/favorites",
-      },
-      {
-        label: "Einkaufsliste",
-        icon: Tag,
-        to: "/shopping-list",
-      },
-      {
-        label: "Feedback",
-        icon: MessageSquareText,
-        onSelect: () => {
+    () =>
+      buildAppNavItems({
+        plan,
+        onOpenUpgrade: () => setIsUpgradePromptOpen(true),
+        onOpenFeedback: () => {
           setIsDrawerOpen(false);
           setIsFeedbackOpen(true);
         },
-      },
-    ],
-    [],
+      }),
+    [plan],
   );
 
   async function handleLogout() {
@@ -337,7 +322,7 @@ export function ShoppingListPage() {
         userId={userId}
         userEmail={userEmail}
         userName={profile?.username || metadataName}
-        plan={profile?.plan ?? "free"}
+        plan={plan}
         profileTo="/profile"
       />
 
@@ -348,6 +333,11 @@ export function ShoppingListPage() {
         userId={userId}
         userEmail={userEmail}
         username={profile?.username || metadataName}
+      />
+
+      <UpgradePrompt
+        isOpen={isUpgradePromptOpen}
+        onClose={() => setIsUpgradePromptOpen(false)}
       />
 
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(214,168,74,0.10),transparent_18%),radial-gradient(circle_at_16%_18%,rgba(94,71,32,0.09),transparent_22%),radial-gradient(circle_at_84%_22%,rgba(111,123,59,0.07),transparent_20%),linear-gradient(180deg,#0F0E0C_0%,#090806_100%)]" />
@@ -379,13 +369,53 @@ export function ShoppingListPage() {
                 {shoppingLists.lists.length}/{shoppingLists.maxLists} Listen
               </div>
               <span className="text-[#9F917D]">
-                {(profile?.plan ?? "free") === "pro" ? "Pro" : "Free"}-Plan
+                {plan === "pro" ? "Pro" : "Free"}-Plan
               </span>
             </div>
           </div>
         </motion.section>
 
-        <div className="mt-6 grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+        {!hasShoppingListAccess ? (
+          <motion.div
+            initial={{ opacity: 0, y: 14, filter: "blur(6px)" }}
+            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+            transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+            className="mt-6 rounded-[30px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.018))] p-8 text-center shadow-[0_18px_50px_rgba(0,0,0,0.24)]"
+          >
+            <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl border border-[#D6A84A]/20 bg-[#D6A84A]/10 text-[#D6A84A]">
+              <ShoppingCart size={22} />
+            </div>
+            <p className="text-xs uppercase tracking-[0.24em] text-[#8D7E6E]">
+              Nur mit Pro
+            </p>
+            <h2 className="mt-3 text-2xl font-semibold tracking-[-0.05em] text-[#FFF8EE]">
+              Einkauf einfacher planen
+            </h2>
+            <p className="mx-auto mt-3 max-w-sm text-sm leading-6 text-[#B7AA96]">
+              Mit Pro kannst du Zutaten direkt aus Rezepten in Einkaufslisten
+              sammeln und deinen Wocheneinkauf in Minuten planen.
+            </p>
+            <div className="mt-6 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+              <button
+                type="button"
+                onClick={() => navigate("/recipes")}
+                className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-5 py-3 text-sm font-medium text-[#F6EFE4] transition-all duration-300 hover:border-[#D6A84A]/18"
+              >
+                Rezepte ansehen
+                <ArrowRight size={16} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsUpgradePromptOpen(true)}
+                className="inline-flex items-center gap-2 rounded-full border border-[#D6A84A]/24 bg-[linear-gradient(180deg,rgba(214,168,74,0.22),rgba(214,168,74,0.12))] px-5 py-3 text-sm font-semibold text-[#FFF1D4] transition-all duration-300 hover:-translate-y-0.5 hover:border-[#D6A84A]/34"
+              >
+                Pro entdecken
+              </button>
+            </div>
+          </motion.div>
+        ) : null}
+
+        <div className={`mt-6 grid gap-6 xl:grid-cols-[1.1fr_0.9fr] ${!hasShoppingListAccess ? "hidden" : ""}`}>
           <section className="rounded-[34px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.018))] p-5 shadow-[0_18px_50px_rgba(0,0,0,0.24)] sm:p-6">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div>
@@ -710,7 +740,7 @@ export function ShoppingListPage() {
         }}
         onConfirm={handleConfirmAddToShoppingList}
         onCreateList={handleCreateShoppingList}
-        plan={profile?.plan ?? "free"}
+        plan={plan}
         recipeServings={
           recipes.find((recipe) => recipe.id === selectedRecipeForShoppingListId)?.servings ?? 1
         }

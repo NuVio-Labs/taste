@@ -7,6 +7,7 @@ import {
 } from "react";
 import { supabase } from "../../lib/supabase";
 import {
+  ensureProfileForUser,
   getCurrentSession,
   signInWithEmailPassword,
   signUpWithEmailPassword,
@@ -42,6 +43,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
       try {
         const currentSession = await getCurrentSession();
 
+        if (currentSession?.user) {
+          try {
+            await ensureProfileForUser(currentSession.user);
+          } catch {
+            // Ignore profile bootstrap errors here so the session flow stays usable.
+          }
+        }
+
         if (isMounted) {
           setSession(currentSession);
         }
@@ -61,6 +70,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      if (nextSession?.user) {
+        void ensureProfileForUser(nextSession.user).catch(() => {
+          // Ignore profile bootstrap errors here so auth state updates remain responsive.
+        });
+      }
+
       if (isMounted) {
         setSession(nextSession);
         setIsLoading(false);
