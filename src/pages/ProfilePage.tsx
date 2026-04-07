@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
@@ -57,6 +58,7 @@ export function ProfilePage() {
   const { session, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const queryClient = useQueryClient();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [isUpgradePromptOpen, setIsUpgradePromptOpen] = useState(false);
@@ -75,6 +77,7 @@ export function ProfilePage() {
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+  const [checkoutSuccess, setCheckoutSuccess] = useState<string | null>(null);
 
   const userId = session?.user.id ?? "";
   const userEmail = session?.user.email ?? "";
@@ -109,6 +112,34 @@ export function ProfilePage() {
   useEffect(() => {
     setNextEmail(userEmail);
   }, [userEmail]);
+
+  useEffect(() => {
+    if (!userId) {
+      return;
+    }
+
+    const searchParams = new URLSearchParams(location.search);
+    if (searchParams.get("checkout") !== "success") {
+      return;
+    }
+
+    setCheckoutSuccess("Dein Pro-Zugang wird gerade aktualisiert.");
+    void Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["profile", userId] }),
+      reload(),
+    ]).finally(() => {
+      setCheckoutSuccess("Dein Checkout war erfolgreich. Dein Profil wurde aktualisiert.");
+      searchParams.delete("checkout");
+      const nextSearch = searchParams.toString();
+      navigate(
+        {
+          pathname: location.pathname,
+          search: nextSearch ? `?${nextSearch}` : "",
+        },
+        { replace: true },
+      );
+    });
+  }, [location.pathname, location.search, navigate, queryClient, reload, userId]);
 
   async function handleLogout() {
     await signOut();
@@ -441,6 +472,12 @@ export function ProfilePage() {
                   className="rounded-[22px] border border-[rgba(214,168,74,0.18)] bg-[rgba(214,168,74,0.08)] px-4 py-3 text-sm text-[#F6EFE4]"
                 >
                   {saveSuccess}
+                </div>
+              ) : null}
+
+              {checkoutSuccess ? (
+                <div className="rounded-[22px] border border-[rgba(214,168,74,0.18)] bg-[rgba(214,168,74,0.08)] px-4 py-3 text-sm text-[#F6EFE4]">
+                  {checkoutSuccess}
                 </div>
               ) : null}
 

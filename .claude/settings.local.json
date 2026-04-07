@@ -4,7 +4,9 @@
       "Bash(npx tsc:*)",
       "Bash(node_modules/.bin/tsc --noEmit)",
       "Bash(node \"c:/Users/axels/Documents/Web Dev/taste/node_modules/typescript/bin/tsc\" --noEmit --project \"c:/Users/axels/Documents/Web Dev/taste/tsconfig.json\")",
-      "Bash(cmd /c \"cd /d \\\\\"c:\\\\Users\\\\axels\\\\Documents\\\\Web Dev\\\\taste\\\\\" && node_modules\\\\\\\\.bin\\\\\\\\tsc --noEmit 2>&1\")"
+      "Bash(cmd /c \"cd /d \\\\\"c:\\\\Users\\\\axels\\\\Documents\\\\Web Dev\\\\taste\\\\\" && node_modules\\\\\\\\.bin\\\\\\\\tsc --noEmit 2>&1\")",
+      "Bash(supabase secrets:*)",
+      "Bash(npx supabase:*)"
     ]
   }
 }

@@ -67,9 +67,9 @@ export async function ensureProfileForUser(user: User): Promise<void> {
     {
       id: user.id,
       username: buildProfileUsername(user),
-      plan: "free",
     },
     {
+      ignoreDuplicates: true,
       onConflict: "id",
     },
   );

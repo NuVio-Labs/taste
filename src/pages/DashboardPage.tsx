@@ -4,16 +4,12 @@ import { motion } from "framer-motion";
 import {
   ArrowRight,
   Bookmark,
-  BookOpen,
   ChefHat,
   Clock3,
   Globe2,
-  LayoutGrid,
   Lock,
-  MessageSquareText,
   Plus,
   ShoppingCart,
-  Tag,
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { FeedbackModal } from "../components/feedback/FeedbackModal";
@@ -28,7 +24,6 @@ import { EmptyStateCard, ErrorStateCard } from "../components/ui/StateCard";
 import { UpgradePrompt } from "../components/ui/UpgradePrompt";
 import { useAuth } from "../features/auth/useAuth";
 import { dashboardQueryOptions } from "../features/dashboard/queryOptions";
-import { canAccess } from "../features/plan/entitlements";
 import { useProfile } from "../features/profile/useProfile";
 import { recipeDetailQueryOptions } from "../features/recipes/queryOptions";
 
