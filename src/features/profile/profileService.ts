@@ -5,7 +5,11 @@ type ProfileRow = {
   access_source: string | null;
   avatar_url: string | null;
   billing_status: string | null;
+  cancel_at: string | null;
+  cancel_at_period_end: boolean | null;
+  canceled_at: string | null;
   created_at: string | null;
+  current_period_end: string | null;
   id: string;
   plan: string | null;
   username: string | null;
@@ -34,11 +38,15 @@ function mapProfile(row: ProfileRow, fallbackId: string): ProfileData {
 
   return {
     accessSource: readString(row.access_source),
+    cancelAt: row.cancel_at,
+    cancelAtPeriodEnd: row.cancel_at_period_end ?? false,
+    canceledAt: row.canceled_at,
     id: row.id || fallbackId,
     username: readString(row.username) ?? "",
     avatarUrl: readString(row.avatar_url),
     billingStatus: readString(row.billing_status),
     createdAt: row.created_at,
+    currentPeriodEnd: row.current_period_end,
     plan,
   };
 }
@@ -46,7 +54,7 @@ function mapProfile(row: ProfileRow, fallbackId: string): ProfileData {
 export async function fetchProfile(userId: string): Promise<ProfileData> {
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, username, avatar_url, created_at, plan, billing_status, access_source")
+    .select("id, username, avatar_url, created_at, plan, billing_status, access_source, current_period_end, cancel_at_period_end, cancel_at, canceled_at")
     .eq("id", userId)
     .maybeSingle();
 
@@ -57,11 +65,15 @@ export async function fetchProfile(userId: string): Promise<ProfileData> {
   if (!data) {
     return {
       accessSource: null,
+      cancelAt: null,
+      cancelAtPeriodEnd: false,
+      canceledAt: null,
       id: userId,
       username: "",
       avatarUrl: null,
       billingStatus: null,
       createdAt: null,
+      currentPeriodEnd: null,
       plan: "free",
     };
   }

@@ -7,6 +7,9 @@ import {
 type ProfileBillingUpdate = {
   access_source?: "free" | "manual" | "stripe";
   billing_status: "inactive" | "active" | "trialing" | "past_due" | "canceled" | "unpaid";
+  cancel_at: string | null;
+  cancel_at_period_end: boolean;
+  canceled_at: string | null;
   current_period_end: string | null;
   plan: "free" | "pro";
   pro_source?: "free" | "manual" | "stripe";
@@ -72,6 +75,9 @@ export function mapSubscriptionToProfileUpdate(
       return {
         access_source: "stripe",
         billing_status: mapSubscriptionToProfileBillingStatus(subscription.status),
+        cancel_at: toIsoFromUnix(subscription.cancel_at),
+        cancel_at_period_end: subscription.cancel_at_period_end ?? false,
+        canceled_at: toIsoFromUnix(subscription.canceled_at),
         current_period_end: getSubscriptionPeriodEnd(subscription),
         plan: "pro",
         pro_source: "stripe",
@@ -85,6 +91,9 @@ export function mapSubscriptionToProfileUpdate(
       return {
         access_source: "free",
         billing_status: "inactive",
+        cancel_at: toIsoFromUnix(subscription.cancel_at),
+        cancel_at_period_end: false,
+        canceled_at: toIsoFromUnix(subscription.canceled_at),
         current_period_end: null,
         plan: "free",
         pro_source: "free",
@@ -95,6 +104,9 @@ export function mapSubscriptionToProfileUpdate(
       return {
         access_source: isStripeProStatus(subscription.status) ? "stripe" : "free",
         billing_status: mapSubscriptionToProfileBillingStatus(subscription.status),
+        cancel_at: toIsoFromUnix(subscription.cancel_at),
+        cancel_at_period_end: subscription.cancel_at_period_end ?? false,
+        canceled_at: toIsoFromUnix(subscription.canceled_at),
         current_period_end: isStripeProStatus(subscription.status)
           ? getSubscriptionPeriodEnd(subscription)
           : null,
@@ -116,7 +128,7 @@ async function updateProfileBy(
     .from("profiles")
     .update(update)
     .eq(column, value)
-    .select("id, plan, pro_source, billing_status, access_source, stripe_subscription_id, current_period_end")
+    .select("id, plan, pro_source, billing_status, access_source, stripe_subscription_id, current_period_end, cancel_at_period_end, cancel_at, canceled_at")
     .maybeSingle();
 
   if (error) {
@@ -179,20 +191,23 @@ export async function markProfileBillingInactiveByCustomerId(customerId: string)
     .update({
       access_source: "free",
       billing_status: "inactive",
+      cancel_at: null,
+      cancel_at_period_end: false,
+      canceled_at: null,
       current_period_end: null,
       plan: "free",
       pro_source: "free",
       stripe_subscription_id: null,
     })
     .eq("stripe_customer_id", customerId)
-    .eq("access_source", "stripe")
-    .select("id")
+    .select("id, plan, pro_source, billing_status, access_source, stripe_subscription_id, current_period_end, cancel_at_period_end, cancel_at, canceled_at")
     .maybeSingle();
 
   if (error) {
     throw new Error(error.message);
   }
 
+  console.log("[billing] profile after inactive reset:", data);
   return data?.id ?? null;
 }
 
@@ -200,7 +215,7 @@ export async function findProfileByUserId(userId: string) {
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("profiles")
-    .select("id, stripe_customer_id, access_source, billing_status, plan, pro_source")
+    .select("id, stripe_customer_id, access_source, billing_status, plan, pro_source, cancel_at_period_end, cancel_at, canceled_at, current_period_end")
     .eq("id", userId)
     .maybeSingle();
 

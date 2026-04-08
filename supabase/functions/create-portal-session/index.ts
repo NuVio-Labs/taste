@@ -125,7 +125,7 @@ Deno.serve(async (req) => {
     try {
       const session = await stripe.billingPortal.sessions.create({
         customer: profile.stripe_customer_id,
-        return_url: `${getAppUrl()}/profile`,
+        return_url: `${getAppUrl()}/profile?portal=return`,
       });
 
       console.log("[portal] portal session created");

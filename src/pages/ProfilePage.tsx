@@ -33,6 +33,7 @@ import { useAuth } from "../features/auth/useAuth";
 import { canAccess } from "../features/plan/entitlements";
 import { saveProfile } from "../features/profile/profileService";
 import { useProfile } from "../features/profile/useProfile";
+import { supabase } from "../lib/supabase";
 
 function formatCreatedAt(value: string | null) {
   if (!value) {
@@ -51,6 +52,24 @@ function formatCreatedAt(value: string | null) {
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
+  });
+}
+
+function formatBillingDate(value: string | null | undefined) {
+  if (!value) {
+    return null;
+  }
+
+  const parsedDate = new Date(value);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return null;
+  }
+
+  return parsedDate.toLocaleDateString("de-DE", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
   });
 }
 
@@ -78,12 +97,28 @@ export function ProfilePage() {
   const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
   const [checkoutSuccess, setCheckoutSuccess] = useState<string | null>(null);
+  const [portalSuccess, setPortalSuccess] = useState<string | null>(null);
+  const [portalError, setPortalError] = useState<string | null>(null);
+  const [isOpeningPortal, setIsOpeningPortal] = useState(false);
 
   const userId = session?.user.id ?? "";
   const userEmail = session?.user.email ?? "";
   const { profile, isLoading, error, reload } = useProfile(userId);
 
   const plan = profile?.plan ?? "free";
+  const isStripeProActive =
+    profile?.accessSource === "stripe" &&
+    (
+      profile?.billingStatus === "active" ||
+      profile?.billingStatus === "trialing" ||
+      profile?.billingStatus === "past_due" ||
+      profile?.billingStatus === "unpaid"
+    );
+  const cancellationDate = formatBillingDate(profile?.currentPeriodEnd ?? profile?.cancelAt);
+  const willCancelAtPeriodEnd =
+    isStripeProActive &&
+    profile?.cancelAtPeriodEnd === true &&
+    Boolean(profile?.currentPeriodEnd);
   const hasFavoritesAccess = canAccess(plan, "favorites");
   const hasShoppingListAccess = canAccess(plan, "shopping_list");
 
@@ -130,6 +165,34 @@ export function ProfilePage() {
     ]).finally(() => {
       setCheckoutSuccess("Dein Checkout war erfolgreich. Dein Profil wurde aktualisiert.");
       searchParams.delete("checkout");
+      const nextSearch = searchParams.toString();
+      navigate(
+        {
+          pathname: location.pathname,
+          search: nextSearch ? `?${nextSearch}` : "",
+        },
+        { replace: true },
+      );
+    });
+  }, [location.pathname, location.search, navigate, queryClient, reload, userId]);
+
+  useEffect(() => {
+    if (!userId) {
+      return;
+    }
+
+    const searchParams = new URLSearchParams(location.search);
+    if (searchParams.get("portal") !== "return") {
+      return;
+    }
+
+    setPortalSuccess("Dein Billing-Status wird gerade aktualisiert.");
+    void Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["profile", userId] }),
+      reload(),
+    ]).finally(() => {
+      setPortalSuccess("Dein Billing-Status wurde aktualisiert.");
+      searchParams.delete("portal");
       const nextSearch = searchParams.toString();
       navigate(
         {
@@ -247,6 +310,54 @@ export function ProfilePage() {
     }
   }
 
+  async function handleOpenBillingPortal() {
+    setPortalError(null);
+    setIsOpeningPortal(true);
+
+    try {
+      const {
+        data: { session: authSession },
+        error: sessionError,
+      } = await supabase.auth.getSession();
+
+      if (sessionError) {
+        throw sessionError;
+      }
+
+      const accessToken = authSession?.access_token?.trim();
+
+      if (!accessToken) {
+        navigate("/login");
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke("create-portal-session", {
+        body: {},
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (!data || typeof data.url !== "string" || !data.url) {
+        throw new Error("Portal-URL konnte nicht erstellt werden.");
+      }
+
+      window.location.assign(data.url);
+    } catch (billingPortalError) {
+      setPortalError(
+        billingPortalError instanceof Error
+          ? billingPortalError.message
+          : "Das Zahlungsportal konnte nicht geoeffnet werden.",
+      );
+    } finally {
+      setIsOpeningPortal(false);
+    }
+  }
+
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#0F0E0C] text-white">
       <NavDrawer
@@ -306,19 +417,41 @@ export function ProfilePage() {
           className="mt-6"
         >
           {plan === "pro" ? (
-            <div className="flex items-center gap-4 rounded-[28px] border border-[#D6A84A]/18 bg-[linear-gradient(180deg,rgba(214,168,74,0.1),rgba(214,168,74,0.04))] px-5 py-4 shadow-[0_10px_30px_rgba(214,168,74,0.06),inset_0_1px_0_rgba(255,255,255,0.04)]">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-[#D6A84A]/20 bg-[#D6A84A]/12 text-[#D6A84A]">
-                <Sparkles size={17} />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs uppercase tracking-[0.24em] text-[#B89A67]">Dein Plan</p>
-                <p className="mt-0.5 text-sm font-semibold text-[#FFF8EE]">
+            <div className="rounded-[28px] border border-[#D6A84A]/18 bg-[linear-gradient(180deg,rgba(214,168,74,0.1),rgba(214,168,74,0.04))] px-5 py-4 shadow-[0_10px_30px_rgba(214,168,74,0.06),inset_0_1px_0_rgba(255,255,255,0.04)]">
+              <div className="flex items-start gap-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-[#D6A84A]/20 bg-[#D6A84A]/12 text-[#D6A84A]">
+                  <Sparkles size={17} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.24em] text-[#B89A67]">Dein Plan</p>
+                    <p className="mt-0.5 text-sm font-semibold text-[#FFF8EE]">
                   Pro — alle Features freigeschaltet
                 </p>
+                  </div>
+                  <span className="shrink-0 rounded-full border border-[#D6A84A]/20 bg-[#D6A84A]/12 px-3 py-1 text-[0.7rem] font-semibold uppercase tracking-[0.18em] text-[#F6D78E]">
+                    Pro
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    void handleOpenBillingPortal();
+                  }}
+                  disabled={isOpeningPortal}
+                  className="mt-4 inline-flex min-h-11 items-center justify-center rounded-full border border-[#E9D8B4]/14 bg-white/[0.06] px-5 py-2 text-sm font-semibold text-[#FFF8EE] transition-all duration-300 hover:-translate-y-0.5 hover:border-[#E9D8B4]/24 disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  {isOpeningPortal ? "Wird geoeffnet..." : "Zahlungsdaten verwalten"}
+                </button>
+
+                {portalError ? (
+                  <p className="mt-3 text-sm leading-6 text-[#f1b6a8]">
+                    {portalError}
+                  </p>
+                ) : null}
+                </div>
               </div>
-              <span className="rounded-full border border-[#D6A84A]/20 bg-[#D6A84A]/12 px-3 py-1 text-[0.7rem] font-semibold uppercase tracking-[0.18em] text-[#F6D78E]">
-                Pro
-              </span>
             </div>
           ) : (
             <div className="rounded-[28px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.015))] px-5 py-4 shadow-[0_10px_30px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.03)]">
@@ -478,6 +611,12 @@ export function ProfilePage() {
               {checkoutSuccess ? (
                 <div className="rounded-[22px] border border-[rgba(214,168,74,0.18)] bg-[rgba(214,168,74,0.08)] px-4 py-3 text-sm text-[#F6EFE4]">
                   {checkoutSuccess}
+                </div>
+              ) : null}
+
+              {portalSuccess ? (
+                <div className="rounded-[22px] border border-[rgba(214,168,74,0.18)] bg-[rgba(214,168,74,0.08)] px-4 py-3 text-sm text-[#F6EFE4]">
+                  {portalSuccess}
                 </div>
               ) : null}
 
