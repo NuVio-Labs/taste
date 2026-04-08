@@ -534,7 +534,7 @@ export function ProfilePage() {
                   </div>
                 </div>
 
-                <div className="rounded-[24px] border border-white/8 bg-black/10 p-4 text-sm leading-7 text-[#D5C5AF]">
+                <div className="hidden rounded-[24px] border border-white/8 bg-black/10 p-4">
                   <p>
                     <span className="font-medium text-[#FFF8EE]">User ID:</span>{" "}
                     {userId || "Nicht verfügbar"}
@@ -547,7 +547,62 @@ export function ProfilePage() {
                     <span className="font-medium text-[#FFF8EE]">Plan:</span>{" "}
                     {profile?.plan === "pro" ? "Pro" : "Free"}
                   </p>
+                  {profile?.currentPeriodEnd ? (
+                    <p>
+                      <span className="font-medium text-[#FFF8EE]">Aktuelle Periode bis:</span>{" "}
+                      {formatCreatedAt(profile.currentPeriodEnd)}
+                    </p>
+                  ) : null}
                 </div>
+
+                <div className="rounded-[24px] border border-white/8 bg-black/10 p-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.22em] text-[#8D7E6E]">
+                        Mitgliedschaft
+                      </p>
+                      <p className="mt-2 text-lg font-semibold text-[#FFF8EE]">
+                        {profile?.plan === "pro" ? "Pro" : "Free"}
+                      </p>
+                      <p className="mt-1 text-sm leading-6 text-[#CDBEA8]">
+                        {profile?.plan === "pro"
+                          ? "Alle Premium-Funktionen sind für dein Konto freigeschaltet."
+                          : "Du nutzt aktuell den Free-Plan."}
+                      </p>
+                    </div>
+                    <span className={`rounded-full px-3 py-1 text-[0.72rem] font-semibold uppercase tracking-[0.18em] ${
+                      profile?.plan === "pro"
+                        ? "border border-[#D6A84A]/20 bg-[#D6A84A]/12 text-[#F6D78E]"
+                        : "border border-white/10 bg-white/[0.04] text-[#B7AA96]"
+                    }`}>
+                      {profile?.plan === "pro" ? "Pro" : "Free"}
+                    </span>
+                  </div>
+
+                  {profile?.plan === "pro" && profile?.currentPeriodEnd ? (
+                    <div className="mt-4 rounded-[18px] border border-white/8 bg-white/[0.02] px-4 py-3 text-sm leading-6 text-[#D5C5AF]">
+                      <p>
+                        <span className="font-medium text-[#FFF8EE]">Aktiver Zugang bis:</span>{" "}
+                        {formatCreatedAt(profile.currentPeriodEnd)}
+                      </p>
+                    </div>
+                  ) : null}
+
+                  <p className="mt-4 text-xs leading-6 text-[#8D7E6E]">
+                    Profil seit {formatCreatedAt(profile?.createdAt ?? null)}
+                  </p>
+                </div>
+
+                {willCancelAtPeriodEnd ? (
+                  <div className="rounded-[24px] border border-[#D6A84A]/22 bg-[linear-gradient(180deg,rgba(214,168,74,0.14),rgba(214,168,74,0.06))] p-4 text-sm leading-6 text-[#F6E7C7] shadow-[0_10px_30px_rgba(214,168,74,0.08)]">
+                    <p className="font-semibold text-[#FFF3D9]">
+                      Dein Pro-Zugang endet{cancellationDate ? ` zum ${cancellationDate}` : " zum Periodenende"}.
+                    </p>
+                    <p className="mt-1 text-[#D9C39B]">
+                      Bis dahin bleiben alle Pro-Funktionen weiterhin aktiv.
+                    </p>
+                  </div>
+                ) : null}
               </div>
             )}
           </section>
