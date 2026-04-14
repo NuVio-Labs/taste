@@ -3,7 +3,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
-  Bookmark,
   BookOpen,
   CheckCircle2,
   ChevronDown,
@@ -68,7 +67,6 @@ export function ShoppingListPage() {
   const { profile } = useProfile(userId);
   const plan = profile?.plan ?? "free";
   const hasShoppingListAccess = canAccess(plan, "shopping_list");
-  const hasFavoritesAccess = canAccess(plan, "favorites");
   const { recipes, reload } = useRecipes(userId);
   const shoppingLists = useShoppingLists(userId, plan);
   const previewRecipes = useMemo(() => recipes.slice(0, 4), [recipes]);

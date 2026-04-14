@@ -91,9 +91,6 @@ export function UpgradePrompt({ isOpen, onClose }: UpgradePromptProps) {
         throw sessionError;
       }
 
-      console.log("UpgradePrompt session available:", Boolean(session));
-      console.log("UpgradePrompt access token available:", Boolean(session?.access_token));
-
       const accessToken = session?.access_token?.trim();
 
       if (!session || !accessToken) {

@@ -30,7 +30,7 @@ async function createRecipe(page: Page, title: string, description?: string) {
   await page.getByTestId("recipe-visibility-select").selectOption("private");
   await page.getByTestId("ingredient-name-input-0").fill("Nudeln");
   await page.getByTestId("ingredient-amount-input-0").fill("250");
-  await page.getByTestId("ingredient-unit-select-0").selectOption("g");
+  await page.getByTestId("ingredient-unit-select-0").fill("g");
   await page.getByTestId("step-textarea-0").fill("Alle Zutaten vermengen und kurz garen.");
 
   await page.getByTestId("recipe-submit-button").click();

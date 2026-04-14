@@ -7,13 +7,13 @@ type UseProfileResult = {
   error: string | null;
   isLoading: boolean;
   profile: ProfileData | null;
-  reload: () => void;
+  reload: () => Promise<void>;
 };
 
 export function useProfile(userId: string): UseProfileResult {
   const { data, isLoading, error, refetch } = useQuery(profileQueryOptions(userId));
-  const reload = useCallback(() => {
-    void refetch();
+  const reload = useCallback(async () => {
+    await refetch();
   }, [refetch]);
 
   return {

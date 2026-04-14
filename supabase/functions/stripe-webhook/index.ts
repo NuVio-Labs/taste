@@ -1,4 +1,4 @@
-import Stripe from "https://esm.sh/stripe@18.3.0?target=deno";
+import type Stripe from "https://esm.sh/stripe@18.3.0?target=deno";
 import {
   attachStripeCustomerToUser,
   mapSubscriptionToProfileUpdate,
@@ -14,37 +14,25 @@ function getCustomerId(
   return typeof customer === "string" ? customer : customer?.id ?? null;
 }
 
-function logSubscriptionDecision(eventType: string, subscription: Stripe.Subscription) {
+function logSubscriptionDecision(_eventType: string, subscription: Stripe.Subscription) {
   const customerId = getCustomerId(subscription.customer);
 
-  console.log("[webhook] event type:", eventType);
-  console.log("[webhook] subscription status:", subscription.status);
-  console.log("[webhook] customer id:", customerId);
-
   if (!customerId) {
-    console.log("[webhook] skipped profile sync: missing customer id");
     return { customerId: null, profileUpdate: null };
   }
 
   const profileUpdate = mapSubscriptionToProfileUpdate(subscription, customerId);
 
-  if (profileUpdate) {
-    console.log("[webhook] profile update:", profileUpdate);
-  } else {
-    console.log("[webhook] skipped profile sync for subscription status:", subscription.status);
-  }
-
   return { customerId, profileUpdate };
 }
 
 async function syncSubscriptionEvent(
-  eventType: string,
+  _eventType: string,
   subscription: Stripe.Subscription,
   fallbackCustomerId?: string | null,
 ) {
-  const { customerId } = logSubscriptionDecision(eventType, subscription);
+  const { customerId } = logSubscriptionDecision(_eventType, subscription);
   const syncedUserId = await syncSubscriptionToProfile(subscription, fallbackCustomerId ?? customerId);
-  console.log("[webhook] user id:", syncedUserId);
   return syncedUserId;
 }
 
@@ -91,12 +79,8 @@ async function handleInvoicePaymentFailed(stripe: Stripe, invoice: Stripe.Invoic
 
   if (!subscriptionId) {
     const customerId = getCustomerId(invoice.customer);
-    console.log("[webhook] event type:", "invoice.payment_failed");
-    console.log("[webhook] subscription status:", null);
-    console.log("[webhook] customer id:", customerId);
     if (customerId) {
-      const syncedUserId = await markProfileBillingInactiveByCustomerId(customerId);
-      console.log("[webhook] user id:", syncedUserId);
+      await markProfileBillingInactiveByCustomerId(customerId);
     }
     return;
   }
@@ -149,10 +133,7 @@ Deno.serve(async (req) => {
         const { customerId } = logSubscriptionDecision(event.type, subscription);
 
         if (customerId) {
-          const syncedUserId = await markProfileBillingInactiveByCustomerId(customerId);
-          console.log("[webhook] user id:", syncedUserId);
-        } else {
-          console.log("[webhook] skipped final downgrade: missing customer id");
+          await markProfileBillingInactiveByCustomerId(customerId);
         }
         break;
       }

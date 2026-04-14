@@ -138,8 +138,6 @@ async function updateProfileBy(
   if (!data) {
     throw new Error(`Profile not found for ${column}.`);
   }
-
-  console.log("[billing] profile after update:", data);
   return data.id;
 }
 
@@ -173,7 +171,6 @@ export async function syncSubscriptionToProfile(
   const update = mapSubscriptionToProfileUpdate(subscription, customerId);
 
   if (!update) {
-    console.log("[billing] skipped profile sync for subscription status:", subscription.status);
     return null;
   }
 
@@ -207,7 +204,6 @@ export async function markProfileBillingInactiveByCustomerId(customerId: string)
     throw new Error(error.message);
   }
 
-  console.log("[billing] profile after inactive reset:", data);
   return data?.id ?? null;
 }
 

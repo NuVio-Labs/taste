@@ -8,8 +8,6 @@ function errorDetails(error: unknown) {
 }
 
 Deno.serve(async (req) => {
-  console.log("[checkout] function entered");
-
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -19,13 +17,9 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const headerKeys = [...req.headers.keys()];
     const authHeader = req.headers.get("authorization") ?? req.headers.get("Authorization");
-    console.log("[checkout] request header keys:", headerKeys);
-    console.log("[checkout] auth header present:", Boolean(authHeader));
 
     if (!authHeader) {
-      console.log("[checkout] bearer valid:", false);
       return jsonResponse(
         { error: "Unauthorized", stage: "missing-auth-header" },
         { status: 401 },
@@ -33,10 +27,8 @@ Deno.serve(async (req) => {
     }
 
     const hasBearerPrefix = authHeader.startsWith("Bearer ");
-    console.log("[checkout] bearer valid:", hasBearerPrefix);
 
     if (!hasBearerPrefix) {
-      console.log("[checkout] missing or malformed Authorization header");
       return jsonResponse(
         { error: "Unauthorized", stage: "invalid-bearer-format" },
         { status: 401 },
@@ -44,9 +36,6 @@ Deno.serve(async (req) => {
     }
 
     const token = authHeader.replace(/^Bearer\s+/i, "").trim();
-    console.log("[checkout] token length:", token.length);
-    console.log("[checkout] token parts count:", token.split(".").length);
-    console.log("[checkout] token startsWith('ey'):", token.startsWith("ey"));
 
     if (!token) {
       return jsonResponse(
@@ -76,7 +65,6 @@ Deno.serve(async (req) => {
     } = await authClient.auth.getUser(token);
 
     if (userError) {
-      console.log("[checkout] getUser error:", userError.message);
       return jsonResponse(
         { error: "Unauthorized", stage: "get-user-failed", details: userError.message },
         { status: 401 },
@@ -84,29 +72,23 @@ Deno.serve(async (req) => {
     }
 
     if (!user) {
-      console.log("[checkout] getUser returned null user");
       return jsonResponse(
         { error: "Unauthorized", stage: "user-missing" },
         { status: 401 },
       );
     }
 
-    console.log("[checkout] resolved user id:", user.id);
-    console.log("[checkout] next stage: profile lookup");
-
     let profile;
     try {
       profile = await findProfileByUserId(user.id);
     } catch (error) {
       const details = errorDetails(error);
-      console.log("[checkout] profile lookup failed:", details);
       return jsonResponse(
         { error: "Checkout creation failed", stage: "profile-lookup-failed", details },
         { status: 500 },
       );
     }
 
-    console.log("[checkout] next stage: billing check");
     const stripe = getStripeClient();
     let customerId = profile?.stripe_customer_id ?? null;
 
@@ -118,21 +100,16 @@ Deno.serve(async (req) => {
         });
         customerId = customer.id;
         await attachStripeCustomerToUser(user.id, customerId);
-        console.log("[checkout] created stripe customer:", customerId);
       } catch (error) {
         const details = errorDetails(error);
-        console.log("[checkout] billing check failed:", details);
         return jsonResponse(
           { error: "Checkout creation failed", stage: "billing-check-failed", details },
           { status: 500 },
         );
       }
-    } else {
-      console.log("[checkout] existing stripe customer:", customerId);
     }
 
     const appUrl = getAppUrl();
-    console.log("[checkout] next stage: stripe session create");
 
     try {
       const session = await stripe.checkout.sessions.create({
@@ -150,11 +127,9 @@ Deno.serve(async (req) => {
         throw new Error("Stripe checkout session URL is missing.");
       }
 
-      console.log("[checkout] session created:", session.id);
       return jsonResponse({ url: session.url });
     } catch (error) {
       const details = errorDetails(error);
-      console.log("[checkout] stripe session create failed:", details);
       return jsonResponse(
         { error: "Checkout creation failed", stage: "stripe-session-create-failed", details },
         { status: 500 },

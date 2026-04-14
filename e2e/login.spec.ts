@@ -25,7 +25,7 @@ test.describe("Login-Flow", () => {
     await page.getByTestId("login-submit-button").click();
 
     await expect(page.getByTestId("login-error")).toContainText(
-      /fehlgeschlagen|ungültig|invalid|incorrect/i,
+      /nicht korrekt|fehlgeschlagen|ungültig|invalid|incorrect/i,
       { timeout: 8000 },
     );
   });

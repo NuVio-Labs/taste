@@ -10,7 +10,6 @@ import { NavDrawer, type NavDrawerItem } from "../components/layout/NavDrawer";
 import { buildAppNavItems } from "../components/layout/navItems";
 import { UpgradePrompt } from "../components/ui/UpgradePrompt";
 import { useAuth } from "../features/auth/useAuth";
-import { canAccess } from "../features/plan/entitlements";
 import { useProfile } from "../features/profile/useProfile";
 
 const inspirationCards = [
