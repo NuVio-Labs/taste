@@ -1,4 +1,4 @@
-import Stripe from "https://esm.sh/stripe@18.3.0?target=deno";
+import Stripe from "npm:stripe@13.3.0";
 
 export type BillingStatus =
   | "inactive"

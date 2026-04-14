@@ -1,4 +1,4 @@
-import type Stripe from "https://esm.sh/stripe@18.3.0?target=deno";
+import type Stripe from "npm:stripe@13.3.0";
 import { createAdminClient } from "./supabase.ts";
 import {
   toIsoFromUnix,
