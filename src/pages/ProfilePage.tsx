@@ -4,17 +4,13 @@ import { motion } from "framer-motion";
 import {
   ArrowRight,
   Bookmark,
-  BookOpen,
   KeyRound,
   Image as ImageIcon,
-  LayoutGrid,
   Lock,
   Mail,
-  MessageSquareText,
   Save,
   ShoppingCart,
   Sparkles,
-  Tag,
   UserCircle2,
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -30,7 +26,6 @@ import {
   updateUserPassword,
 } from "../features/auth/auth-service";
 import { useAuth } from "../features/auth/useAuth";
-import { canAccess } from "../features/plan/entitlements";
 import { saveProfile } from "../features/profile/profileService";
 import { useProfile } from "../features/profile/useProfile";
 import { supabase } from "../lib/supabase";
@@ -119,8 +114,6 @@ export function ProfilePage() {
     isStripeProActive &&
     profile?.cancelAtPeriodEnd === true &&
     Boolean(profile?.currentPeriodEnd);
-  const hasFavoritesAccess = canAccess(plan, "favorites");
-  const hasShoppingListAccess = canAccess(plan, "shopping_list");
 
   const navItems: NavDrawerItem[] = useMemo(
     () =>
@@ -434,16 +427,31 @@ export function ProfilePage() {
                     Pro
                   </span>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    void handleOpenBillingPortal();
-                  }}
-                  disabled={isOpeningPortal}
-                  className="mt-4 inline-flex min-h-11 items-center justify-center rounded-full border border-[#E9D8B4]/14 bg-white/[0.06] px-5 py-2 text-sm font-semibold text-[#FFF8EE] transition-all duration-300 hover:-translate-y-0.5 hover:border-[#E9D8B4]/24 disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-70"
-                >
-                  {isOpeningPortal ? "Wird geoeffnet..." : "Zahlungsdaten verwalten"}
-                </button>
+                <div className="mt-4 flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void handleOpenBillingPortal();
+                    }}
+                    disabled={isOpeningPortal}
+                    className="inline-flex min-h-11 items-center justify-center rounded-full border border-[#E9D8B4]/14 bg-white/[0.06] px-5 py-2 text-sm font-semibold text-[#FFF8EE] transition-all duration-300 hover:-translate-y-0.5 hover:border-[#E9D8B4]/24 disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-70"
+                  >
+                    {isOpeningPortal ? "Wird geoeffnet..." : "Zahlungsdaten verwalten"}
+                  </button>
+
+                  {isStripeProActive && !willCancelAtPeriodEnd ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void handleOpenBillingPortal();
+                      }}
+                      disabled={isOpeningPortal}
+                      className="inline-flex min-h-11 items-center justify-center rounded-full border border-red-900/40 bg-red-950/20 px-5 py-2 text-sm font-semibold text-red-300/80 transition-all duration-300 hover:-translate-y-0.5 hover:border-red-800/50 hover:text-red-300 disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-70"
+                    >
+                      Abo kündigen
+                    </button>
+                  ) : null}
+                </div>
 
                 {portalError ? (
                   <p className="mt-3 text-sm leading-6 text-[#f1b6a8]">

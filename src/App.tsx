@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { RouteSpeedInsights } from "./components/analytics/RouteSpeedInsights";
 import { ErrorBoundary } from "./components/ui/ErrorBoundary";
 import { Spinner } from "./components/ui/Spinner";
+import { InstallPrompt } from "./components/InstallPrompt";
 
 export function AppLoadingScreen() {
   return (
@@ -31,6 +32,7 @@ export default function AppShell() {
       <Suspense fallback={<AppLoadingScreen />}>
         <Outlet />
       </Suspense>
+      <InstallPrompt />
     </ErrorBoundary>
   );
 }
