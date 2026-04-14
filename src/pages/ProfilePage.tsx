@@ -95,6 +95,9 @@ export function ProfilePage() {
   const [portalSuccess, setPortalSuccess] = useState<string | null>(null);
   const [portalError, setPortalError] = useState<string | null>(null);
   const [isOpeningPortal, setIsOpeningPortal] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
 
   const userId = session?.user.id ?? "";
   const userEmail = session?.user.email ?? "";
@@ -351,6 +354,35 @@ export function ProfilePage() {
     }
   }
 
+  async function handleCancelSubscription() {
+    setIsCancelling(true);
+    setCancelError(null);
+    try {
+      const { data: authSession, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) throw sessionError;
+      const accessToken = authSession?.session?.access_token?.trim();
+      if (!accessToken) {
+        navigate("/login");
+        return;
+      }
+      const res = await fetch("/api/cancel-subscription", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+      const json = await res.json() as { error?: string };
+      if (!res.ok) throw new Error(json.error ?? "Kündigung fehlgeschlagen.");
+      setShowCancelConfirm(false);
+      await reload();
+    } catch (err) {
+      setCancelError(err instanceof Error ? err.message : "Kündigung fehlgeschlagen.");
+    } finally {
+      setIsCancelling(false);
+    }
+  }
+
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#0F0E0C] text-white">
       <NavDrawer
@@ -380,6 +412,42 @@ export function ProfilePage() {
         isOpen={isUpgradePromptOpen}
         onClose={() => setIsUpgradePromptOpen(false)}
       />
+
+      {showCancelConfirm ? (
+        <div className="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center">
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => !isCancelling && setShowCancelConfirm(false)}
+          />
+          <div className="relative w-full max-w-sm rounded-[28px] border border-neutral-800 bg-[#0F0E0C] p-6 shadow-2xl">
+            <h2 className="text-base font-semibold text-neutral-100">Abo wirklich kündigen?</h2>
+            <p className="mt-2 text-sm leading-6 text-neutral-400">
+              Dein Pro-Zugang bleibt bis zum Ende des aktuellen Abrechnungszeitraums aktiv. Danach wechselst du automatisch auf Free.
+            </p>
+            {cancelError ? (
+              <p className="mt-3 text-sm text-red-400">{cancelError}</p>
+            ) : null}
+            <div className="mt-5 flex gap-2">
+              <button
+                type="button"
+                onClick={() => setShowCancelConfirm(false)}
+                disabled={isCancelling}
+                className="flex-1 rounded-2xl border border-neutral-800 py-2.5 text-sm font-medium text-neutral-400 transition-colors hover:border-neutral-700 hover:text-neutral-300 disabled:opacity-50"
+              >
+                Abbrechen
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleCancelSubscription()}
+                disabled={isCancelling}
+                className="flex-1 rounded-2xl border border-red-900/50 bg-red-950/30 py-2.5 text-sm font-semibold text-red-400 transition-colors hover:border-red-800/60 hover:text-red-300 disabled:opacity-50"
+              >
+                {isCancelling ? "Wird gekündigt..." : "Ja, kündigen"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(214,168,74,0.10),transparent_18%),radial-gradient(circle_at_16%_18%,rgba(94,71,32,0.09),transparent_22%),radial-gradient(circle_at_84%_22%,rgba(111,123,59,0.07),transparent_20%),linear-gradient(180deg,#0F0E0C_0%,#090806_100%)]" />
       <div className="absolute inset-0 opacity-[0.04] [background-image:linear-gradient(rgba(255,255,255,0.7)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.7)_1px,transparent_1px)] [background-size:72px_72px]" />
@@ -442,11 +510,8 @@ export function ProfilePage() {
                   {isStripeProActive && !willCancelAtPeriodEnd ? (
                     <button
                       type="button"
-                      onClick={() => {
-                        void handleOpenBillingPortal();
-                      }}
-                      disabled={isOpeningPortal}
-                      className="inline-flex min-h-11 items-center justify-center rounded-full border border-red-900/40 bg-red-950/20 px-5 py-2 text-sm font-semibold text-red-300/80 transition-all duration-300 hover:-translate-y-0.5 hover:border-red-800/50 hover:text-red-300 disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-70"
+                      onClick={() => setShowCancelConfirm(true)}
+                      className="inline-flex min-h-11 items-center justify-center rounded-full border border-red-900/40 bg-red-950/20 px-5 py-2 text-sm font-semibold text-red-300/80 transition-all duration-300 hover:-translate-y-0.5 hover:border-red-800/50 hover:text-red-300"
                     >
                       Abo kündigen
                     </button>
