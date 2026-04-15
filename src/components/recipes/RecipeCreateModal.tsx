@@ -266,6 +266,7 @@ export function RecipeCreateModal({
     control,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<RecipeFormValues>({
     resolver: zodResolver(recipeSchema),
@@ -542,6 +543,7 @@ export function RecipeCreateModal({
                                   onClick={() => {
                                     setImageFile(null);
                                     setImagePreview(null);
+                                    setValue("image_url", "");
                                   }}
                                   className="text-xs text-[#9F917D] underline underline-offset-4 transition-colors duration-200 hover:text-[#F6EFE4]"
                                 >
