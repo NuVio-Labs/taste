@@ -17,7 +17,7 @@ import {
   createRecipe,
   updateRecipe,
 } from "../../features/recipes/recipeService";
-import { uploadRecipeImage } from "../../features/recipes/imageUpload";
+import { uploadRecipeImage, deleteRecipeImage } from "../../features/recipes/imageUpload";
 import { normalizeIngredientUnit } from "../../features/recipes/ingredientNormalization";
 import type { RecipeDetailData } from "../../features/recipes/types";
 import { supabase } from "../../lib/supabase";
@@ -374,6 +374,17 @@ export function RecipeCreateModal({
 
       if (recipe) {
         await updateRecipe(user.id, recipe.id, payload);
+
+        // Altes Bild aus Storage löschen wenn ersetzt oder entfernt
+        const oldImageUrl = recipe.imageUrl;
+        const imageWasReplaced = imageFile && oldImageUrl;
+        const imageWasRemoved = !imagePreview && oldImageUrl;
+
+        if ((imageWasReplaced || imageWasRemoved) && oldImageUrl) {
+          await deleteRecipeImage(oldImageUrl).catch(() => {
+            // Nicht kritisch — Storage-Leak ist besser als einen Speicherfehler anzuzeigen
+          });
+        }
       } else {
         await createRecipe(user.id, payload);
       }
