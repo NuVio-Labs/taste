@@ -15,6 +15,8 @@ export type ShoppingList = {
   createdAt: string;
   id: string;
   name: string;
+  ownerId: string;
+  ownerName: string | null;
   recipes: ShoppingListRecipeSnapshot[];
   updatedAt: string;
 };
@@ -26,6 +28,17 @@ export type AggregatedShoppingListItemSource = {
   recipeId: string;
   recipeTitle: string;
   unit: string;
+};
+
+export type ShoppingListSharePermission = "read" | "edit";
+
+export type ShoppingListShare = {
+  id: string;
+  listId: string;
+  createdBy: string;
+  token: string;
+  permission: ShoppingListSharePermission;
+  createdAt: string;
 };
 
 export type AggregatedShoppingListItem = {

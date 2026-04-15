@@ -45,7 +45,7 @@ export function RecipeDetailPage() {
   const plan = profile?.plan ?? "free";
   const hasFavoritesAccess = canAccess(plan, "favorites");
   const hasShoppingListAccess = canAccess(plan, "shopping_list");
-  const { recipe, isLoading, error } = useRecipe(userId, id);
+  const { recipe, isLoading, error, reload } = useRecipe(userId, id);
   const shoppingLists = useShoppingLists(userId, plan);
   const canManageRecipe = recipe?.userId === userId;
 
@@ -221,6 +221,17 @@ export function RecipeDetailPage() {
               eyebrow="Laden fehlgeschlagen"
               title="Rezept konnte nicht geladen werden"
               description={error ?? "Rezept nicht gefunden."}
+              action={
+                error ? (
+                  <button
+                    type="button"
+                    onClick={() => void reload()}
+                    className="inline-flex items-center gap-2 rounded-full border border-[#E9D8B4]/12 bg-white/[0.03] px-4 py-2 text-sm font-medium text-[#F6EFE4] transition-colors duration-300 hover:border-[#D6A84A]/20 hover:bg-white/[0.045]"
+                  >
+                    Erneut versuchen
+                  </button>
+                ) : null
+              }
             />
           ) : (
             <div className="space-y-4">

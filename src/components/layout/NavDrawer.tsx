@@ -60,30 +60,46 @@ export function NavDrawer({
 
   // Edge swipe to open drawer
   useEffect(() => {
-    const EDGE = 20;
-    const MIN_X = 60;
-    const MAX_Y = 60;
+    const EDGE = 44;
+    const MIN_X = 56;
     let startX = 0;
     let startY = 0;
+    let isTracking = false;
+    let moved = false;
 
     function onTouchStart(event: TouchEvent) {
-      startX = event.touches[0].clientX;
-      startY = event.touches[0].clientY;
+      const touch = event.touches[0];
+      startX = touch.clientX;
+      startY = touch.clientY;
+      isTracking = !isOpenRef.current && startX < EDGE;
+      moved = false;
+    }
+
+    function onTouchMove(event: TouchEvent) {
+      if (!isTracking) return;
+      const touch = event.touches[0];
+      const dx = touch.clientX - startX;
+      const dy = Math.abs(touch.clientY - startY);
+      if (dx > 10) moved = true;
+      if (dy > dx * 1.5 && dy > 20) isTracking = false;
     }
 
     function onTouchEnd(event: TouchEvent) {
-      if (isOpenRef.current) return;
-      const dx = event.changedTouches[0].clientX - startX;
-      const dy = Math.abs(event.changedTouches[0].clientY - startY);
-      if (startX < EDGE && dx > MIN_X && dy < MAX_Y) {
+      if (!isTracking || !moved) return;
+      const touch = event.changedTouches[0];
+      const dx = touch.clientX - startX;
+      const dy = Math.abs(touch.clientY - startY);
+      if (dx > MIN_X && dy < dx * 0.6) {
         onToggle();
       }
     }
 
     window.addEventListener("touchstart", onTouchStart, { passive: true });
+    window.addEventListener("touchmove", onTouchMove, { passive: true });
     window.addEventListener("touchend", onTouchEnd, { passive: true });
     return () => {
       window.removeEventListener("touchstart", onTouchStart);
+      window.removeEventListener("touchmove", onTouchMove);
       window.removeEventListener("touchend", onTouchEnd);
     };
   }, [onToggle]);

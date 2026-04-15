@@ -20,6 +20,7 @@ import {
   unlikeRecipe,
 } from "../features/recipes/recipeService";
 import { useRecipes } from "../features/recipes/useRecipes";
+import { useRecipeSearch } from "../features/recipes/useRecipeSearch";
 import { recipeDetailQueryOptions } from "../features/recipes/queryOptions";
 import type {
   RecipeCategorySummary,
@@ -32,8 +33,11 @@ const DEFAULT_SORT: RecipeSortOption = "latest";
 const ALL_CATEGORY_KEY = "all";
 const SCROLL_STORAGE_KEY = "recipes-scroll-position";
 const DEFAULT_VISIBILITY = "all";
+const DEFAULT_DIET = "all";
+const PAGE_SIZE = 24;
 
 type RecipeVisibilityFilter = "all" | "public" | "private";
+type RecipeDietFilter = "all" | "vegetarian" | "vegan";
 
 function normalizeCategoryKey(value: string) {
   return value.trim().toLowerCase();
@@ -78,6 +82,7 @@ function filterRecipes(
   search: string,
   sort: RecipeSortOption,
   visibility: RecipeVisibilityFilter,
+  diet: RecipeDietFilter,
 ) {
   const normalizedSearch = search.trim().toLowerCase();
 
@@ -91,6 +96,14 @@ function filterRecipes(
       normalizeCategoryKey(recipe.category) === category;
 
     if (!matchesCategory) {
+      return false;
+    }
+
+    if (diet === "vegan" && !recipe.isVegan) {
+      return false;
+    }
+
+    if (diet === "vegetarian" && !recipe.isVegetarian && !recipe.isVegan) {
       return false;
     }
 
@@ -167,13 +180,14 @@ export function RecipesPage() {
   const [selectedRecipeForShoppingListId, setSelectedRecipeForShoppingListId] = useState<string | null>(null);
   const recipeListRef = useRef<HTMLDivElement | null>(null);
   const hasRestoredScrollRef = useRef(false);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   const userId = session?.user.id ?? "";
   const { profile } = useProfile(userId);
   const plan = profile?.plan ?? "free";
   const hasFavoritesAccess = canAccess(plan, "favorites");
   const hasShoppingListAccess = canAccess(plan, "shopping_list");
-  const { recipes, isLoading, error } = useRecipes(userId);
+  const { recipes, isLoading, error, reload } = useRecipes(userId);
   const shoppingLists = useShoppingLists(userId, plan);
 
   const activeCategory =
@@ -185,6 +199,11 @@ export function RecipesPage() {
     visibilityParam === "public" || visibilityParam === "private"
       ? visibilityParam
       : DEFAULT_VISIBILITY;
+  const dietParam = searchParams.get("diet");
+  const dietFilter: RecipeDietFilter =
+    dietParam === "vegetarian" || dietParam === "vegan" ? dietParam : DEFAULT_DIET;
+
+  const { searchResultIds, isSearching } = useRecipeSearch(userId, searchValue);
 
   const visibilityScopedRecipes = useMemo(
     () => recipes.filter((recipe) => matchesRecipeVisibility(recipe, userId, visibilityFilter)),
@@ -194,18 +213,33 @@ export function RecipesPage() {
     () => buildCategorySummary(visibilityScopedRecipes),
     [visibilityScopedRecipes],
   );
-  const filteredRecipes = useMemo(
-    () =>
-      filterRecipes(
-        recipes,
-        userId,
-        activeCategory,
-        searchValue,
-        sortValue,
-        visibilityFilter,
-      ),
-    [activeCategory, recipes, searchValue, sortValue, userId, visibilityFilter],
+  const filteredRecipes = useMemo(() => {
+    const base = filterRecipes(
+      recipes,
+      userId,
+      activeCategory,
+      searchValue,
+      sortValue,
+      visibilityFilter,
+      dietFilter,
+    );
+
+    // When fuzzy search results are available, re-rank by RPC similarity order
+    if (searchResultIds !== null) {
+      const orderMap = new Map(searchResultIds.map((id, i) => [id, i]));
+      return base
+        .filter((r) => orderMap.has(r.id))
+        .sort((a, b) => (orderMap.get(a.id) ?? 999) - (orderMap.get(b.id) ?? 999));
+    }
+
+    return base;
+  }, [activeCategory, dietFilter, recipes, searchResultIds, searchValue, sortValue, userId, visibilityFilter]);
+
+  const visibleRecipes = useMemo(
+    () => filteredRecipes.slice(0, visibleCount),
+    [filteredRecipes, visibleCount],
   );
+  const hasMore = filteredRecipes.length > visibleCount;
   const activeVisibilityLabel =
     visibilityFilter === "public"
       ? "Öffentliche Rezepte"
@@ -222,6 +256,10 @@ export function RecipesPage() {
         : activeCategoryLabel === "Alle Rezepte"
           ? activeVisibilityLabel
           : `${activeVisibilityLabel} • ${activeCategoryLabel}`;
+
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [activeCategory, searchValue, sortValue, visibilityFilter, dietFilter]);
 
   useEffect(() => {
     if (isLoading || hasRestoredScrollRef.current) {
@@ -262,6 +300,12 @@ export function RecipesPage() {
   function setSort(sort: RecipeSortOption) {
     const nextParams = new URLSearchParams(searchParams);
     updateParams(nextParams, "sort", sort, DEFAULT_SORT);
+    setSearchParams(nextParams, { replace: true });
+  }
+
+  function setDiet(diet: RecipeDietFilter) {
+    const nextParams = new URLSearchParams(searchParams);
+    updateParams(nextParams, "diet", diet, DEFAULT_DIET);
     setSearchParams(nextParams, { replace: true });
   }
 
@@ -433,7 +477,9 @@ export function RecipesPage() {
             <RecipeFilters
               activeCategory={activeCategory}
               categories={categories}
+              dietFilter={dietFilter}
               onCategoryChange={setCategory}
+              onDietChange={setDiet}
               searchValue={searchValue}
               sortValue={sortValue}
               onSearchChange={setSearch}
@@ -451,8 +497,11 @@ export function RecipesPage() {
               {isLoading ? (
                 <Skeleton className="mt-2 h-8 w-52 rounded-full" />
               ) : (
-                <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-[#FFF8EE]">
-                  {filteredRecipes.length} passende Rezepte
+                <h2 className="mt-2 flex items-center gap-2 text-2xl font-semibold tracking-[-0.04em] text-[#FFF8EE]">
+                  {filteredRecipes.length} passende Rezepte{hasMore ? ` (${visibleCount} angezeigt)` : ""}
+                  {isSearching ? (
+                    <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-[#D6A84A]/30 border-t-[#D6A84A]" />
+                  ) : null}
                 </h2>
               )}
             </div>
@@ -472,24 +521,46 @@ export function RecipesPage() {
               eyebrow="Laden fehlgeschlagen"
               title="Rezeptdaten konnten nicht geladen werden"
               description={error}
-            />
-          ) : (
-            <RecipeOverview
-              addToShoppingListPendingRecipeId={shoppingListPendingRecipeId}
-              recipes={filteredRecipes}
-              onAddToShoppingList={handleOpenShoppingListDialog}
-              onPrefetchRecipe={handlePrefetchRecipe}
-              onSelectRecipe={handleSelectRecipe}
-              onToggleFavorite={handleToggleFavorite}
-              onToggleLike={handleToggleLike}
-              favoritePendingRecipeId={favoritePendingRecipeId}
-              likePendingRecipeId={likePendingRecipeId}
-              emptyMessage={
-                recipes.length === 0
-                  ? "Noch keine Rezepte vorhanden. Erstelle dein erstes Rezept und die Übersicht füllt sich automatisch."
-                  : "Keine Rezepte passen aktuell zu Suche und Filter."
+              action={
+                <button
+                  type="button"
+                  onClick={() => void reload()}
+                  className="inline-flex items-center gap-2 rounded-full border border-[#E9D8B4]/12 bg-white/[0.03] px-4 py-2 text-sm font-medium text-[#F6EFE4] transition-colors duration-300 hover:border-[#D6A84A]/20 hover:bg-white/[0.045]"
+                >
+                  Erneut versuchen
+                </button>
               }
             />
+          ) : (
+            <>
+              <RecipeOverview
+                addToShoppingListPendingRecipeId={shoppingListPendingRecipeId}
+                recipes={visibleRecipes}
+                onAddToShoppingList={handleOpenShoppingListDialog}
+                onPrefetchRecipe={handlePrefetchRecipe}
+                onSelectRecipe={handleSelectRecipe}
+                onToggleFavorite={handleToggleFavorite}
+                onToggleLike={handleToggleLike}
+                favoritePendingRecipeId={favoritePendingRecipeId}
+                likePendingRecipeId={likePendingRecipeId}
+                emptyMessage={
+                  recipes.length === 0
+                    ? "Noch keine Rezepte vorhanden. Erstelle dein erstes Rezept und die Übersicht füllt sich automatisch."
+                    : "Keine Rezepte passen aktuell zu Suche und Filter."
+                }
+              />
+              {hasMore ? (
+                <div className="flex justify-center pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setVisibleCount((prev) => prev + PAGE_SIZE)}
+                    className="inline-flex items-center gap-2 rounded-full border border-[#E9D8B4]/12 bg-white/[0.03] px-6 py-3 text-sm font-medium text-[#F6EFE4] transition-colors duration-300 hover:border-[#D6A84A]/20 hover:bg-white/[0.045]"
+                  >
+                    Mehr laden ({filteredRecipes.length - visibleCount} weitere)
+                  </button>
+                </div>
+              ) : null}
+            </>
           )}
         </section>
       </div>

@@ -125,7 +125,11 @@ export function loadShoppingLists(userId: string) {
       return [] as ShoppingList[];
     }
 
-    return parsed.filter(isShoppingList);
+    return parsed.filter(isShoppingList).map((list) => ({
+      ...list,
+      ownerId: (list as ShoppingList).ownerId ?? userId,
+      ownerName: (list as ShoppingList).ownerName ?? null,
+    }));
   } catch {
     return [] as ShoppingList[];
   }
@@ -163,6 +167,8 @@ export function createShoppingList(
     createdAt: now,
     id: createListId(),
     name: trimmedName,
+    ownerId: userId,
+    ownerName: null,
     recipes: [],
     updatedAt: now,
   };
@@ -350,6 +356,120 @@ export function removeRecipeFromShoppingList(
 
   saveShoppingLists(userId, nextLists);
   return nextLists;
+}
+
+// Pure transformation functions (no localStorage I/O) — used by Supabase-backed hook
+
+export function applyRenameList(
+  lists: ShoppingList[],
+  listId: string,
+  name: string,
+): ShoppingList[] {
+  const trimmedName = name.trim();
+  if (!trimmedName) throw new Error("Bitte vergib einen Namen für die Liste.");
+  return lists.map((list) =>
+    list.id === listId
+      ? { ...list, name: trimmedName, updatedAt: new Date().toISOString() }
+      : list,
+  );
+}
+
+export function applyAddRecipe(
+  lists: ShoppingList[],
+  listId: string,
+  recipe: Pick<RecipeDetailData, "id" | "ingredients" | "servings" | "title">,
+  targetServings: number,
+): ShoppingList[] {
+  return lists.map((list) => {
+    if (list.id !== listId) return list;
+    const nextRecipe: ShoppingListRecipeSnapshot = {
+      id: `recipe-${recipe.id}-${crypto.randomUUID()}`,
+      ingredients: normalizeIngredients(recipe.ingredients).map((ingredient) =>
+        scaleIngredientAmount(ingredient, recipe.servings, targetServings),
+      ),
+      servings: targetServings,
+      recipeId: recipe.id,
+      recipeTitle: recipe.title,
+    };
+    return { ...list, recipes: [...list.recipes, nextRecipe], updatedAt: new Date().toISOString() };
+  });
+}
+
+export function applyRemoveRecipe(
+  lists: ShoppingList[],
+  listId: string,
+  shoppingListRecipeId: string,
+): ShoppingList[] {
+  return lists.map((list) => {
+    if (list.id !== listId) return list;
+    return {
+      ...list,
+      recipes: list.recipes.filter((r) => r.id !== shoppingListRecipeId),
+      updatedAt: new Date().toISOString(),
+    };
+  });
+}
+
+export function applyUpdateRecipeServings(
+  lists: ShoppingList[],
+  listId: string,
+  shoppingListRecipeId: string,
+  targetServings: number,
+): ShoppingList[] {
+  if (!Number.isFinite(targetServings) || targetServings < 1) {
+    throw new Error("Bitte wähle mindestens 1 Portion.");
+  }
+  return lists.map((list) => {
+    if (list.id !== listId) return list;
+    return {
+      ...list,
+      recipes: list.recipes.map((recipe) => {
+        if (recipe.id !== shoppingListRecipeId) return recipe;
+        return {
+          ...recipe,
+          ingredients: recipe.ingredients.map((ingredient) =>
+            scaleIngredientAmount(ingredient, recipe.servings, targetServings),
+          ),
+          servings: targetServings,
+        };
+      }),
+      updatedAt: new Date().toISOString(),
+    };
+  });
+}
+
+export function applyToggleItemChecked(
+  lists: ShoppingList[],
+  listId: string,
+  itemKey: string,
+): ShoppingList[] {
+  return lists.map((list) => {
+    if (list.id !== listId) return list;
+    const isChecked = list.checkedItemKeys.includes(itemKey);
+    return {
+      ...list,
+      checkedItemKeys: isChecked
+        ? list.checkedItemKeys.filter((k) => k !== itemKey)
+        : [...list.checkedItemKeys, itemKey],
+      updatedAt: new Date().toISOString(),
+    };
+  });
+}
+
+export function applyResetChecks(lists: ShoppingList[], listId: string): ShoppingList[] {
+  return lists.map((list) =>
+    list.id === listId
+      ? { ...list, checkedItemKeys: [], updatedAt: new Date().toISOString() }
+      : list,
+  );
+}
+
+export function applyClearList(lists: ShoppingList[], listId: string): ShoppingList[] {
+  return lists.map((list) =>
+    list.id === listId
+      ? { ...list, recipes: [], checkedItemKeys: [], updatedAt: new Date().toISOString() }
+      : list,
+  );
 }
 
 export function aggregateShoppingListItems(list: ShoppingList) {

@@ -398,6 +398,24 @@ export async function fetchFavoriteRecipes(userId: string): Promise<RecipeListIt
     : [];
 }
 
+export async function searchRecipeIds(
+  userId: string,
+  query: string,
+): Promise<string[]> {
+  const { data, error } = await supabase.rpc("search_recipes", {
+    p_user_id: userId,
+    p_query: query,
+  });
+
+  if (error) {
+    throw new Error(error.message ?? "Suche fehlgeschlagen.");
+  }
+
+  return Array.isArray(data)
+    ? (data as Array<{ id: string }>).map((row) => row.id)
+    : [];
+}
+
 export async function fetchRecipeById(
   userId: string,
   recipeId: string,

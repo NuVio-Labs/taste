@@ -10,14 +10,17 @@ import {
   FolderPlus,
   Pencil,
   RotateCcw,
+  Share2,
   ShoppingCart,
   Trash2,
   X,
 } from "lucide-react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { RecipeOverview } from "../components/recipes/RecipeOverview";
 import { ShoppingListEditDialog } from "../components/shopping-list/ShoppingListEditDialog";
 import { ShoppingListPickerDialog } from "../components/shopping-list/ShoppingListPickerDialog";
+import { ShoppingListShareDialog } from "../components/shopping-list/ShoppingListShareDialog";
+import { resolveShareToken } from "../features/shopping-list/shoppingListShareService";
 import { useLayout } from "../contexts/LayoutContext";
 import { useAuth } from "../features/auth/useAuth";
 import { canAccess } from "../features/plan/entitlements";
@@ -51,7 +54,10 @@ export function ShoppingListPage() {
   const [selectedRecipeForShoppingListId, setSelectedRecipeForShoppingListId] = useState<string | null>(null);
   const [selectedListForEditId, setSelectedListForEditId] = useState<string | null>(null);
   const [isCompletionDialogOpen, setIsCompletionDialogOpen] = useState(false);
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+  const [selectedListForShareId, setSelectedListForShareId] = useState<string | null>(null);
   const hadIncompleteItemsRef = useRef(false);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const userId = session?.user.id ?? "";
   const { profile } = useProfile(userId);
@@ -63,6 +69,23 @@ export function ShoppingListPage() {
   const hasCompletedAllItems =
     shoppingLists.aggregatedItems.length > 0 &&
     shoppingLists.aggregatedItems.every((item) => item.isChecked);
+
+  // Resolve share token from URL and select the shared list
+  useEffect(() => {
+    const token = searchParams.get("share");
+    if (!token || !userId) return;
+
+    void resolveShareToken(token).then((share) => {
+      if (!share) return;
+      shoppingLists.setSelectedListId(share.listId);
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete("share");
+        return next;
+      }, { replace: true });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, searchParams.get("share")]);
 
   useEffect(() => {
     if (shoppingLists.aggregatedItems.length === 0) {
@@ -107,6 +130,11 @@ export function ShoppingListPage() {
     setIsListEditDialogOpen(true);
     setListError(null);
     setListSuccess(null);
+  }
+
+  function openShareDialog(listId: string) {
+    setSelectedListForShareId(listId);
+    setIsShareDialogOpen(true);
   }
 
   function handleRenameList(name: string) {
@@ -462,8 +490,9 @@ export function ShoppingListPage() {
                               {list.name}
                             </p>
                             <p className="text-xs text-[#A99883]">
-                              {list.recipes.length} Rezept
-                              {list.recipes.length === 1 ? "" : "e"}
+                              {list.ownerId !== userId && list.ownerName
+                                ? `Geteilt von ${list.ownerName}`
+                                : `${list.recipes.length} Rezept${list.recipes.length === 1 ? "" : "e"}`}
                             </p>
                           </div>
                         </button>
@@ -475,6 +504,13 @@ export function ShoppingListPage() {
                             className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] text-[#F6EFE4] transition-colors duration-300 hover:border-[#D6A84A]/18"
                           >
                             <Pencil size={15} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => openShareDialog(list.id)}
+                            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] text-[#F6EFE4] transition-colors duration-300 hover:border-[#D6A84A]/18"
+                          >
+                            <Share2 size={15} />
                           </button>
                           <button
                             type="button"
@@ -706,6 +742,16 @@ export function ShoppingListPage() {
         onDeleteRecipe={handleRemoveRecipe}
         onRenameList={handleRenameList}
         onUpdateRecipeServings={handleUpdateRecipeServings}
+      />
+
+      <ShoppingListShareDialog
+        isOpen={isShareDialogOpen}
+        list={shoppingLists.lists.find((l) => l.id === selectedListForShareId) ?? null}
+        userId={userId}
+        onClose={() => {
+          setIsShareDialogOpen(false);
+          setSelectedListForShareId(null);
+        }}
       />
 
       {isCompletionDialogOpen && shoppingLists.selectedList ? (

@@ -533,6 +533,15 @@ export function ProfilePage() {
                   eyebrow="Laden fehlgeschlagen"
                   title="Profil konnte nicht geladen werden"
                   description={error}
+                  action={
+                    <button
+                      type="button"
+                      onClick={() => void reload()}
+                      className="inline-flex items-center gap-2 rounded-full border border-[#E9D8B4]/12 bg-white/[0.03] px-4 py-2 text-sm font-medium text-[#F6EFE4] transition-colors duration-300 hover:border-[#D6A84A]/20 hover:bg-white/[0.045]"
+                    >
+                      Erneut versuchen
+                    </button>
+                  }
                 />
               </div>
             ) : (

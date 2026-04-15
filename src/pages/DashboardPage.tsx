@@ -248,7 +248,7 @@ export function DashboardPage() {
   const navigate = useNavigate();
   const userId = session?.user.id ?? "";
   const { profile } = useProfile(userId);
-  const { data, isLoading, error } = useQuery(dashboardQueryOptions(userId));
+  const { data, isLoading, error, refetch } = useQuery(dashboardQueryOptions(userId));
   const { openUpgrade } = useLayout();
   const [isCreateRecipeOpen, setIsCreateRecipeOpen] = useState(false);
   const [activeRecipeVisibility, setActiveRecipeVisibility] =
@@ -347,6 +347,15 @@ export function DashboardPage() {
                   eyebrow="Laden fehlgeschlagen"
                   title="Rezepte konnten nicht geladen werden"
                   description={error.message}
+                  action={
+                    <button
+                      type="button"
+                      onClick={() => void refetch()}
+                      className="inline-flex items-center gap-2 rounded-full border border-[#E9D8B4]/12 bg-white/[0.03] px-4 py-2 text-sm font-medium text-[#F6EFE4] transition-colors duration-300 hover:border-[#D6A84A]/20 hover:bg-white/[0.045]"
+                    >
+                      Erneut versuchen
+                    </button>
+                  }
                 />
               ) : recentRecipes.length === 0 ? (
                 <EmptyStateCard

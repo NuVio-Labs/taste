@@ -4,10 +4,14 @@ import type {
   RecipeSortOption,
 } from "../../features/recipes/types";
 
+type RecipeDietFilter = "all" | "vegetarian" | "vegan";
+
 type RecipeFiltersProps = {
   activeCategory: string;
   categories: RecipeCategorySummary[];
+  dietFilter: RecipeDietFilter;
   onCategoryChange: (value: string) => void;
+  onDietChange: (value: RecipeDietFilter) => void;
   onSearchChange: (value: string) => void;
   onSortChange: (value: RecipeSortOption) => void;
   searchValue: string;
@@ -17,7 +21,9 @@ type RecipeFiltersProps = {
 export function RecipeFilters({
   activeCategory,
   categories,
+  dietFilter,
   onCategoryChange,
+  onDietChange,
   onSearchChange,
   onSortChange,
   searchValue,
@@ -81,6 +87,29 @@ export function RecipeFilters({
           </option>
         </select>
       </label>
+
+      <div className="flex items-center gap-2 xl:col-span-3">
+        {(
+          [
+            { value: "all", label: "Alle" },
+            { value: "vegetarian", label: "🌿 Vegetarisch" },
+            { value: "vegan", label: "🌱 Vegan" },
+          ] as { value: RecipeDietFilter; label: string }[]
+        ).map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            onClick={() => onDietChange(option.value)}
+            className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors duration-300 ${
+              dietFilter === option.value
+                ? "border-[#D6A84A]/30 bg-[#D6A84A]/12 text-[#F6D78E]"
+                : "border-white/10 bg-white/[0.02] text-[#8E806F] hover:border-white/20 hover:text-[#C8B79F]"
+            }`}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

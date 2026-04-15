@@ -34,6 +34,9 @@ import { useShoppingLists } from "../features/shopping-list/useShoppingLists";
 const DEFAULT_SORT: RecipeSortOption = "latest";
 const ALL_CATEGORY_KEY = "all";
 const SCROLL_STORAGE_KEY = "favorites-scroll-position";
+const DEFAULT_DIET = "all";
+
+type RecipeDietFilter = "all" | "vegetarian" | "vegan";
 
 function normalizeCategoryKey(value: string) {
   return value.trim().toLowerCase();
@@ -76,6 +79,7 @@ function filterRecipes(
   category: string,
   search: string,
   sort: RecipeSortOption,
+  diet: RecipeDietFilter,
 ) {
   const normalizedSearch = search.trim().toLowerCase();
 
@@ -85,6 +89,14 @@ function filterRecipes(
       normalizeCategoryKey(recipe.category) === category;
 
     if (!matchesCategory) {
+      return false;
+    }
+
+    if (diet === "vegan" && !recipe.isVegan) {
+      return false;
+    }
+
+    if (diet === "vegetarian" && !recipe.isVegetarian && !recipe.isVegan) {
       return false;
     }
 
@@ -154,23 +166,27 @@ export function FavoritesPage() {
   const plan = profile?.plan ?? "free";
   const hasFavoritesAccess = canAccess(plan, "favorites");
   const hasShoppingListAccess = canAccess(plan, "shopping_list");
-  const { favorites, isLoading, error } = useFavoriteRecipes(userId);
+  const { favorites, isLoading, error, reload } = useFavoriteRecipes(userId);
   const shoppingLists = useShoppingLists(userId, plan);
 
   const activeCategory =
     searchParams.get("category")?.trim().toLowerCase() || ALL_CATEGORY_KEY;
   const searchValue = searchParams.get("q") ?? "";
   const sortValue = (searchParams.get("sort") as RecipeSortOption) || DEFAULT_SORT;
+  const dietParam = searchParams.get("diet");
+  const dietFilter: RecipeDietFilter =
+    dietParam === "vegetarian" || dietParam === "vegan" ? dietParam : DEFAULT_DIET;
 
   const categories = useMemo(() => buildCategorySummary(favorites), [favorites]);
   const filteredRecipes = useMemo(
-    () => filterRecipes(favorites, activeCategory, searchValue, sortValue),
-    [activeCategory, favorites, searchValue, sortValue],
+    () => filterRecipes(favorites, activeCategory, searchValue, sortValue, dietFilter),
+    [activeCategory, dietFilter, favorites, searchValue, sortValue],
   );
   const hasActiveFilters =
     activeCategory !== ALL_CATEGORY_KEY ||
     searchValue.trim().length > 0 ||
-    sortValue !== DEFAULT_SORT;
+    sortValue !== DEFAULT_SORT ||
+    dietFilter !== DEFAULT_DIET;
 
   useEffect(() => {
     if (isLoading || hasRestoredScrollRef.current) {
@@ -211,6 +227,12 @@ export function FavoritesPage() {
   function setSort(sort: RecipeSortOption) {
     const nextParams = new URLSearchParams(searchParams);
     updateParams(nextParams, "sort", sort, DEFAULT_SORT);
+    setSearchParams(nextParams, { replace: true });
+  }
+
+  function setDiet(diet: RecipeDietFilter) {
+    const nextParams = new URLSearchParams(searchParams);
+    updateParams(nextParams, "diet", diet, DEFAULT_DIET);
     setSearchParams(nextParams, { replace: true });
   }
 
@@ -366,7 +388,9 @@ export function FavoritesPage() {
             <RecipeFilters
               activeCategory={activeCategory}
               categories={categories}
+              dietFilter={dietFilter}
               onCategoryChange={setCategory}
+              onDietChange={setDiet}
               searchValue={searchValue}
               sortValue={sortValue}
               onSearchChange={setSearch}
@@ -458,6 +482,15 @@ export function FavoritesPage() {
                   eyebrow="Laden fehlgeschlagen"
                   title="Favoriten konnten nicht geladen werden"
                   description={error}
+                  action={
+                    <button
+                      type="button"
+                      onClick={() => void reload()}
+                      className="inline-flex items-center gap-2 rounded-full border border-[#E9D8B4]/12 bg-white/[0.03] px-4 py-2 text-sm font-medium text-[#F6EFE4] transition-colors duration-300 hover:border-[#D6A84A]/20 hover:bg-white/[0.045]"
+                    >
+                      Erneut versuchen
+                    </button>
+                  }
                 />
               ) : favorites.length === 0 ? (
                 <EmptyStateCard
