@@ -26,6 +26,8 @@ export type RecipeListItem = {
   isFavorite: boolean;
   isPublic: boolean;
   isLiked: boolean;
+  isVegetarian: boolean;
+  isVegan: boolean;
   likeCount: number;
   prepTime: number | null;
   servings: number | null;

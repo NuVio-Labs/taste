@@ -7,6 +7,7 @@ import {
   ChevronDown,
   ChefHat,
   Image as ImageIcon,
+  Loader2,
   Plus,
   Save,
   Trash2,
@@ -16,6 +17,7 @@ import {
   createRecipe,
   updateRecipe,
 } from "../../features/recipes/recipeService";
+import { uploadRecipeImage } from "../../features/recipes/imageUpload";
 import { normalizeIngredientUnit } from "../../features/recipes/ingredientNormalization";
 import type { RecipeDetailData } from "../../features/recipes/types";
 import { supabase } from "../../lib/supabase";
@@ -55,6 +57,8 @@ const recipeSchema = z.object({
   prep_time_unit: z.enum(["minutes", "hours", "days"]),
   servings: z.number().int().min(1, "Mindestens 1 Portion"),
   visibility: z.enum(["private", "public"]),
+  is_vegetarian: z.boolean(),
+  is_vegan: z.boolean(),
   ingredients: z.array(ingredientSchema).min(1, "Mindestens 1 Zutat"),
   steps: z.array(stepSchema).min(1, "Mindestens 1 Schritt"),
 });
@@ -101,6 +105,8 @@ function createDefaultValues(): RecipeFormValues {
     prep_time_unit: "minutes",
     servings: 2,
     visibility: "private",
+    is_vegetarian: false,
+    is_vegan: false,
     ingredients: [
       {
         id: crypto.randomUUID(),
@@ -177,6 +183,8 @@ function createValuesFromRecipe(recipe: RecipeDetailData): RecipeFormValues {
     prep_time_unit: prepTimeValues.prep_time_unit,
     servings: recipe.servings ?? 2,
     visibility: recipe.isPublic ? "public" : "private",
+    is_vegetarian: recipe.isVegetarian,
+    is_vegan: recipe.isVegan,
     ingredients:
       recipe.ingredients.length > 0
         ? recipe.ingredients.map((ingredient) => ({
@@ -248,6 +256,9 @@ export function RecipeCreateModal({
   open,
 }: RecipeCreateModalProps) {
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const isEditMode = Boolean(recipe);
 
   const {
@@ -283,6 +294,8 @@ export function RecipeCreateModal({
     if (open) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setSubmitError(null);
+      setImageFile(null);
+      setImagePreview(recipe?.imageUrl ?? null);
       reset(recipe ? createValuesFromRecipe(recipe) : createDefaultValues());
       document.body.style.overflow = "hidden";
     }
@@ -322,6 +335,17 @@ export function RecipeCreateModal({
     }
 
     try {
+      let imageUrl = values.image_url?.trim() ?? null;
+
+      if (imageFile) {
+        setIsUploadingImage(true);
+        try {
+          imageUrl = await uploadRecipeImage(user.id, imageFile);
+        } finally {
+          setIsUploadingImage(false);
+        }
+      }
+
       const payload = {
         title: values.title,
         description: values.description,
@@ -336,7 +360,7 @@ export function RecipeCreateModal({
           unit: normalizeIngredientUnit(ingredient.unit),
         })),
         steps: values.steps,
-        imageUrl: values.image_url?.trim() ?? null,
+        imageUrl,
         category: values.category,
         prepTime: convertPrepTimeToMinutes(
           values.prep_time,
@@ -344,6 +368,8 @@ export function RecipeCreateModal({
         ),
         servings: values.servings,
         isPublic: values.visibility === "public",
+        isVegetarian: values.is_vegetarian,
+        isVegan: values.is_vegan,
       };
 
       if (recipe) {
@@ -467,37 +493,51 @@ export function RecipeCreateModal({
                               Rezeptbild
                             </label>
                             <div className="space-y-3">
-                              <div className="flex min-h-[164px] flex-col items-center justify-center gap-3 rounded-[24px] border border-dashed border-white/12 bg-black/10 px-5 py-6 text-center opacity-75">
-                                {recipe?.imageUrl ? (
+                              <label className="group flex min-h-[164px] cursor-pointer flex-col items-center justify-center gap-3 rounded-[24px] border border-dashed border-white/12 bg-black/10 px-5 py-6 text-center transition-colors duration-200 hover:border-[#D6A84A]/30 hover:bg-black/20">
+                                {imagePreview ? (
                                   <img
-                                    src={recipe.imageUrl}
+                                    src={imagePreview}
                                     alt="Vorschau"
                                     className="h-28 w-full rounded-[18px] object-cover"
                                   />
                                 ) : (
-                                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03] text-[#D6A84A]">
+                                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03] text-[#D6A84A] transition-colors duration-200 group-hover:border-[#D6A84A]/30">
                                     <ImageIcon size={22} />
                                   </div>
                                 )}
-
                                 <div>
                                   <p className="text-sm font-medium text-[#FFF8EE]">
-                                    Bild-Upload
+                                    {imagePreview ? "Bild ändern" : "Bild auswählen"}
                                   </p>
                                   <p className="mt-1 text-xs leading-5 text-[#9F917D]">
-                                    Foto-Uploads kommen später direkt im Rezept-Modal.
+                                    JPG, PNG oder WebP · wird automatisch optimiert
                                   </p>
                                 </div>
-
-                                <span className="rounded-full border border-white/8 bg-white/[0.04] px-3 py-1 text-[0.68rem] uppercase tracking-[0.18em] text-[#B89A67]">
-                                  Soon
-                                </span>
-                              </div>
-
-                              <input
-                                {...register("image_url")}
-                                type="hidden"
-                              />
+                                <input
+                                  type="file"
+                                  accept="image/jpeg,image/png,image/webp"
+                                  className="hidden"
+                                  onChange={(event) => {
+                                    const file = event.target.files?.[0];
+                                    if (!file) return;
+                                    setImageFile(file);
+                                    setImagePreview(URL.createObjectURL(file));
+                                  }}
+                                />
+                              </label>
+                              {imagePreview ? (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setImageFile(null);
+                                    setImagePreview(null);
+                                  }}
+                                  className="text-xs text-[#9F917D] underline underline-offset-4 transition-colors duration-200 hover:text-[#F6EFE4]"
+                                >
+                                  Bild entfernen
+                                </button>
+                              ) : null}
+                              <input {...register("image_url")} type="hidden" />
                             </div>
                             <FieldError message={errors.image_url?.message} />
                           </div>
@@ -784,6 +824,26 @@ export function RecipeCreateModal({
                               </div>
                             </div>
                           </div>
+
+                          <div className="space-y-3">
+                            <p className="text-sm font-medium text-[#F6EFE4]">Ernährungsweise</p>
+                            <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-white/8 bg-black/10 px-4 py-3 transition-colors duration-200 hover:border-white/14">
+                              <input
+                                type="checkbox"
+                                {...register("is_vegetarian")}
+                                className="h-4 w-4 accent-[#6FA86A]"
+                              />
+                              <span className="text-sm text-[#FFF8EE]">🌿 Vegetarisch</span>
+                            </label>
+                            <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-white/8 bg-black/10 px-4 py-3 transition-colors duration-200 hover:border-white/14">
+                              <input
+                                type="checkbox"
+                                {...register("is_vegan")}
+                                className="h-4 w-4 accent-[#5BAF7A]"
+                              />
+                              <span className="text-sm text-[#FFF8EE]">🌱 Vegan</span>
+                            </label>
+                          </div>
                         </div>
                       </section>
 
@@ -811,15 +871,21 @@ export function RecipeCreateModal({
                     <button
                       type="submit"
                       data-testid="recipe-submit-button"
-                      disabled={isSubmitting}
+                      disabled={isSubmitting || isUploadingImage}
                       className="inline-flex h-12 items-center justify-center gap-2 rounded-full border border-[#E9D8B4]/12 bg-[#D6A84A] px-5 text-sm font-medium text-[#1A140E] shadow-[0_12px_30px_rgba(214,168,74,0.24)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#DEB457] disabled:cursor-not-allowed disabled:opacity-70"
                     >
-                      <Save size={16} />
-                      {isSubmitting
-                        ? "Speichert..."
-                        : isEditMode
-                          ? "Änderungen speichern"
-                          : "Rezept speichern"}
+                      {isUploadingImage ? (
+                        <Loader2 size={16} className="animate-spin" />
+                      ) : (
+                        <Save size={16} />
+                      )}
+                      {isUploadingImage
+                        ? "Bild wird hochgeladen…"
+                        : isSubmitting
+                          ? "Speichert..."
+                          : isEditMode
+                            ? "Änderungen speichern"
+                            : "Rezept speichern"}
                     </button>
                   </div>
                 </form>

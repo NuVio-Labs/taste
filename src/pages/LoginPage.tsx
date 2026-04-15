@@ -332,7 +332,7 @@ export function LoginPage() {
                     NuvioLabs Taste
                   </p>
                   <p className="mt-1 text-[0.96rem] text-[#B7AA96]">
-                    Culinary workspace
+                    Deine Küchen-App
                   </p>
                 </div>
               </div>

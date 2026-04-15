@@ -184,6 +184,16 @@ export function RecipeCard({
             {recipe.isPublic ? <Globe2 size={14} /> : <Lock size={14} />}
             {recipe.isPublic ? "Öffentlich" : "Privat"}
           </span>
+          {recipe.isVegetarian ? (
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-[#6FA86A]/28 bg-[rgba(111,168,106,0.1)] px-3 py-1.5 text-[#A8D4A4]">
+              🌿 Vegetarisch
+            </span>
+          ) : null}
+          {recipe.isVegan ? (
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-[#5BAF7A]/28 bg-[rgba(91,175,122,0.1)] px-3 py-1.5 text-[#94D4AE]">
+              🌱 Vegan
+            </span>
+          ) : null}
         </div>
       </div>
     </motion.div>

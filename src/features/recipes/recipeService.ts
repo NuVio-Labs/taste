@@ -16,6 +16,8 @@ type RecipeRow = {
   image_url: string | null;
   ingredients?: unknown;
   is_public: boolean | null;
+  is_vegetarian?: boolean | null;
+  is_vegan?: boolean | null;
   prep_time: number | null;
   servings: number | null;
   steps?: unknown;
@@ -170,6 +172,8 @@ function mapRecipeListItem(
     servings: readNumber(row.servings),
     isFavorite: favoriteRecipeIds.has(row.id),
     isPublic: row.is_public === true,
+    isVegetarian: row.is_vegetarian === true,
+    isVegan: row.is_vegan === true,
     likeCount: likeCounts.get(row.id) ?? 0,
     isLiked: likedRecipeIds.has(row.id),
     createdAt: row.created_at,
@@ -190,6 +194,8 @@ function mapRecipeFeedListItem(row: RecipeFeedRow): RecipeListItem {
     servings: readNumber(row.servings),
     isFavorite: row.is_favorite === true,
     isPublic: row.is_public === true,
+    isVegetarian: row.is_vegetarian === true,
+    isVegan: row.is_vegan === true,
     likeCount: readNumber(row.like_count) ?? 0,
     isLiked: row.is_liked === true,
     createdAt: row.created_at,
@@ -205,7 +211,7 @@ async function fetchRecipesLegacy(userId: string): Promise<RecipeListItem[]> {
     supabase
       .from("recipes")
       .select(
-        "id, user_id, title, description, image_url, category, prep_time, servings, is_public, created_at, updated_at",
+        "id, user_id, title, description, image_url, category, prep_time, servings, is_public, is_vegetarian, is_vegan, created_at, updated_at",
       )
       .or(`user_id.eq.${userId},is_public.eq.true`)
       .order("created_at", { ascending: false }),
@@ -307,7 +313,7 @@ async function fetchFavoriteRecipesLegacy(userId: string): Promise<RecipeListIte
     supabase
       .from("recipes")
       .select(
-        "id, user_id, title, description, image_url, category, prep_time, servings, is_public, created_at, updated_at",
+        "id, user_id, title, description, image_url, category, prep_time, servings, is_public, is_vegetarian, is_vegan, created_at, updated_at",
       )
       .in("id", recipeIds)
       .or(`user_id.eq.${userId},is_public.eq.true`)
@@ -400,7 +406,7 @@ export async function fetchRecipeById(
     supabase
       .from("recipes")
       .select(
-        "id, user_id, title, description, image_url, category, prep_time, servings, is_public, created_at, updated_at, ingredients, steps",
+        "id, user_id, title, description, image_url, category, prep_time, servings, is_public, is_vegetarian, is_vegan, created_at, updated_at, ingredients, steps",
       )
       .eq("id", recipeId)
       .or(`user_id.eq.${userId},is_public.eq.true`)
@@ -484,6 +490,8 @@ type SaveRecipeInput = {
   imageUrl: string | null;
   ingredients: RecipeIngredient[];
   isPublic: boolean;
+  isVegetarian: boolean;
+  isVegan: boolean;
   prepTime: number;
   servings: number;
   steps: RecipeStep[];
@@ -511,6 +519,8 @@ function buildRecipePayload(input: SaveRecipeInput, timestamp: string) {
     prep_time: input.prepTime,
     servings: input.servings,
     is_public: input.isPublic,
+    is_vegetarian: input.isVegetarian,
+    is_vegan: input.isVegan,
     updated_at: timestamp,
   };
 }
