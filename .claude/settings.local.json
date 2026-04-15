@@ -9,7 +9,11 @@
       "Bash(npx supabase:*)",
       "Bash(npm install:*)",
       "Bash(ls -la \"c:/Users/PCUser/Documents/NuvioLabs/taste/\"*.env*)",
-      "Bash(curl -s -o /dev/null -w \"%{http_code}\" -X POST https://mucxykufiolssenuvtmy.supabase.co/functions/v1/stripe-webhook)"
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" -X POST https://mucxykufiolssenuvtmy.supabase.co/functions/v1/stripe-webhook)",
+      "Bash(curl -v -X POST https://mucxykufiolssenuvtmy.supabase.co/functions/v1/stripe-webhook -H \"Content-Type: application/json\" -d '{}')",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" -X POST https://mucxykufiolssenuvtmy.supabase.co/functions/v1/stripe-webhook -H \"Content-Type: application/json\" -H \"stripe-signature: t=123,v1=abc\" -d '{\"type\":\"test\"}')",
+      "Bash(npm run *)",
+      "Bash(grep -E \"\\\\.\\(tsx?|jsx?\\)$\")"
     ]
   }
 }

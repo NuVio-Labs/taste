@@ -1,16 +1,9 @@
-import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Compass,
   Sparkles,
 } from "lucide-react";
-import { useLocation, useNavigate } from "react-router-dom";
-import { FeedbackModal } from "../components/feedback/FeedbackModal";
-import { NavDrawer, type NavDrawerItem } from "../components/layout/NavDrawer";
-import { buildAppNavItems } from "../components/layout/navItems";
-import { UpgradePrompt } from "../components/ui/UpgradePrompt";
-import { useAuth } from "../features/auth/useAuth";
-import { useProfile } from "../features/profile/useProfile";
+import { useNavigate } from "react-router-dom";
 
 const inspirationCards = [
   {
@@ -28,67 +21,10 @@ const inspirationCards = [
 ];
 
 export function InspirationPage() {
-  const { session, signOut } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
-  const [isUpgradePromptOpen, setIsUpgradePromptOpen] = useState(false);
-
-  const userId = session?.user.id ?? "";
-  const userEmail = session?.user.email ?? "";
-  const metadataName =
-    typeof session?.user.user_metadata.full_name === "string"
-      ? session.user.user_metadata.full_name
-      : "";
-  const { profile } = useProfile(userId);
-  const plan = profile?.plan ?? "free";
-  const navItems: NavDrawerItem[] = useMemo(
-    () =>
-      buildAppNavItems({
-        plan,
-        onOpenUpgrade: () => setIsUpgradePromptOpen(true),
-        onOpenFeedback: () => {
-          setIsDrawerOpen(false);
-          setIsFeedbackOpen(true);
-        },
-      }),
-    [plan],
-  );
-
-  async function handleLogout() {
-    await signOut();
-  }
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#0F0E0C] text-white">
-      <NavDrawer
-        isOpen={isDrawerOpen}
-        items={navItems}
-        onClose={() => setIsDrawerOpen(false)}
-        onLogout={handleLogout}
-        onToggle={() => setIsDrawerOpen((previous) => !previous)}
-        userId={userId}
-        userEmail={userEmail}
-        userName={profile?.username || metadataName}
-        plan={plan}
-        profileTo="/profile"
-      />
-
-      <FeedbackModal
-        open={isFeedbackOpen}
-        onClose={() => setIsFeedbackOpen(false)}
-        currentPage={`${location.pathname}${location.search}`}
-        userId={userId}
-        userEmail={userEmail}
-        username={profile?.username || metadataName}
-      />
-
-      <UpgradePrompt
-        isOpen={isUpgradePromptOpen}
-        onClose={() => setIsUpgradePromptOpen(false)}
-      />
-
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(214,168,74,0.10),transparent_18%),radial-gradient(circle_at_16%_18%,rgba(94,71,32,0.09),transparent_22%),radial-gradient(circle_at_84%_22%,rgba(111,123,59,0.07),transparent_20%),linear-gradient(180deg,#0F0E0C_0%,#090806_100%)]" />
       <div className="absolute inset-0 opacity-[0.04] [background-image:linear-gradient(rgba(255,255,255,0.7)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.7)_1px,transparent_1px)] [background-size:72px_72px]" />
 

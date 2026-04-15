@@ -1,19 +1,16 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { FeedbackModal } from "../components/feedback/FeedbackModal";
-import { NavDrawer, type NavDrawerItem } from "../components/layout/NavDrawer";
-import { buildAppNavItems } from "../components/layout/navItems";
 import { RecipeDetail } from "../components/recipes/RecipeDetail";
 import { RecipeCreateModal } from "../components/recipes/RecipeCreateModal";
 import { ShoppingListPickerDialog } from "../components/shopping-list/ShoppingListPickerDialog";
 import { RecipeDetailSkeleton } from "../components/ui/PageSkeletons";
 import { ErrorStateCard } from "../components/ui/StateCard";
-import { UpgradePrompt } from "../components/ui/UpgradePrompt";
 import { useAuth } from "../features/auth/useAuth";
 import { canAccess } from "../features/plan/entitlements";
 import { useSwipeBack } from "../hooks/useSwipeBack";
+import { useLayout } from "../contexts/LayoutContext";
 import { useProfile } from "../features/profile/useProfile";
 import { deleteRecipeImage } from "../features/recipes/imageUpload";
 import {
@@ -28,29 +25,22 @@ import { useShoppingLists } from "../features/shopping-list/useShoppingLists";
 
 export function RecipeDetailPage() {
   const queryClient = useQueryClient();
-  const { session, signOut } = useAuth();
+  const { session } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const { id = "" } = useParams();
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const { openUpgrade } = useLayout();
   const [isCreateRecipeOpen, setIsCreateRecipeOpen] = useState(false);
-  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isFavoritePending, setIsFavoritePending] = useState(false);
   const [isLikePending, setIsLikePending] = useState(false);
   const [isShoppingListDialogOpen, setIsShoppingListDialogOpen] = useState(false);
-  const [isUpgradePromptOpen, setIsUpgradePromptOpen] = useState(false);
   const [shoppingListError, setShoppingListError] = useState<string | null>(null);
   const [shoppingListSuccess, setShoppingListSuccess] = useState<string | null>(null);
 
   const userId = session?.user.id ?? "";
-  const userEmail = session?.user.email ?? "";
-  const metadataName =
-    typeof session?.user.user_metadata.full_name === "string"
-      ? session.user.user_metadata.full_name
-      : "";
   const { profile } = useProfile(userId);
   const plan = profile?.plan ?? "free";
   const hasFavoritesAccess = canAccess(plan, "favorites");
@@ -58,23 +48,6 @@ export function RecipeDetailPage() {
   const { recipe, isLoading, error } = useRecipe(userId, id);
   const shoppingLists = useShoppingLists(userId, plan);
   const canManageRecipe = recipe?.userId === userId;
-
-  const navItems: NavDrawerItem[] = useMemo(
-    () =>
-      buildAppNavItems({
-        plan,
-        onOpenUpgrade: () => setIsUpgradePromptOpen(true),
-        onOpenFeedback: () => {
-          setIsDrawerOpen(false);
-          setIsFeedbackOpen(true);
-        },
-      }),
-    [plan],
-  );
-
-  async function handleLogout() {
-    await signOut();
-  }
 
   const handleBack = useCallback(() => {
     const state = location.state as
@@ -146,7 +119,7 @@ export function RecipeDetailPage() {
 
   async function handleToggleFavorite() {
     if (!hasFavoritesAccess) {
-      setIsUpgradePromptOpen(true);
+      openUpgrade();
       return;
     }
 
@@ -175,7 +148,7 @@ export function RecipeDetailPage() {
 
   function handleOpenShoppingList() {
     if (!hasShoppingListAccess) {
-      setIsUpgradePromptOpen(true);
+      openUpgrade();
       return;
     }
 
@@ -220,20 +193,6 @@ export function RecipeDetailPage() {
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#0F0E0C] text-white">
-      <NavDrawer
-        _onCreateRecipe={() => setIsCreateRecipeOpen(true)}
-        isOpen={isDrawerOpen}
-        items={navItems}
-        onClose={() => setIsDrawerOpen(false)}
-        onLogout={handleLogout}
-        onToggle={() => setIsDrawerOpen((previous) => !previous)}
-        userId={userId}
-        userEmail={userEmail}
-        userName={profile?.username || metadataName}
-        plan={plan}
-        profileTo="/profile"
-      />
-
       <RecipeCreateModal
         open={isCreateRecipeOpen}
         onClose={() => setIsCreateRecipeOpen(false)}
@@ -244,20 +203,6 @@ export function RecipeDetailPage() {
           void queryClient.invalidateQueries({ queryKey: ["favorite-recipes", userId] });
           void queryClient.invalidateQueries({ queryKey: ["dashboard", userId] });
         }}
-      />
-
-      <FeedbackModal
-        open={isFeedbackOpen}
-        onClose={() => setIsFeedbackOpen(false)}
-        currentPage={`${location.pathname}${location.search}`}
-        userId={userId}
-        userEmail={userEmail}
-        username={profile?.username || metadataName}
-      />
-
-      <UpgradePrompt
-        isOpen={isUpgradePromptOpen}
-        onClose={() => setIsUpgradePromptOpen(false)}
       />
 
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(214,168,74,0.10),transparent_18%),radial-gradient(circle_at_16%_18%,rgba(94,71,32,0.09),transparent_22%),radial-gradient(circle_at_84%_22%,rgba(111,123,59,0.07),transparent_20%),linear-gradient(180deg,#0F0E0C_0%,#090806_100%)]" />

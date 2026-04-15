@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
@@ -14,12 +14,9 @@ import {
   UserCircle2,
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { FeedbackModal } from "../components/feedback/FeedbackModal";
-import { NavDrawer, type NavDrawerItem } from "../components/layout/NavDrawer";
-import { buildAppNavItems } from "../components/layout/navItems";
 import { ProfileSummarySkeleton } from "../components/ui/PageSkeletons";
 import { ErrorStateCard } from "../components/ui/StateCard";
-import { UpgradePrompt } from "../components/ui/UpgradePrompt";
+import { useLayout } from "../contexts/LayoutContext";
 import {
   signInWithEmailPassword,
   updateUserEmail,
@@ -69,13 +66,11 @@ function formatBillingDate(value: string | null | undefined) {
 }
 
 export function ProfilePage() {
-  const { session, signOut } = useAuth();
+  const { session } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const queryClient = useQueryClient();
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
-  const [isUpgradePromptOpen, setIsUpgradePromptOpen] = useState(false);
+  const { openUpgrade } = useLayout();
   const [username, setUsername] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -117,19 +112,6 @@ export function ProfilePage() {
     isStripeProActive &&
     profile?.cancelAtPeriodEnd === true &&
     Boolean(profile?.currentPeriodEnd);
-
-  const navItems: NavDrawerItem[] = useMemo(
-    () =>
-      buildAppNavItems({
-        plan,
-        onOpenUpgrade: () => setIsUpgradePromptOpen(true),
-        onOpenFeedback: () => {
-          setIsDrawerOpen(false);
-          setIsFeedbackOpen(true);
-        },
-      }),
-    [plan],
-  );
 
   useEffect(() => {
     if (!profile) {
@@ -199,10 +181,6 @@ export function ProfilePage() {
       );
     });
   }, [location.pathname, location.search, navigate, queryClient, reload, userId]);
-
-  async function handleLogout() {
-    await signOut();
-  }
 
   async function handleSave() {
     if (!userId) {
@@ -385,34 +363,6 @@ export function ProfilePage() {
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#0F0E0C] text-white">
-      <NavDrawer
-        _onCreateRecipe={() => navigate("/recipes")}
-        isOpen={isDrawerOpen}
-        items={navItems}
-        onClose={() => setIsDrawerOpen(false)}
-        onLogout={handleLogout}
-        onToggle={() => setIsDrawerOpen((previous) => !previous)}
-        userId={userId}
-        userEmail={userEmail}
-        userName={profile?.username ?? ""}
-        plan={plan}
-        profileTo="/profile"
-      />
-
-      <FeedbackModal
-        open={isFeedbackOpen}
-        onClose={() => setIsFeedbackOpen(false)}
-        currentPage={`${location.pathname}${location.search}`}
-        userId={userId}
-        userEmail={userEmail}
-        username={profile?.username ?? ""}
-      />
-
-      <UpgradePrompt
-        isOpen={isUpgradePromptOpen}
-        onClose={() => setIsUpgradePromptOpen(false)}
-      />
-
       {showCancelConfirm ? (
         <div className="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center">
           <div
@@ -554,7 +504,7 @@ export function ProfilePage() {
                   </div>
                   <button
                     type="button"
-                    onClick={() => setIsUpgradePromptOpen(true)}
+                    onClick={() => openUpgrade()}
                     className="inline-flex items-center gap-2 rounded-full border border-[#D6A84A]/22 bg-[linear-gradient(180deg,rgba(214,168,74,0.16),rgba(214,168,74,0.08))] px-4 py-2 text-sm font-semibold text-[#FFF1D4] transition-all duration-300 hover:-translate-y-0.5 hover:border-[#D6A84A]/30"
                   >
                     Pro entdecken

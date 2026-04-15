@@ -1,6 +1,7 @@
-import { Navigate, Outlet, useLocation } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { AppLoadingScreen } from "../App";
 import { useAuth } from "../features/auth/useAuth";
+import { ProtectedLayout } from "../components/layout/ProtectedLayout";
 
 export function ProtectedRoute() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -14,5 +15,5 @@ export function ProtectedRoute() {
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
-  return <Outlet />;
+  return <ProtectedLayout />;
 }

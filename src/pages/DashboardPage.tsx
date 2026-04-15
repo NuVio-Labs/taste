@@ -11,17 +11,14 @@ import {
   Plus,
   ShoppingCart,
 } from "lucide-react";
-import { useLocation, useNavigate } from "react-router-dom";
-import { FeedbackModal } from "../components/feedback/FeedbackModal";
-import { NavDrawer, type NavDrawerItem } from "../components/layout/NavDrawer";
-import { buildAppNavItems } from "../components/layout/navItems";
+import { useNavigate } from "react-router-dom";
 import { RecipeCreateModal } from "../components/recipes/RecipeCreateModal";
+import { useLayout } from "../contexts/LayoutContext";
 import {
   DashboardRecentRecipesSkeleton,
   DashboardStatsSkeleton,
 } from "../components/ui/PageSkeletons";
 import { EmptyStateCard, ErrorStateCard } from "../components/ui/StateCard";
-import { UpgradePrompt } from "../components/ui/UpgradePrompt";
 import { useAuth } from "../features/auth/useAuth";
 import { dashboardQueryOptions } from "../features/dashboard/queryOptions";
 import { useProfile } from "../features/profile/useProfile";
@@ -247,26 +244,17 @@ function _ActionCard({
 
 export function DashboardPage() {
   const queryClient = useQueryClient();
-  const { session, signOut } = useAuth();
+  const { session } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
   const userId = session?.user.id ?? "";
-  const userEmail = session?.user.email ?? "";
-  const metadataName =
-    typeof session?.user.user_metadata.full_name === "string"
-      ? session.user.user_metadata.full_name
-      : "";
   const { profile } = useProfile(userId);
   const { data, isLoading, error } = useQuery(dashboardQueryOptions(userId));
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const { openUpgrade } = useLayout();
   const [isCreateRecipeOpen, setIsCreateRecipeOpen] = useState(false);
-  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
-  const [isUpgradePromptOpen, setIsUpgradePromptOpen] = useState(false);
   const [activeRecipeVisibility, setActiveRecipeVisibility] =
     useState<RecipeVisibilityFilter>("public");
 
   const plan = profile?.plan ?? "free";
-  const userName = profile?.username || metadataName;
   const stats = data?.stats ?? EMPTY_STATS;
   const recentRecipes = data?.recentRecipes ?? [];
 
@@ -280,19 +268,6 @@ export function DashboardPage() {
     },
   };
 
-  const navItems: NavDrawerItem[] = buildAppNavItems({
-    plan,
-    onOpenUpgrade: () => setIsUpgradePromptOpen(true),
-    onOpenFeedback: () => {
-      setIsDrawerOpen(false);
-      setIsFeedbackOpen(true);
-    },
-  });
-
-  async function handleLogout() {
-    await signOut();
-  }
-
   function handlePrefetchRecipe(recipeId: string) {
     if (!userId) return;
     void queryClient.prefetchQuery(recipeDetailQueryOptions(userId, recipeId));
@@ -300,20 +275,6 @@ export function DashboardPage() {
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#0F0E0C] text-white">
-      <NavDrawer
-        _onCreateRecipe={() => setIsCreateRecipeOpen(true)}
-        isOpen={isDrawerOpen}
-        items={navItems}
-        onClose={() => setIsDrawerOpen(false)}
-        onLogout={handleLogout}
-        onToggle={() => setIsDrawerOpen((previous) => !previous)}
-        userId={userId}
-        userEmail={userEmail}
-        userName={userName}
-        plan={plan}
-        profileTo="/profile"
-      />
-
       <RecipeCreateModal
         open={isCreateRecipeOpen}
         onClose={() => setIsCreateRecipeOpen(false)}
@@ -321,20 +282,6 @@ export function DashboardPage() {
           void queryClient.invalidateQueries({ queryKey: ["dashboard", userId] });
           void queryClient.invalidateQueries({ queryKey: ["recipes", userId] });
         }}
-      />
-
-      <FeedbackModal
-        open={isFeedbackOpen}
-        onClose={() => setIsFeedbackOpen(false)}
-        currentPage={`${location.pathname}${location.search}`}
-        userId={userId}
-        userEmail={userEmail}
-        username={userName}
-      />
-
-      <UpgradePrompt
-        isOpen={isUpgradePromptOpen}
-        onClose={() => setIsUpgradePromptOpen(false)}
       />
 
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(214,168,74,0.10),transparent_18%),radial-gradient(circle_at_16%_18%,rgba(94,71,32,0.09),transparent_22%),radial-gradient(circle_at_84%_22%,rgba(111,123,59,0.07),transparent_20%),linear-gradient(180deg,#0F0E0C_0%,#090806_100%)]" />
@@ -512,7 +459,7 @@ export function DashboardPage() {
 
                   <button
                     type="button"
-                    onClick={() => setIsUpgradePromptOpen(true)}
+                    onClick={openUpgrade}
                     className="mt-1 inline-flex h-10 w-full items-center justify-center gap-2 rounded-full border border-[#D6A84A]/20 bg-[linear-gradient(180deg,rgba(214,168,74,0.14),rgba(214,168,74,0.07))] text-sm font-semibold text-[#FFF1D4] transition-all duration-300 hover:-translate-y-0.5 hover:border-[#D6A84A]/28"
                   >
                     Pro entdecken
