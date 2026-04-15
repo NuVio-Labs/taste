@@ -14,6 +14,7 @@ import { UpgradePrompt } from "../components/ui/UpgradePrompt";
 import { useAuth } from "../features/auth/useAuth";
 import { canAccess } from "../features/plan/entitlements";
 import { useProfile } from "../features/profile/useProfile";
+import { deleteRecipeImage } from "../features/recipes/imageUpload";
 import {
   deleteRecipe,
   favoriteRecipe,
@@ -94,7 +95,11 @@ export function RecipeDetailPage() {
     setDeleteError(null);
 
     try {
+      const imageUrl = recipe.imageUrl;
       await deleteRecipe(userId, recipe.id);
+      if (imageUrl) {
+        await deleteRecipeImage(imageUrl).catch(() => {});
+      }
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["recipes", userId] }),
         queryClient.invalidateQueries({ queryKey: ["favorite-recipes", userId] }),
