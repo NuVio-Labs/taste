@@ -231,8 +231,9 @@ export function RecipeDetailPage() {
         onClose={() => setIsCreateRecipeOpen(false)}
         recipe={recipe}
         onCreated={() => {
-          void queryClient.invalidateQueries({ queryKey: ["recipe", userId, id] });
+          queryClient.removeQueries({ queryKey: ["recipe", userId, id] });
           void queryClient.invalidateQueries({ queryKey: ["recipes", userId] });
+          void queryClient.invalidateQueries({ queryKey: ["favorite-recipes", userId] });
           void queryClient.invalidateQueries({ queryKey: ["dashboard", userId] });
         }}
       />
