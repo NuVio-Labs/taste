@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
@@ -13,6 +13,7 @@ import { ErrorStateCard } from "../components/ui/StateCard";
 import { UpgradePrompt } from "../components/ui/UpgradePrompt";
 import { useAuth } from "../features/auth/useAuth";
 import { canAccess } from "../features/plan/entitlements";
+import { useSwipeBack } from "../hooks/useSwipeBack";
 import { useProfile } from "../features/profile/useProfile";
 import { deleteRecipeImage } from "../features/recipes/imageUpload";
 import {
@@ -75,7 +76,7 @@ export function RecipeDetailPage() {
     await signOut();
   }
 
-  function handleBack() {
+  const handleBack = useCallback(() => {
     const state = location.state as
       | {
           fromPath?: string;
@@ -84,7 +85,9 @@ export function RecipeDetailPage() {
       | undefined;
 
     navigate(`${state?.fromPath ?? "/recipes"}${state?.fromSearch ?? ""}`);
-  }
+  }, [location.state, navigate]);
+
+  useSwipeBack(handleBack);
 
   async function handleDelete() {
     if (!userId || !recipe) {

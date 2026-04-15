@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -55,6 +55,39 @@ export function NavDrawer({
 }: NavDrawerProps) {
   const location = useLocation();
   const queryClient = useQueryClient();
+  const isOpenRef = useRef(isOpen);
+  isOpenRef.current = isOpen;
+
+  // Edge swipe to open drawer
+  useEffect(() => {
+    const EDGE = 20;
+    const MIN_X = 60;
+    const MAX_Y = 60;
+    let startX = 0;
+    let startY = 0;
+
+    function onTouchStart(event: TouchEvent) {
+      startX = event.touches[0].clientX;
+      startY = event.touches[0].clientY;
+    }
+
+    function onTouchEnd(event: TouchEvent) {
+      if (isOpenRef.current) return;
+      const dx = event.changedTouches[0].clientX - startX;
+      const dy = Math.abs(event.changedTouches[0].clientY - startY);
+      if (startX < EDGE && dx > MIN_X && dy < MAX_Y) {
+        onToggle();
+      }
+    }
+
+    window.addEventListener("touchstart", onTouchStart, { passive: true });
+    window.addEventListener("touchend", onTouchEnd, { passive: true });
+    return () => {
+      window.removeEventListener("touchstart", onTouchStart);
+      window.removeEventListener("touchend", onTouchEnd);
+    };
+  }, [onToggle]);
+
   const firstName = useMemo(() => {
     const sourceName = userName?.trim();
 

@@ -1,6 +1,7 @@
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import { ChefHat } from "lucide-react";
 import { Suspense } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { RouteSpeedInsights } from "./components/analytics/RouteSpeedInsights";
 import { ErrorBoundary } from "./components/ui/ErrorBoundary";
 import { Spinner } from "./components/ui/Spinner";
@@ -25,12 +26,31 @@ export function AppLoadingScreen() {
   );
 }
 
+function AnimatedOutlet() {
+  const location = useLocation();
+
+  return (
+    <AnimatePresence mode="wait" initial={false}>
+      <motion.div
+        key={location.pathname}
+        initial={{ opacity: 0, x: 18, filter: "blur(3px)" }}
+        animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
+        exit={{ opacity: 0, x: -18, filter: "blur(3px)" }}
+        transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+        style={{ minHeight: "100dvh" }}
+      >
+        <Outlet />
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
 export default function AppShell() {
   return (
     <ErrorBoundary>
       <RouteSpeedInsights />
       <Suspense fallback={<AppLoadingScreen />}>
-        <Outlet />
+        <AnimatedOutlet />
       </Suspense>
       <InstallPrompt />
     </ErrorBoundary>
