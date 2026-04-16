@@ -11,7 +11,7 @@ function getEnv(name: string): string {
 function getStripeClient() {
   return new Stripe(getEnv("STRIPE_SECRET_KEY"), {
     appInfo: { name: "NuVio Taste" },
-    apiVersion: "2025-02-24.acacia" as Stripe.LatestApiVersion,
+    apiVersion: "2025-02-24.acacia" as Parameters<typeof Stripe>[1]["apiVersion"],
   });
 }
 

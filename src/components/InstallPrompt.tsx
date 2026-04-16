@@ -26,7 +26,7 @@ export function InstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] =
     useState<BeforeInstallPromptEvent | null>(null);
   const [showBanner, setShowBanner] = useState(false);
-  const [showIOSGuide] = useState(
+  const [showIOSGuide, setShowIOSGuide] = useState(
     () =>
       !isInStandaloneMode() &&
       !sessionStorage.getItem(DISMISSED_KEY) &&

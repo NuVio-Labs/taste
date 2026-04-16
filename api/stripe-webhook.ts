@@ -11,7 +11,7 @@ function getEnv(name: string): string {
 function getStripeClient() {
   return new Stripe(getEnv("STRIPE_SECRET_KEY"), {
     appInfo: { name: "NuVio Taste" },
-    apiVersion: "2025-02-24.acacia" as Stripe.LatestApiVersion,
+    apiVersion: "2025-02-24.acacia" as Parameters<typeof Stripe>[1]["apiVersion"],
   });
 }
 
@@ -161,11 +161,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         break;
       }
       case "invoice.paid": {
-        const invoice = event.data.object as Stripe.Invoice;
+        const invoice = event.data.object as Stripe.Invoice & { subscription?: string | Stripe.Subscription | null };
         const subId =
           typeof invoice.subscription === "string"
             ? invoice.subscription
-            : (invoice.subscription as Stripe.Subscription)?.id ?? null;
+            : (invoice.subscription as Stripe.Subscription | null)?.id ?? null;
         if (subId) {
           const sub = await stripe.subscriptions.retrieve(subId);
           await syncSubscription(sub);
@@ -173,11 +173,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         break;
       }
       case "invoice.payment_failed": {
-        const invoice = event.data.object as Stripe.Invoice;
+        const invoice = event.data.object as Stripe.Invoice & { subscription?: string | Stripe.Subscription | null };
         const subId =
           typeof invoice.subscription === "string"
             ? invoice.subscription
-            : (invoice.subscription as Stripe.Subscription)?.id ?? null;
+            : (invoice.subscription as Stripe.Subscription | null)?.id ?? null;
         if (subId) {
           const sub = await stripe.subscriptions.retrieve(subId);
           await syncSubscription(sub);
