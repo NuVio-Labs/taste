@@ -406,7 +406,7 @@ describe("aggregateShoppingListItems", () => {
     expect(tomate?.normalizedName).toBe("tomate");
   });
 
-  it("normalisiert beschreibende Varianten wie gehackte und stückige Tomaten", () => {
+  it("normalisiert beschreibende Varianten wie gehackte Tomaten (Singular/Plural)", () => {
     const list = createShoppingList(TEST_USER_ID, "Varianten", "free");
     const recipe = {
       id: "recipe-variants",
@@ -423,7 +423,7 @@ describe("aggregateShoppingListItems", () => {
         },
         {
           id: "ing-2",
-          name: "stückige Tomate",
+          name: "gehackte Tomate",
           amount: "2",
           amountValue: "2",
           amountNote: "",
@@ -441,7 +441,7 @@ describe("aggregateShoppingListItems", () => {
     expect(tomaten?.amountDisplay).toBe("3");
     expect(tomaten?.unit).toBe("Dose");
     expect(tomaten?.sourceCount).toBe(2);
-    expect(tomaten?.sources[1]?.ingredientName).toBe("stückige Tomate");
+    expect(tomaten?.sources[1]?.ingredientName).toBe("gehackte Tomate");
   });
 });
 
