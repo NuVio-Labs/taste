@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { lazy, Suspense, useMemo, useState, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
@@ -12,7 +12,9 @@ import {
   ShoppingCart,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { RecipeCreateModal } from "../components/recipes/RecipeCreateModal";
+const RecipeCreateModal = lazy(() =>
+  import("../components/recipes/RecipeCreateModal").then((m) => ({ default: m.RecipeCreateModal })),
+);
 import { useLayout } from "../contexts/LayoutContext";
 import {
   DashboardRecentRecipesSkeleton,
@@ -286,14 +288,16 @@ export function DashboardPage() {
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#0F0E0C] text-white">
-      <RecipeCreateModal
-        open={isCreateRecipeOpen}
-        onClose={() => setIsCreateRecipeOpen(false)}
-        onCreated={() => {
-          void queryClient.invalidateQueries({ queryKey: ["dashboard", userId] });
-          void queryClient.invalidateQueries({ queryKey: ["recipes", userId] });
-        }}
-      />
+      <Suspense fallback={null}>
+        <RecipeCreateModal
+          open={isCreateRecipeOpen}
+          onClose={() => setIsCreateRecipeOpen(false)}
+          onCreated={() => {
+            void queryClient.invalidateQueries({ queryKey: ["dashboard", userId] });
+            void queryClient.invalidateQueries({ queryKey: ["recipes", userId] });
+          }}
+        />
+      </Suspense>
 
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(214,168,74,0.10),transparent_18%),radial-gradient(circle_at_16%_18%,rgba(94,71,32,0.09),transparent_22%),radial-gradient(circle_at_84%_22%,rgba(111,123,59,0.07),transparent_20%),linear-gradient(180deg,#0F0E0C_0%,#090806_100%)]" />
 

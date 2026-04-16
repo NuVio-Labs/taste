@@ -1,5 +1,20 @@
 import { supabase } from "../../lib/supabase";
 
+export type ImageSize = "card" | "detail";
+
+const SIZE_WIDTH: Record<ImageSize, number> = {
+  card: 600,
+  detail: 1200,
+};
+
+export function getTransformedImageUrl(url: string | null | undefined, size: ImageSize): string | null {
+  if (!url) return null;
+  // Only transform Supabase Storage URLs
+  if (!url.includes("/storage/v1/object/public/")) return url;
+  const width = SIZE_WIDTH[size];
+  return `${url}?width=${width}&quality=80&format=origin`;
+}
+
 const MAX_WIDTH = 1200;
 const MAX_HEIGHT = 900;
 const WEBP_QUALITY = 0.82;

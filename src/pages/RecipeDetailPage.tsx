@@ -1,10 +1,12 @@
-import { useCallback, useEffect, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { RecipeDetail } from "../components/recipes/RecipeDetail";
 import { CookingMode } from "../components/recipes/CookingMode";
-import { RecipeCreateModal } from "../components/recipes/RecipeCreateModal";
+const RecipeCreateModal = lazy(() =>
+  import("../components/recipes/RecipeCreateModal").then((m) => ({ default: m.RecipeCreateModal })),
+);
 import { ShoppingListPickerDialog } from "../components/shopping-list/ShoppingListPickerDialog";
 import { RecipeDetailSkeleton } from "../components/ui/PageSkeletons";
 import { ErrorStateCard } from "../components/ui/StateCard";
@@ -214,17 +216,19 @@ export function RecipeDetailPage() {
         ) : null}
       </AnimatePresence>
 
-      <RecipeCreateModal
-        open={isCreateRecipeOpen}
-        onClose={() => setIsCreateRecipeOpen(false)}
-        recipe={recipe}
-        onCreated={() => {
-          queryClient.removeQueries({ queryKey: ["recipe", userId, id] });
-          void queryClient.invalidateQueries({ queryKey: ["recipes", userId] });
-          void queryClient.invalidateQueries({ queryKey: ["favorite-recipes", userId] });
-          void queryClient.invalidateQueries({ queryKey: ["dashboard", userId] });
-        }}
-      />
+      <Suspense fallback={null}>
+        <RecipeCreateModal
+          open={isCreateRecipeOpen}
+          onClose={() => setIsCreateRecipeOpen(false)}
+          recipe={recipe}
+          onCreated={() => {
+            queryClient.removeQueries({ queryKey: ["recipe", userId, id] });
+            void queryClient.invalidateQueries({ queryKey: ["recipes", userId] });
+            void queryClient.invalidateQueries({ queryKey: ["favorite-recipes", userId] });
+            void queryClient.invalidateQueries({ queryKey: ["dashboard", userId] });
+          }}
+        />
+      </Suspense>
 
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(214,168,74,0.10),transparent_18%),radial-gradient(circle_at_16%_18%,rgba(94,71,32,0.09),transparent_22%),radial-gradient(circle_at_84%_22%,rgba(111,123,59,0.07),transparent_20%),linear-gradient(180deg,#0F0E0C_0%,#090806_100%)]" />
       <div className="absolute inset-0 opacity-[0.04] [background-image:linear-gradient(rgba(255,255,255,0.7)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.7)_1px,transparent_1px)] [background-size:72px_72px]" />

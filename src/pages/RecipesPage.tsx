@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useLayout } from "../contexts/LayoutContext";
-import { RecipeCreateModal } from "../components/recipes/RecipeCreateModal";
+const RecipeCreateModal = lazy(() =>
+  import("../components/recipes/RecipeCreateModal").then((m) => ({ default: m.RecipeCreateModal })),
+);
 import { RecipeFilters } from "../components/recipes/RecipeFilters";
 import { RecipeOverview } from "../components/recipes/RecipeOverview";
 import { ShoppingListPickerDialog } from "../components/shopping-list/ShoppingListPickerDialog";
@@ -438,14 +440,16 @@ export function RecipesPage() {
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#0F0E0C] text-white">
-      <RecipeCreateModal
-        open={isCreateRecipeOpen}
-        onClose={() => setIsCreateRecipeOpen(false)}
-        onCreated={() => {
-          void queryClient.invalidateQueries({ queryKey: ["recipes", userId] });
-          void queryClient.invalidateQueries({ queryKey: ["dashboard", userId] });
-        }}
-      />
+      <Suspense fallback={null}>
+        <RecipeCreateModal
+          open={isCreateRecipeOpen}
+          onClose={() => setIsCreateRecipeOpen(false)}
+          onCreated={() => {
+            void queryClient.invalidateQueries({ queryKey: ["recipes", userId] });
+            void queryClient.invalidateQueries({ queryKey: ["dashboard", userId] });
+          }}
+        />
+      </Suspense>
 
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(214,168,74,0.10),transparent_18%),radial-gradient(circle_at_16%_18%,rgba(94,71,32,0.09),transparent_22%),radial-gradient(circle_at_84%_22%,rgba(111,123,59,0.07),transparent_20%),linear-gradient(180deg,#0F0E0C_0%,#090806_100%)]" />
       <div className="absolute inset-0 opacity-[0.04] [background-image:linear-gradient(rgba(255,255,255,0.7)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.7)_1px,transparent_1px)] [background-size:72px_72px]" />
@@ -559,6 +563,10 @@ export function RecipesPage() {
                     Mehr laden ({filteredRecipes.length - visibleCount} weitere)
                   </button>
                 </div>
+              ) : filteredRecipes.length > 0 ? (
+                <p className="pt-4 text-center text-xs text-[#6B5F52]">
+                  Alle {filteredRecipes.length} Rezepte geladen
+                </p>
               ) : null}
             </>
           )}

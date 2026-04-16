@@ -19,6 +19,8 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error("[ErrorBoundary]", error, info.componentStack);
+    (window as unknown as { va?: (event: string, data: Record<string, string>) => void })
+      .va?.("event", { name: "error_boundary", message: error.message });
   }
 
   handleReset = () => {

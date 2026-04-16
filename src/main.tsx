@@ -9,6 +9,13 @@ import "./index.css";
 import { queryClient } from "./lib/queryClient";
 import { router } from "./router";
 
+window.addEventListener("unhandledrejection", (event) => {
+  const message = event.reason instanceof Error ? event.reason.message : String(event.reason);
+  console.error("[unhandledrejection]", message);
+  (window as unknown as { va?: (event: string, data: Record<string, string>) => void })
+    .va?.("event", { name: "unhandled_rejection", message });
+});
+
 registerSW({
   onNeedRefresh() {
     // New SW available — reload to avoid stale chunk errors after deploy

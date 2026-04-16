@@ -18,6 +18,7 @@ import {
   formatRecipeIngredientAmount,
   type RecipeDetailData,
 } from "../../features/recipes/types";
+import { getTransformedImageUrl } from "../../features/recipes/imageUpload";
 import { getRecipeCategoryTheme } from "./categoryTheme";
 
 type RecipeDetailProps = {
@@ -79,7 +80,7 @@ export function RecipeDetail({
           {recipe.imageUrl ? (
             <>
               <img
-                src={recipe.imageUrl}
+                src={getTransformedImageUrl(recipe.imageUrl, "detail") ?? ""}
                 alt={recipe.title}
                 className="h-full w-full object-cover"
               />

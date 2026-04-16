@@ -1,4 +1,3 @@
-import { motion } from "framer-motion";
 import {
   Bookmark,
   Clock3,
@@ -10,6 +9,7 @@ import {
   Users2,
 } from "lucide-react";
 import type { RecipeListItem } from "../../features/recipes/types";
+import { getTransformedImageUrl } from "../../features/recipes/imageUpload";
 import { getRecipeCategoryTheme } from "./categoryTheme";
 
 type RecipeCardProps = {
@@ -49,18 +49,16 @@ export function RecipeCard({
   }
 
   return (
-    <motion.div
+    <div
       role="button"
       tabIndex={0}
       aria-label={`Rezept öffnen: ${recipe.title}`}
-      whileHover={{ y: -2 }}
-      transition={{ duration: 0.2 }}
       onClick={onClick}
       onKeyDown={handleCardKeyDown}
       onMouseEnter={onPrefetch}
       onFocus={onPrefetch}
       onTouchStart={onPrefetch}
-      className="overflow-hidden rounded-[28px] border border-white/8 bg-white/[0.03] text-left shadow-[0_16px_40px_rgba(0,0,0,0.18)] transition-all duration-300 hover:border-[#D6A84A]/18 hover:bg-white/[0.04]"
+      className="overflow-hidden rounded-[28px] border border-white/8 bg-white/[0.03] text-left shadow-[0_16px_40px_rgba(0,0,0,0.18)] transition-all duration-300 hover:-translate-y-0.5 hover:border-[#D6A84A]/18 hover:bg-white/[0.04]"
     >
       <div className={`relative aspect-[16/10] ${categoryTheme.mediaClassName}`}>
         {onAddToShoppingList ? (
@@ -79,9 +77,10 @@ export function RecipeCard({
         {recipe.imageUrl ? (
           <>
             <img
-              src={recipe.imageUrl}
+              src={getTransformedImageUrl(recipe.imageUrl, "card") ?? ""}
               alt={recipe.title}
               className="h-full w-full object-cover"
+              loading="lazy"
             />
             <div className={`absolute inset-0 ${categoryTheme.overlayClassName}`} />
           </>
@@ -195,6 +194,6 @@ export function RecipeCard({
           ) : null}
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }
