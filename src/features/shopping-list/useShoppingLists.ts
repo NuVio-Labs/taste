@@ -1,5 +1,6 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "../../lib/supabase";
 import type { RecipeDetailData } from "../recipes/types";
 import {
   fetchShoppingLists,
@@ -95,6 +96,59 @@ export function useShoppingLists(
     enabled: Boolean(userId),
     staleTime: 30_000,
   });
+
+  // Realtime: subscribe to changes on shopping_lists rows this user can see
+  useEffect(() => {
+    if (!userId) return;
+
+    const channel = supabase
+      .channel(`shopping-lists-${userId}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "shopping_lists" }, (payload) => {
+        const row = payload.new as Record<string, unknown>;
+        const normalized: ShoppingList = {
+          id: row.id as string,
+          name: row.name as string,
+          ownerId: row.user_id as string,
+          ownerName: null,
+          recipes: Array.isArray(row.recipes) ? (row.recipes as ShoppingList["recipes"]) : [],
+          checkedItemKeys: Array.isArray(row.checked_item_keys) ? (row.checked_item_keys as string[]) : [],
+          createdAt: row.created_at as string,
+          updatedAt: row.updated_at as string,
+        };
+        queryClient.setQueryData<ShoppingList[]>(shoppingListsQueryKey(userId), (current) => {
+          if (!current) return [normalized];
+          if (current.some((l) => l.id === normalized.id)) return current;
+          return [normalized, ...current];
+        });
+      })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "shopping_lists" }, (payload) => {
+        const row = payload.new as Record<string, unknown>;
+        const normalized: ShoppingList = {
+          id: row.id as string,
+          name: row.name as string,
+          ownerId: row.user_id as string,
+          ownerName: null,
+          recipes: Array.isArray(row.recipes) ? (row.recipes as ShoppingList["recipes"]) : [],
+          checkedItemKeys: Array.isArray(row.checked_item_keys) ? (row.checked_item_keys as string[]) : [],
+          createdAt: row.created_at as string,
+          updatedAt: row.updated_at as string,
+        };
+        queryClient.setQueryData<ShoppingList[]>(shoppingListsQueryKey(userId), (current) =>
+          current ? current.map((l) => (l.id === normalized.id ? { ...l, ...normalized } : l)) : current,
+        );
+      })
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "shopping_lists" }, (payload) => {
+        const id = (payload.old as Record<string, unknown>).id as string;
+        queryClient.setQueryData<ShoppingList[]>(shoppingListsQueryKey(userId), (current) =>
+          current ? current.filter((l) => l.id !== id) : current,
+        );
+      })
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [userId, queryClient]);
 
   const selectedList = useMemo(() => {
     if (selectedListId) {
