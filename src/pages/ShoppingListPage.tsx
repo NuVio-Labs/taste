@@ -57,6 +57,7 @@ export function ShoppingListPage() {
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const [selectedListForShareId, setSelectedListForShareId] = useState<string | null>(null);
   const hadIncompleteItemsRef = useRef(false);
+  const localToggleRef = useRef(false);
   const [searchParams, setSearchParams] = useSearchParams();
 
   const userId = session?.user.id ?? "";
@@ -103,9 +104,10 @@ export function ShoppingListPage() {
       return;
     }
 
-    if (hadIncompleteItemsRef.current && hasCompletedAllItems) {
+    if (hadIncompleteItemsRef.current && hasCompletedAllItems && localToggleRef.current) {
       setIsCompletionDialogOpen(true);
       hadIncompleteItemsRef.current = false;
+      localToggleRef.current = false;
     }
   }, [hasCompletedAllItems, isCompletionDialogOpen, shoppingLists.aggregatedItems]);
 
@@ -561,7 +563,10 @@ export function ShoppingListPage() {
                           <div className="flex items-center gap-3 px-4 py-3">
                             <button
                               type="button"
-                              onClick={() => shoppingLists.toggleItemChecked(item.key)}
+                              onClick={() => {
+                                localToggleRef.current = true;
+                                shoppingLists.toggleItemChecked(item.key);
+                              }}
                               data-testid={`shopping-list-item-toggle-${item.key}`}
                               className={`h-5 w-5 rounded border transition-colors duration-300 ${
                                 item.isChecked
