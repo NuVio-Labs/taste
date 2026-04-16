@@ -10,6 +10,10 @@ import { queryClient } from "./lib/queryClient";
 import { router } from "./router";
 
 registerSW({
+  onNeedRefresh() {
+    // New SW available — reload to avoid stale chunk errors after deploy
+    window.location.reload();
+  },
   onRegistered(registration) {
     if (!registration) return;
     // Periodic sync every 60 minutes
