@@ -4,12 +4,13 @@ export type Plan = "free" | "pro";
  * All features that can be access-controlled by plan.
  * Add new gated features here — nowhere else.
  */
-export type Feature = "favorites" | "shopping_list" | "pro_dashboard";
+export type Feature = "favorites" | "shopping_list" | "pro_dashboard" | "cooking_mode";
 
 const PRO_ONLY_FEATURES: ReadonlySet<Feature> = new Set([
   "favorites",
   "shopping_list",
   "pro_dashboard",
+  "cooking_mode",
 ]);
 
 /**

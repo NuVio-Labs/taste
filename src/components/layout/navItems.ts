@@ -1,6 +1,7 @@
 import {
   Bookmark,
   BookOpen,
+  ChefHat,
   LayoutGrid,
   MessageSquareText,
   Tag,
@@ -11,16 +12,19 @@ import type { NavDrawerItem } from "./NavDrawer";
 type BuildAppNavItemsOptions = {
   onOpenFeedback: () => void;
   onOpenUpgrade: () => void;
+  onOpenCookingMode: () => void;
   plan: Plan;
 };
 
 export function buildAppNavItems({
   onOpenFeedback,
   onOpenUpgrade,
+  onOpenCookingMode,
   plan,
 }: BuildAppNavItemsOptions): NavDrawerItem[] {
   const hasFavoritesAccess = canAccess(plan, "favorites");
   const hasShoppingListAccess = canAccess(plan, "shopping_list");
+  const hasCookingModeAccess = canAccess(plan, "cooking_mode");
 
   return [
     {
@@ -45,6 +49,13 @@ export function buildAppNavItems({
       icon: Tag,
       ...(hasShoppingListAccess
         ? { to: "/shopping-list" }
+        : { locked: true as const, onSelect: onOpenUpgrade }),
+    },
+    {
+      label: "Kochmodus",
+      icon: ChefHat,
+      ...(hasCookingModeAccess
+        ? { onSelect: onOpenCookingMode }
         : { locked: true as const, onSelect: onOpenUpgrade }),
     },
     {

@@ -5,9 +5,12 @@ import { FeedbackModal } from "../feedback/FeedbackModal";
 import { NavDrawer } from "./NavDrawer";
 import { buildAppNavItems } from "./navItems";
 import { UpgradePrompt } from "../ui/UpgradePrompt";
+import { CookingModePickerSheet } from "../recipes/CookingModePickerSheet";
+import { CookingMode } from "../recipes/CookingMode";
 import { LayoutContext } from "../../contexts/LayoutContext";
 import { useAuth } from "../../features/auth/useAuth";
 import { useProfile } from "../../features/profile/useProfile";
+import type { RecipeDetailData } from "../../features/recipes/types";
 
 export function ProtectedLayout() {
   const { session, signOut } = useAuth();
@@ -28,18 +31,25 @@ export function ProtectedLayout() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [isUpgradeOpen, setIsUpgradeOpen] = useState(false);
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const [cookingRecipe, setCookingRecipe] = useState<RecipeDetailData | null>(null);
 
   const openFeedback = useCallback(() => setIsFeedbackOpen(true), []);
   const openUpgrade = useCallback(() => setIsUpgradeOpen(true), []);
+  const openCookingMode = useCallback(() => {
+    setIsDrawerOpen(false);
+    setIsPickerOpen(true);
+  }, []);
 
   const navItems = useMemo(
     () =>
       buildAppNavItems({
         onOpenFeedback: openFeedback,
         onOpenUpgrade: openUpgrade,
+        onOpenCookingMode: openCookingMode,
         plan,
       }),
-    [openFeedback, openUpgrade, plan],
+    [openFeedback, openUpgrade, openCookingMode, plan],
   );
 
   async function handleLogout() {
@@ -49,6 +59,26 @@ export function ProtectedLayout() {
 
   return (
     <LayoutContext.Provider value={{ openFeedback, openUpgrade }}>
+      <AnimatePresence>
+        {cookingRecipe ? (
+          <CookingMode
+            key="cooking-mode-global"
+            recipe={cookingRecipe}
+            servings={cookingRecipe.servings ?? 1}
+            onClose={() => setCookingRecipe(null)}
+          />
+        ) : null}
+      </AnimatePresence>
+
+      <CookingModePickerSheet
+        isOpen={isPickerOpen}
+        userId={userId}
+        onClose={() => setIsPickerOpen(false)}
+        onSelect={(recipe) => {
+          setCookingRecipe(recipe);
+        }}
+      />
+
       <NavDrawer
         isOpen={isDrawerOpen}
         items={navItems}

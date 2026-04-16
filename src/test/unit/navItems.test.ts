@@ -10,6 +10,7 @@ describe("buildAppNavItems", () => {
       plan: "free",
       onOpenFeedback,
       onOpenUpgrade,
+      onOpenCookingMode: vi.fn(),
     });
 
     expect(items.find((item) => item.label === "Favoriten")).toMatchObject({
@@ -27,6 +28,7 @@ describe("buildAppNavItems", () => {
       plan: "pro",
       onOpenFeedback: vi.fn(),
       onOpenUpgrade: vi.fn(),
+      onOpenCookingMode: vi.fn(),
     });
 
     expect(items.find((item) => item.label === "Favoriten")).toMatchObject({

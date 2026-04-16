@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
@@ -23,6 +23,7 @@ import { useAuth } from "../features/auth/useAuth";
 import { dashboardQueryOptions } from "../features/dashboard/queryOptions";
 import { useProfile } from "../features/profile/useProfile";
 import { recipeDetailQueryOptions } from "../features/recipes/queryOptions";
+import { getRecentlyViewed } from "../features/recipes/useRecentlyViewed";
 
 type StatCardProps = {
   hint: string;
@@ -258,6 +259,16 @@ export function DashboardPage() {
   const stats = data?.stats ?? EMPTY_STATS;
   const recentRecipes = data?.recentRecipes ?? [];
 
+  const recentlyViewedIds = useMemo(() => getRecentlyViewed(userId), [userId]);
+  const recentlyViewedRecipes = useMemo(
+    () =>
+      recentlyViewedIds
+        .map((id) => recentRecipes.find((r) => r.id === id))
+        .filter(Boolean)
+        .slice(0, 5),
+    [recentlyViewedIds, recentRecipes],
+  );
+
   const fadeUp = {
     initial: { opacity: 0, y: 14, filter: "blur(6px)" },
     animate: {
@@ -476,6 +487,30 @@ export function DashboardPage() {
                 </div>
               </SectionCard>
             )}
+
+            {recentlyViewedRecipes.length > 0 ? (
+              <SectionCard eyebrow="Verlauf" title="Zuletzt angesehen">
+                <div className="space-y-2">
+                  {recentlyViewedRecipes.map((recipe) => (
+                    <button
+                      key={recipe!.id}
+                      type="button"
+                      onClick={() => navigate(`/recipes/${recipe!.id}`)}
+                      onMouseEnter={() => handlePrefetchRecipe(recipe!.id)}
+                      className="group flex w-full items-center gap-3 rounded-[20px] border border-white/8 bg-white/[0.025] px-4 py-3 text-left transition-all duration-300 hover:border-[#D6A84A]/18 hover:bg-white/[0.035]"
+                    >
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#E9D8B4]/10 bg-white/[0.03] text-[#8D7E6E]">
+                        <ChefHat size={14} />
+                      </div>
+                      <p className="min-w-0 flex-1 truncate text-sm font-medium text-[#FFF8EE]">
+                        {recipe!.title}
+                      </p>
+                      <ArrowRight size={14} className="shrink-0 text-[#6B5E4E] transition-transform duration-300 group-hover:translate-x-0.5 group-hover:text-[#D6A84A]" />
+                    </button>
+                  ))}
+                </div>
+              </SectionCard>
+            ) : null}
 
           </motion.aside>
         </div>

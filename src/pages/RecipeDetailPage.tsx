@@ -1,8 +1,9 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { RecipeDetail } from "../components/recipes/RecipeDetail";
+import { CookingMode } from "../components/recipes/CookingMode";
 import { RecipeCreateModal } from "../components/recipes/RecipeCreateModal";
 import { ShoppingListPickerDialog } from "../components/shopping-list/ShoppingListPickerDialog";
 import { RecipeDetailSkeleton } from "../components/ui/PageSkeletons";
@@ -21,6 +22,7 @@ import {
   unlikeRecipe,
 } from "../features/recipes/recipeService";
 import { useRecipe } from "../features/recipes/useRecipe";
+import { trackRecentlyViewed } from "../features/recipes/useRecentlyViewed";
 import { useShoppingLists } from "../features/shopping-list/useShoppingLists";
 
 export function RecipeDetailPage() {
@@ -39,6 +41,8 @@ export function RecipeDetailPage() {
   const [isShoppingListDialogOpen, setIsShoppingListDialogOpen] = useState(false);
   const [shoppingListError, setShoppingListError] = useState<string | null>(null);
   const [shoppingListSuccess, setShoppingListSuccess] = useState<string | null>(null);
+  const [isCookingMode, setIsCookingMode] = useState(false);
+  const [cookingServings, setCookingServings] = useState<number | null>(null);
 
   const userId = session?.user.id ?? "";
   const { profile } = useProfile(userId);
@@ -48,6 +52,12 @@ export function RecipeDetailPage() {
   const { recipe, isLoading, error, reload } = useRecipe(userId, id);
   const shoppingLists = useShoppingLists(userId, plan);
   const canManageRecipe = recipe?.userId === userId;
+
+  useEffect(() => {
+    if (userId && id && recipe) {
+      trackRecentlyViewed(userId, id);
+    }
+  }, [userId, id, recipe]);
 
   const handleBack = useCallback(() => {
     const state = location.state as
@@ -193,6 +203,17 @@ export function RecipeDetailPage() {
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#0F0E0C] text-white">
+      <AnimatePresence>
+        {isCookingMode && recipe ? (
+          <CookingMode
+            key="cooking-mode"
+            recipe={recipe}
+            servings={cookingServings ?? recipe.servings ?? 1}
+            onClose={() => setIsCookingMode(false)}
+          />
+        ) : null}
+      </AnimatePresence>
+
       <RecipeCreateModal
         open={isCreateRecipeOpen}
         onClose={() => setIsCreateRecipeOpen(false)}
@@ -253,6 +274,10 @@ export function RecipeDetailPage() {
                 onAddToShoppingList={handleOpenShoppingList}
                 onBack={handleBack}
                 onEdit={() => setIsCreateRecipeOpen(true)}
+                onStartCooking={(servings) => {
+                  setCookingServings(servings);
+                  setIsCookingMode(true);
+                }}
                 onToggleFavorite={() => {
                   void handleToggleFavorite();
                 }}

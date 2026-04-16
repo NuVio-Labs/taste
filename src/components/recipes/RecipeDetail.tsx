@@ -1,15 +1,19 @@
 import {
   ArrowLeft,
   Bookmark,
+  ChefHat,
   Clock3,
   Globe2,
   Lock,
+  Minus,
   Pencil,
+  Plus,
   ShoppingCart,
   ThumbsUp,
   Trash2,
   Users2,
 } from "lucide-react";
+import { useState } from "react";
 import {
   formatRecipeIngredientAmount,
   type RecipeDetailData,
@@ -26,6 +30,7 @@ type RecipeDetailProps = {
   onBack: () => void;
   onDelete: () => void;
   onEdit: () => void;
+  onStartCooking: (servings: number) => void;
   onToggleFavorite: () => void;
   onToggleLike: () => void;
   recipe: RecipeDetailData;
@@ -41,11 +46,22 @@ export function RecipeDetail({
   onBack,
   onDelete,
   onEdit,
+  onStartCooking,
   onToggleFavorite,
   onToggleLike,
   recipe,
 }: RecipeDetailProps) {
   const categoryTheme = getRecipeCategoryTheme(recipe.category);
+  const [servings, setServings] = useState(recipe.servings ?? 1);
+
+  const servingRatio = recipe.servings && recipe.servings > 0 ? servings / recipe.servings : 1;
+
+  function scaleAmount(amountValue: string): string {
+    const num = parseFloat(amountValue.replace(",", "."));
+    if (!isFinite(num)) return amountValue;
+    const scaled = num * servingRatio;
+    return Number.isInteger(scaled) ? String(scaled) : scaled.toFixed(1).replace(/\.0$/, "");
+  }
 
   return (
     <div className="space-y-6">
@@ -137,6 +153,14 @@ export function RecipeDetail({
               </button>
               <button
                 type="button"
+                onClick={() => onStartCooking(servings)}
+                className="inline-flex h-11 items-center gap-2 rounded-full border border-[#D6A84A]/24 bg-[linear-gradient(180deg,rgba(214,168,74,0.22),rgba(214,168,74,0.12))] px-4 text-sm font-semibold text-[#FFF1D4] transition-all duration-300 hover:-translate-y-0.5 hover:border-[#D6A84A]/34"
+              >
+                <ChefHat size={16} />
+                Jetzt kochen
+              </button>
+              <button
+                type="button"
                 onClick={onAddToShoppingList}
                 data-testid="recipe-detail-add-to-shopping-list-button"
                 disabled={isAddToShoppingListPending}
@@ -145,7 +169,7 @@ export function RecipeDetail({
                 <ShoppingCart size={16} />
                 {isAddToShoppingListPending
                   ? "Wird hinzugefügt..."
-                  : "Zur Einkaufsliste hinzufügen"}
+                  : "Zur Einkaufsliste"}
               </button>
               {canManageRecipe ? (
                 <>
@@ -204,9 +228,32 @@ export function RecipeDetail({
           <p className="text-xs uppercase tracking-[0.24em] text-[#8D7E6E]">
             Zutaten
           </p>
-          <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-[#FFF8EE]">
-            Alles auf einen Blick
-          </h2>
+          <div className="mt-2 flex items-center justify-between gap-4">
+            <h2 className="text-2xl font-semibold tracking-[-0.04em] text-[#FFF8EE]">
+              Alles auf einen Blick
+            </h2>
+            {recipe.servings ? (
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setServings((s) => Math.max(1, s - 1))}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] text-[#A99883] transition-colors hover:text-[#F6EFE4]"
+                >
+                  <Minus size={13} />
+                </button>
+                <span className="min-w-[3rem] text-center text-sm font-medium text-[#FFF8EE]">
+                  {servings} {servings === 1 ? "Port." : "Port."}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setServings((s) => s + 1)}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] text-[#A99883] transition-colors hover:text-[#F6EFE4]"
+                >
+                  <Plus size={13} />
+                </button>
+              </div>
+            ) : null}
+          </div>
 
           <div className="mt-5 space-y-3">
             {recipe.ingredients.length > 0 ? (
@@ -219,9 +266,10 @@ export function RecipeDetail({
                     {ingredient.name}
                   </span>
                   <span className="text-sm text-[#D5C5AF]">
-                    {[formatRecipeIngredientAmount(ingredient), ingredient.unit]
-                      .filter(Boolean)
-                      .join(" ")}
+                    {ingredient.amountValue
+                      ? `${scaleAmount(ingredient.amountValue)}${ingredient.amountNote ? ` ${ingredient.amountNote}` : ""}`
+                      : formatRecipeIngredientAmount(ingredient)}{" "}
+                    {ingredient.unit}
                   </span>
                 </div>
               ))
