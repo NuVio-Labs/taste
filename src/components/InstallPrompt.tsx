@@ -26,16 +26,17 @@ export function InstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] =
     useState<BeforeInstallPromptEvent | null>(null);
   const [showBanner, setShowBanner] = useState(false);
-  const [showIOSGuide, setShowIOSGuide] = useState(false);
+  const [showIOSGuide] = useState(
+    () =>
+      !isInStandaloneMode() &&
+      !sessionStorage.getItem(DISMISSED_KEY) &&
+      isIOS(),
+  );
 
   useEffect(() => {
     if (isInStandaloneMode()) return;
     if (sessionStorage.getItem(DISMISSED_KEY)) return;
-
-    if (isIOS()) {
-      setShowIOSGuide(true);
-      return;
-    }
+    if (isIOS()) return;
 
     const handler = (e: Event) => {
       e.preventDefault();

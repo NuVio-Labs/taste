@@ -103,9 +103,6 @@ export function RecipeCard({
             </h3>
           </div>
 
-          <div className="rounded-full border border-white/8 bg-black/10 px-3 py-1 text-xs text-[#D7C6AE]">
-            {recipe.isPublic ? "Öffentlich" : "Privat"}
-          </div>
         </div>
 
         <p className="line-clamp-2 text-sm leading-6 text-[#CDBBA2]">
@@ -125,7 +122,7 @@ export function RecipeCard({
                 onAddToShoppingList();
               }}
               disabled={isAddToShoppingListPending}
-              className="inline-flex items-center gap-2 rounded-full border border-[#D6A84A]/24 bg-[rgba(214,168,74,0.1)] px-3 py-1.5 text-[#FFF1D4] transition-colors duration-300 hover:border-[#D6A84A]/36 hover:bg-[rgba(214,168,74,0.14)] disabled:opacity-60"
+              className="inline-flex h-8 items-center gap-1.5 rounded-full border border-[#D6A84A]/24 bg-[rgba(214,168,74,0.1)] px-3 text-[#FFF1D4] transition-colors duration-300 hover:border-[#D6A84A]/36 hover:bg-[rgba(214,168,74,0.14)] disabled:opacity-60"
             >
               <ShoppingCart size={14} />
               Zur Liste
@@ -140,7 +137,7 @@ export function RecipeCard({
             data-testid={`recipe-favorite-button-${recipe.id}`}
             aria-pressed={recipe.isFavorite}
             disabled={isFavoritePending}
-            className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 transition-colors duration-300 ${
+            className={`inline-flex h-8 items-center gap-1.5 rounded-full border px-3 transition-colors duration-300 ${
               recipe.isFavorite
                 ? "border-[#E7C26E]/30 bg-[rgba(231,194,110,0.14)] text-[#FCE7B0]"
                 : "border-white/8 bg-black/10 text-[#E2D4BE]"
@@ -160,7 +157,7 @@ export function RecipeCard({
             data-testid={`recipe-like-button-${recipe.id}`}
             aria-pressed={recipe.isLiked}
             disabled={isLikePending}
-            className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 transition-colors duration-300 ${
+            className={`inline-flex h-8 items-center gap-1.5 rounded-full border px-3 transition-colors duration-300 ${
               recipe.isLiked
                 ? "border-[#6FA6FF]/30 bg-[rgba(111,166,255,0.14)] text-[#D9E8FF]"
                 : "border-white/8 bg-black/10 text-[#E2D4BE]"
@@ -172,26 +169,28 @@ export function RecipeCard({
             />
             {recipe.likeCount}
           </button>
-          <span className="inline-flex items-center gap-2 rounded-full border border-white/8 bg-black/10 px-3 py-1.5">
+          <span className="inline-flex h-8 items-center gap-1.5 rounded-full border border-white/8 bg-black/10 px-3">
             <Clock3 size={14} />
             {recipe.prepTime ? `${recipe.prepTime} Min` : "Zeit offen"}
           </span>
-          <span className="inline-flex items-center gap-2 rounded-full border border-white/8 bg-black/10 px-3 py-1.5">
+          <span className="inline-flex h-8 items-center gap-1.5 rounded-full border border-white/8 bg-black/10 px-3">
             <Users2 size={14} />
-            {recipe.servings ? `${recipe.servings} Portionen` : "Portionen offen"}
+            {recipe.servings ? `${recipe.servings} Port.` : "Port. offen"}
           </span>
-          <span className="inline-flex items-center gap-2 rounded-full border border-white/8 bg-black/10 px-3 py-1.5">
+          <span className="inline-flex h-8 items-center gap-1.5 rounded-full border border-white/8 bg-black/10 px-3">
             {recipe.isPublic ? <Globe2 size={14} /> : <Lock size={14} />}
             {recipe.isPublic ? "Öffentlich" : "Privat"}
           </span>
           {recipe.isVegetarian ? (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-[#6FA86A]/28 bg-[rgba(111,168,106,0.1)] px-3 py-1.5 text-[#A8D4A4]">
-              🌿 Vegetarisch
+            <span className="inline-flex h-8 items-center gap-1.5 rounded-full border border-[#6FA86A]/28 bg-[rgba(111,168,106,0.1)] px-3 text-[#A8D4A4]">
+              <span className="text-[13px] leading-none">🌿</span>
+              Vegetarisch
             </span>
           ) : null}
           {recipe.isVegan ? (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-[#5BAF7A]/28 bg-[rgba(91,175,122,0.1)] px-3 py-1.5 text-[#94D4AE]">
-              🌱 Vegan
+            <span className="inline-flex h-8 items-center gap-1.5 rounded-full border border-[#5BAF7A]/28 bg-[rgba(91,175,122,0.1)] px-3 text-[#94D4AE]">
+              <span className="text-[13px] leading-none">🌱</span>
+              Vegan
             </span>
           ) : null}
         </div>

@@ -197,26 +197,28 @@ export function RecipeDetail({
           </div>
 
           <div className="flex flex-wrap gap-3 text-sm text-[#E2D4BE]">
-            <span className="inline-flex items-center gap-2 rounded-full border border-white/8 bg-black/10 px-3 py-2">
+            <span className="inline-flex h-9 items-center gap-1.5 rounded-full border border-white/8 bg-black/10 px-3">
               <Clock3 size={15} />
               {recipe.prepTime ? `${recipe.prepTime} Minuten` : "Zeit offen"}
             </span>
-            <span className="inline-flex items-center gap-2 rounded-full border border-white/8 bg-black/10 px-3 py-2">
+            <span className="inline-flex h-9 items-center gap-1.5 rounded-full border border-white/8 bg-black/10 px-3">
               <Users2 size={15} />
               {recipe.servings ? `${recipe.servings} Portionen` : "Portionen offen"}
             </span>
-            <span className="inline-flex items-center gap-2 rounded-full border border-white/8 bg-black/10 px-3 py-2">
+            <span className="inline-flex h-9 items-center gap-1.5 rounded-full border border-white/8 bg-black/10 px-3">
               {recipe.isPublic ? <Globe2 size={15} /> : <Lock size={15} />}
               {recipe.isPublic ? "Öffentlich" : "Privat"}
             </span>
             {recipe.isVegetarian ? (
-              <span className="inline-flex items-center gap-2 rounded-full border border-[#6FA86A]/28 bg-[rgba(111,168,106,0.1)] px-3 py-2 text-[#A8D4A4]">
-                🌿 Vegetarisch
+              <span className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[#6FA86A]/28 bg-[rgba(111,168,106,0.1)] px-3 text-[#A8D4A4]">
+                <span className="text-[13px] leading-none">🌿</span>
+                Vegetarisch
               </span>
             ) : null}
             {recipe.isVegan ? (
-              <span className="inline-flex items-center gap-2 rounded-full border border-[#5BAF7A]/28 bg-[rgba(91,175,122,0.1)] px-3 py-2 text-[#94D4AE]">
-                🌱 Vegan
+              <span className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[#5BAF7A]/28 bg-[rgba(91,175,122,0.1)] px-3 text-[#94D4AE]">
+                <span className="text-[13px] leading-none">🌱</span>
+                Vegan
               </span>
             ) : null}
           </div>

@@ -91,21 +91,24 @@ export function RecipeFilters({
       <div className="flex items-center gap-2 xl:col-span-3">
         {(
           [
-            { value: "all", label: "Alle" },
-            { value: "vegetarian", label: "🌿 Vegetarisch" },
-            { value: "vegan", label: "🌱 Vegan" },
-          ] as { value: RecipeDietFilter; label: string }[]
+            { value: "all", emoji: null, label: "Alle" },
+            { value: "vegetarian", emoji: "🌿", label: "Vegetarisch" },
+            { value: "vegan", emoji: "🌱", label: "Vegan" },
+          ] as { value: RecipeDietFilter; emoji: string | null; label: string }[]
         ).map((option) => (
           <button
             key={option.value}
             type="button"
             onClick={() => onDietChange(option.value)}
-            className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors duration-300 ${
+            className={`inline-flex h-9 items-center gap-1.5 rounded-full border px-4 text-sm font-medium transition-colors duration-300 ${
               dietFilter === option.value
                 ? "border-[#D6A84A]/30 bg-[#D6A84A]/12 text-[#F6D78E]"
                 : "border-white/10 bg-white/[0.02] text-[#8E806F] hover:border-white/20 hover:text-[#C8B79F]"
             }`}
           >
+            {option.emoji ? (
+              <span className="text-[13px] leading-none">{option.emoji}</span>
+            ) : null}
             {option.label}
           </button>
         ))}

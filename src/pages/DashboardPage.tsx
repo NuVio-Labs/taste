@@ -257,7 +257,7 @@ export function DashboardPage() {
 
   const plan = profile?.plan ?? "free";
   const stats = data?.stats ?? EMPTY_STATS;
-  const recentRecipes = data?.recentRecipes ?? [];
+  const recentRecipes = useMemo(() => data?.recentRecipes ?? [], [data]);
 
   const recentlyViewedIds = useMemo(() => getRecentlyViewed(userId), [userId]);
   const recentlyViewedRecipes = useMemo(

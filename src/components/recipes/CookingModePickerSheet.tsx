@@ -7,7 +7,7 @@ import {
   recipesQueryOptions,
 } from "../../features/recipes/queryOptions";
 import { fetchRecipeById } from "../../features/recipes/recipeService";
-import type { RecipeDetailData, RecipeListItem } from "../../features/recipes/types";
+import type { RecipeDetailData } from "../../features/recipes/types";
 
 type Tab = "own" | "favorites";
 

@@ -91,16 +91,6 @@ export function CookingMode({ recipe, servings, onClose }: Props) {
     return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
   }, []);
 
-  // Reset timer when step changes
-  useEffect(() => {
-    stopAll();
-    setTimerSeconds(null);
-    setTimerRunning(false);
-    setTimerDone(false);
-    setArcProgress(1);
-    pausedProgressRef.current = 1;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step]);
 
   // rAF loop for smooth arc
   useEffect(() => {
@@ -210,12 +200,22 @@ export function CookingMode({ recipe, servings, onClose }: Props) {
     pausedProgressRef.current = 1;
   }
 
+  function resetTimer() {
+    if (timerRef.current) clearInterval(timerRef.current);
+    if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+    setTimerSeconds(null);
+    setTimerRunning(false);
+    setTimerDone(false);
+    setArcProgress(1);
+    pausedProgressRef.current = 1;
+  }
+
   function handleNext() {
-    if (step < totalSteps) setStep((s) => s + 1);
+    if (step < totalSteps) { resetTimer(); setStep((s) => s + 1); }
   }
 
   function handlePrev() {
-    if (step > 0) setStep((s) => s - 1);
+    if (step > 0) { resetTimer(); setStep((s) => s - 1); }
   }
 
   const touchStartX = useRef<number | null>(null);
@@ -398,7 +398,11 @@ export function CookingMode({ recipe, servings, onClose }: Props) {
                                 />
                               </svg>
                               {/* Center content */}
-                              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                              <div
+                                aria-live="polite"
+                                aria-atomic="true"
+                                className="absolute inset-0 flex flex-col items-center justify-center"
+                              >
                                 <p className={`text-4xl font-bold tabular-nums tracking-[-0.04em] ${timerDone ? "text-[#F6D78E]" : "text-[#FFF8EE]"}`}>
                                   {timerDone ? "✓" : formatTime(timerSeconds ?? 0)}
                                 </p>

@@ -293,7 +293,6 @@ export function RecipeCreateModal({
 
   useEffect(() => {
     if (open) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSubmitError(null);
       setImageFile(null);
       setImagePreview(recipe?.imageUrl ?? null);

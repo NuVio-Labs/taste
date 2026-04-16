@@ -24,7 +24,7 @@ function rowToShoppingList(row: ShoppingListRow): ShoppingList {
   };
 }
 
-export async function fetchShoppingLists(userId: string): Promise<ShoppingList[]> {
+export async function fetchShoppingLists(_userId: string): Promise<ShoppingList[]> {
   const { data, error } = await supabase
     .from("shopping_lists")
     .select("*")

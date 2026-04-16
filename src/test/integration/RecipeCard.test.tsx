@@ -105,7 +105,7 @@ describe("RecipeCard", () => {
 
   it("zeigt Portionen an", () => {
     renderCard({ servings: 4 });
-    expect(screen.getByText(/4 Portionen/)).toBeDefined();
+    expect(screen.getByText(/4 Port\./)).toBeDefined();
   });
 
   it("zeigt Fallback-Buchstabe wenn kein Bild", () => {
