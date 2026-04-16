@@ -1,7 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Bookmark, Lock, ShoppingCart, LayoutGrid, X } from "lucide-react";
 import { useState } from "react";
-import { FunctionsHttpError } from "@supabase/supabase-js";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 
@@ -10,11 +9,6 @@ type UpgradePromptProps = {
   onClose: () => void;
 };
 
-type FunctionErrorPayload = {
-  details?: string;
-  error?: string;
-  stage?: string;
-};
 
 const BENEFITS = [
   {
@@ -43,40 +37,6 @@ export function UpgradePrompt({ isOpen, onClose }: UpgradePromptProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  async function logFunctionErrorResponse(error: FunctionsHttpError) {
-    const response = error.context;
-    const status = response instanceof Response ? response.status : undefined;
-
-    if (!(response instanceof Response)) {
-      console.error("UpgradePrompt function HTTP error without response context.", error);
-      return;
-    }
-
-    let responseText: string | null = null;
-    let responseJson: FunctionErrorPayload | null = null;
-
-    try {
-      responseText = await response.clone().text();
-    } catch (readError) {
-      console.error("UpgradePrompt could not read function error response text.", readError);
-    }
-
-    try {
-      responseJson = responseText ? JSON.parse(responseText) as FunctionErrorPayload : null;
-    } catch {
-      responseJson = null;
-    }
-
-    console.error("UpgradePrompt function HTTP error details:", {
-      details: responseJson?.details,
-      error: responseJson?.error,
-      responseJson,
-      responseText,
-      stage: responseJson?.stage,
-      status,
-    });
-  }
-
   async function handleUpgradeClick() {
     setErrorMessage(null);
     setIsLoading(true);
@@ -87,39 +47,32 @@ export function UpgradePrompt({ isOpen, onClose }: UpgradePromptProps) {
         error: sessionError,
       } = await supabase.auth.getSession();
 
-      if (sessionError) {
-        throw sessionError;
-      }
+      if (sessionError) throw sessionError;
 
       const accessToken = session?.access_token?.trim();
-
       if (!session || !accessToken) {
         onClose();
         navigate("/login");
         return;
       }
 
-      const { data, error } = await supabase.functions.invoke("create-checkout-session", {
-        body: {},
+      const response = await fetch("/api/create-checkout-session", {
+        method: "POST",
         headers: {
+          "Content-Type": "application/json",
           Authorization: `Bearer ${accessToken}`,
         },
+        body: JSON.stringify({}),
       });
 
-      if (error) {
-        throw error;
-      }
+      const data = await response.json() as { url?: string; error?: string };
 
-      if (!data || typeof data.url !== "string" || !data.url) {
-        throw new Error("Checkout-URL konnte nicht erstellt werden.");
+      if (!response.ok || !data.url) {
+        throw new Error(data.error ?? "Checkout-URL konnte nicht erstellt werden.");
       }
 
       window.location.assign(data.url);
     } catch (error) {
-      if (error instanceof FunctionsHttpError) {
-        await logFunctionErrorResponse(error);
-      }
-
       console.error("Stripe checkout could not be started.", error);
       setErrorMessage(
         "Der Checkout konnte gerade nicht gestartet werden. Bitte versuche es erneut.",
