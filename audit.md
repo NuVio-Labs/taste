@@ -51,45 +51,6 @@
 
 ---
 
-## [P2] Fehlende Virtualisierung für lange Rezeptlisten
-
-**Bereich:** Performance  
-**Betroffene Dateien:** `src/pages/RecipesPage.tsx`  
-**Problem:** Pagination ist auf 24 Einträge gesetzt. Alle 24 Cards werden gleichzeitig gerendert mit Framer-Motion-Wrapping. Bei wachsendem Datenbestand und vielen Rezepten steigt die DOM-Größe.  
-**Warum das problematisch ist:** Framer-Motion per Card erhöht Layout-Kosten. 24 Cards mit Bildern können auf Low-End-Geräten Scroll-Jank verursachen.  
-**Auswirkung:** Performance-Degradation bei vielen Rezepten.  
-**Empfohlene Lösung:** Kurzfristig: `motion.div` aus `RecipeCard` entfernen oder auf reine CSS-Transition wechseln. Langfristig: `@tanstack/react-virtual` für Scroll-Virtualisierung.  
-**Aufwand:** mittel  
-**Impact:** mittel
-
----
-
-## [P2] Fehlende Error-Tracking-Integration
-
-**Bereich:** Architektur  
-**Betroffene Dateien:** `src/components/ui/ErrorBoundary.tsx`, `src/App.tsx`  
-**Problem:** ErrorBoundary loggt Fehler nur auf `console.error`. Kein Sentry oder vergleichbares Tool. Produktionsfehler sind unsichtbar.  
-**Warum das problematisch ist:** In Produktion mit echten Nutzern bemerkt man Crashes erst wenn jemand meldet.  
-**Auswirkung:** Blinde Flecken in der Produktionsqualität.  
-**Empfohlene Lösung:** Sentry oder Vercel Error Monitoring integrieren. `componentDidCatch` in ErrorBoundary für Sentry-Event nutzen.  
-**Aufwand:** klein  
-**Impact:** hoch
-
----
-
-## [P2] Kein Feedback wenn Bild-Upload fehlschlägt
-
-**Bereich:** UX  
-**Betroffene Dateien:** `src/components/recipes/RecipeCreateModal.tsx`  
-**Problem:** Bild-Upload-Fehler könnten silent fail wenn der Error nicht explizit in der UI surfaced wird.  
-**Warum das problematisch ist:** Nutzer denkt Bild wurde gespeichert, Rezept erscheint ohne Bild.  
-**Auswirkung:** Vertrauensverlust, Support-Aufwand.  
-**Empfohlene Lösung:** Upload-Error explizit in Formular-UI anzeigen. Retry-Option.  
-**Aufwand:** klein  
-**Impact:** mittel
-
----
-
 ## [P2] `RecipeCard`-Test testet veraltetes Rendering-Verhalten
 
 **Bereich:** Code Quality  
@@ -100,32 +61,6 @@
 **Empfohlene Lösung:** Konvention: UI-Änderungen die Rendering-Text ändern → Test in gleicher PR aktualisieren.  
 **Aufwand:** klein  
 **Impact:** mittel
-
----
-
-## [P3] iOS-Pill-Fixes bestätigen und committen
-
-**Bereich:** UI / Responsiveness  
-**Betroffene Dateien:** `src/components/recipes/RecipeFilters.tsx`, `src/components/recipes/RecipeCard.tsx`, `src/components/recipes/RecipeDetail.tsx`  
-**Problem:** Emoji-Pills auf Apple-Geräten können zu groß sein (Emoji überläuft die Pill-Höhe). Fixes wurden implementiert aber noch nicht durch Tester bestätigt.  
-**Warum das problematisch ist:** Bekannter Bug bleibt in Produktion für iOS-Nutzer.  
-**Auswirkung:** Visuell defekte UI auf iOS — dem wahrscheinlich häufigsten Endgerät der Zielgruppe.  
-**Empfohlene Lösung:** Nach Tester-Bestätigung committen und deployen.  
-**Aufwand:** klein  
-**Impact:** hoch
-
----
-
-## [P3] Keine Pagination-Indikatoren / Infinite-Scroll-Feedback
-
-**Bereich:** UX  
-**Betroffene Dateien:** `src/pages/RecipesPage.tsx`  
-**Problem:** Pagination lädt mehr Rezepte, aber es ist unklar wann das Ende erreicht ist oder wie viele Seiten es gibt. Kein "Ende der Liste"-Signal.  
-**Warum das problematisch ist:** Nutzer wissen nicht ob es mehr gibt oder ob alles geladen wurde.  
-**Auswirkung:** Orientierungsverlust bei vielen Rezepten.  
-**Empfohlene Lösung:** "X von Y Rezepten angezeigt"-Counter, oder "Alle geladen" wenn am Ende.  
-**Aufwand:** klein  
-**Impact:** niedrig
 
 ---
 
@@ -144,10 +79,6 @@
 
 ## Abschlussabschnitt
 
-### Verbleibende Quick Wins
-
-1. **P3 — iOS-Pill-Fixes committen** (nach Tester-Bestätigung)
-
 ### Verbleibende Strategische Baustellen
 
 1. **Komponenten-Splits**: `NavDrawer` aufbrechen. Touch-Logik zwischen NavDrawer und `useSwipeBack` konsolidieren.
@@ -157,14 +88,12 @@
 ### Empfohlene Umsetzungsreihenfolge
 
 **Kurzfristig:**
-- Supabase Image Transformations
-- Error Tracking (Sentry)
-- useSwipeBack löschen oder integrieren
+- Bild-Upload-Fehler in RecipeCreateModal sichtbar machen
+- NavDrawer aufbrechen + Touch-Logik konsolidieren
 
 **Mittelfristig:**
-- RecipeCreateModal lazy loading
-- Component-Splits für NavDrawer
 - CookingMode Tests
+- RecipeCreateModal intern aufteilen
 
 **Langfristig:**
 - Virtualisierung für große Rezeptlisten

@@ -341,6 +341,13 @@ export function RecipeCreateModal({
         setIsUploadingImage(true);
         try {
           imageUrl = await uploadRecipeImage(user.id, imageFile);
+        } catch (uploadError) {
+          setSubmitError(
+            uploadError instanceof Error
+              ? `Bild-Upload fehlgeschlagen: ${uploadError.message}`
+              : "Das Bild konnte nicht hochgeladen werden. Bitte versuche es erneut.",
+          );
+          return;
         } finally {
           setIsUploadingImage(false);
         }
