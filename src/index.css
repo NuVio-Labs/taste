@@ -21,6 +21,11 @@ html {
   scroll-behavior: smooth;
   background: #0f0e0c;
   color: white;
+  scrollbar-width: none;
+}
+
+html::-webkit-scrollbar {
+  display: none;
 }
 
 body {
@@ -29,12 +34,31 @@ body {
   min-height: 100%;
   background: #0f0e0c;
   color: white;
+  scrollbar-width: none;
+  overflow-y: scroll;
+}
+
+body::-webkit-scrollbar {
+  display: none;
 }
 
 #root {
   min-height: 100vh;
   background: #0f0e0c;
   color: white;
+  scrollbar-width: none;
+}
+
+#root::-webkit-scrollbar {
+  display: none;
+}
+
+* {
+  scrollbar-width: none;
+}
+
+*::-webkit-scrollbar {
+  display: none;
 }
 
 button,

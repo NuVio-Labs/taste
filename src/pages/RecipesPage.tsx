@@ -113,7 +113,7 @@ function filterRecipes(
       return true;
     }
 
-    const haystack = [recipe.title, recipe.description, recipe.category]
+    const haystack = [recipe.title, recipe.description, recipe.category, recipe.ingredientNames]
       .join(" ")
       .toLowerCase();
 
@@ -477,7 +477,7 @@ export function RecipesPage() {
 
           </div>
 
-          <div className="mt-6 space-y-6">
+          <div className="mt-6 space-y-4">
             <RecipeFilters
               activeCategory={activeCategory}
               categories={categories}
@@ -489,6 +489,28 @@ export function RecipesPage() {
               onSearchChange={setSearch}
               onSortChange={setSort}
             />
+
+            {/* Schnellfilter-Chips */}
+            <div className="hide-scrollbar flex gap-2 overflow-x-auto pb-1">
+              {[
+                { label: "⚡ Schnell", action: () => { setSort("prepTime"); } },
+                { label: "🌿 Vegetarisch", action: () => setDiet("vegetarian") },
+                { label: "🌱 Vegan", action: () => setDiet("vegan") },
+                ...categories.slice(1, 5).map((cat) => ({
+                  label: cat.label,
+                  action: () => setCategory(cat.key),
+                })),
+              ].map((chip) => (
+                <button
+                  key={chip.label}
+                  type="button"
+                  onClick={chip.action}
+                  className="inline-flex shrink-0 items-center rounded-full border border-white/8 bg-white/[0.02] px-4 py-2 text-sm text-[#C8B79F] transition-colors hover:border-[#D6A84A]/18 hover:text-[#F6EFE4]"
+                >
+                  {chip.label}
+                </button>
+              ))}
+            </div>
           </div>
         </motion.section>
 
@@ -549,8 +571,18 @@ export function RecipesPage() {
                 likePendingRecipeId={likePendingRecipeId}
                 emptyMessage={
                   recipes.length === 0
-                    ? "Noch keine Rezepte vorhanden. Erstelle dein erstes Rezept und die Übersicht füllt sich automatisch."
-                    : "Keine Rezepte passen aktuell zu Suche und Filter."
+                    ? "Noch keine Rezepte vorhanden."
+                    : "Keine Rezepte gefunden."
+                }
+                emptyHint={
+                  recipes.length === 0
+                    ? "Erstelle dein erstes Rezept — es erscheint dann hier automatisch."
+                    : "Versuche einen anderen Suchbegriff oder entferne aktive Filter."
+                }
+                emptyAction={
+                  recipes.length === 0
+                    ? { label: "Rezept erstellen", onClick: () => setIsCreateRecipeOpen(true) }
+                    : undefined
                 }
               />
               {hasMore ? (

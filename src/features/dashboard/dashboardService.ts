@@ -12,6 +12,8 @@ type RecipeStatsRow = {
 
 export type RecipePreview = {
   id: string;
+  imageUrl: string | null;
+  prepTime: number | null;
   sortTimestamp: number;
   subtitle: string;
   title: string;
@@ -77,8 +79,14 @@ function mapRecipeRow(row: RecipeRow, index: number): RecipePreview {
     readString(row.inserted_at);
   const sortTimestamp = dateValue ? new Date(dateValue).getTime() : 0;
 
+  const imageUrl = readString(row.image_url) ?? readString(row.imageUrl);
+  const rawPrepTime = row.prep_time ?? row.prepTime;
+  const prepTime = typeof rawPrepTime === "number" ? rawPrepTime : null;
+
   return {
     id,
+    imageUrl,
+    prepTime,
     sortTimestamp: Number.isNaN(sortTimestamp) ? 0 : sortTimestamp,
     title,
     subtitle: formatRecipeSubtitle(row),

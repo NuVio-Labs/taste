@@ -44,6 +44,7 @@ type RecipeFeedRow = RecipeRow & {
   is_favorite: boolean | null;
   is_liked: boolean | null;
   like_count: number | null;
+  ingredient_names: string | null;
 };
 
 function isMissingFavoritesTableError(error: { message?: string } | null | undefined) {
@@ -174,6 +175,7 @@ function mapRecipeListItem(
     isPublic: row.is_public === true,
     isVegetarian: row.is_vegetarian === true,
     isVegan: row.is_vegan === true,
+    ingredientNames: "",
     likeCount: likeCounts.get(row.id) ?? 0,
     isLiked: likedRecipeIds.has(row.id),
     createdAt: row.created_at,
@@ -196,6 +198,7 @@ function mapRecipeFeedListItem(row: RecipeFeedRow): RecipeListItem {
     isPublic: row.is_public === true,
     isVegetarian: row.is_vegetarian === true,
     isVegan: row.is_vegan === true,
+    ingredientNames: readString(row.ingredient_names) ?? "",
     likeCount: readNumber(row.like_count) ?? 0,
     isLiked: row.is_liked === true,
     createdAt: row.created_at,

@@ -5,7 +5,7 @@ import {
   ArrowRight,
   Bookmark,
   ChefHat,
-  Clock3,
+  Clock,
   Globe2,
   Lock,
   Plus,
@@ -24,13 +24,15 @@ import { EmptyStateCard, ErrorStateCard } from "../components/ui/StateCard";
 import { useAuth } from "../features/auth/useAuth";
 import { dashboardQueryOptions } from "../features/dashboard/queryOptions";
 import { useProfile } from "../features/profile/useProfile";
-import { recipeDetailQueryOptions } from "../features/recipes/queryOptions";
+import { getTransformedImageUrl } from "../features/recipes/imageUpload";
+import { favoriteRecipesQueryOptions, recipeDetailQueryOptions, recipesQueryOptions } from "../features/recipes/queryOptions";
 import { getRecentlyViewed } from "../features/recipes/useRecentlyViewed";
 
 type StatCardProps = {
   hint: string;
   icon: ReactNode;
   label: string;
+  onClick?: () => void;
   value: string;
 };
 
@@ -77,12 +79,13 @@ function SectionCard({
   );
 }
 
-function StatCard({ hint, icon, label, value }: StatCardProps) {
+function StatCard({ hint, icon, label, onClick, value }: StatCardProps) {
   return (
     <motion.div
       whileHover={{ y: -2 }}
       transition={{ duration: 0.2 }}
-      className="rounded-[28px] border border-white/8 bg-white/[0.03] p-5 shadow-[0_10px_30px_rgba(0,0,0,0.22),inset_0_1px_0_rgba(255,255,255,0.03)]"
+      onClick={onClick}
+      className={`rounded-[28px] border border-white/8 bg-white/[0.03] p-5 shadow-[0_10px_30px_rgba(0,0,0,0.22),inset_0_1px_0_rgba(255,255,255,0.03)] ${onClick ? "cursor-pointer hover:border-[#D6A84A]/18" : ""}`}
     >
       <div className="mb-4 flex items-center justify-between">
         <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[#E9D8B4]/10 bg-white/[0.03] text-[#E9D8B4]">
@@ -261,14 +264,17 @@ export function DashboardPage() {
   const stats = data?.stats ?? EMPTY_STATS;
   const recentRecipes = useMemo(() => data?.recentRecipes ?? [], [data]);
 
+  const { data: allRecipes = [] } = useQuery(recipesQueryOptions(userId));
+  const { data: favoriteRecipes = [] } = useQuery(favoriteRecipesQueryOptions(userId));
+
   const recentlyViewedIds = useMemo(() => getRecentlyViewed(userId), [userId]);
   const recentlyViewedRecipes = useMemo(
     () =>
       recentlyViewedIds
-        .map((id) => recentRecipes.find((r) => r.id === id))
+        .map((id) => allRecipes.find((r) => r.id === id))
         .filter(Boolean)
         .slice(0, 5),
-    [recentlyViewedIds, recentRecipes],
+    [recentlyViewedIds, allRecipes],
   );
 
   const fadeUp = {
@@ -339,10 +345,15 @@ export function DashboardPage() {
                 publicRecipes={stats.publicRecipes}
               />
               <StatCard
-                label="Letztes Update"
-                value={stats.lastUpdatedLabel}
-                hint={stats.lastUpdatedHint}
-                icon={<Clock3 size={18} />}
+                label="Favoriten"
+                value={String(favoriteRecipes.length)}
+                hint={
+                  favoriteRecipes.length === 0
+                    ? "Noch keine Rezepte gespeichert."
+                    : `${favoriteRecipes.length} Rezept${favoriteRecipes.length === 1 ? "" : "e"} in deiner Merkliste.`
+                }
+                icon={<Bookmark size={18} />}
+                onClick={plan === "pro" ? () => navigate("/favorites") : undefined}
               />
             </>
           )}
@@ -354,6 +365,52 @@ export function DashboardPage() {
             transition={{ delay: 0.06 }}
             className="space-y-6"
           >
+            {recentlyViewedRecipes.length > 0 ? (
+              <SectionCard eyebrow="Verlauf" title="Zuletzt angesehen">
+                <div className="space-y-2">
+                  {recentlyViewedRecipes.map((recipe) => {
+                    const imgUrl = getTransformedImageUrl(recipe!.imageUrl, "card");
+                    return (
+                      <button
+                        key={recipe!.id}
+                        type="button"
+                        onClick={() => navigate(`/recipes/${recipe!.id}`, { state: { fromPath: "/dashboard" } })}
+                        onMouseEnter={() => handlePrefetchRecipe(recipe!.id)}
+                        onFocus={() => handlePrefetchRecipe(recipe!.id)}
+                        onTouchStart={() => handlePrefetchRecipe(recipe!.id)}
+                        className="group flex w-full items-center gap-3 rounded-[22px] border border-white/8 bg-white/[0.025] px-4 py-3 text-left transition-all duration-300 hover:border-[#D6A84A]/18 hover:bg-white/[0.035]"
+                      >
+                        {imgUrl ? (
+                          <img
+                            src={imgUrl}
+                            alt={recipe!.title}
+                            className="h-11 w-11 shrink-0 rounded-xl object-cover"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[#E9D8B4]/10 bg-white/[0.03] text-[#8D7E6E]">
+                            <ChefHat size={15} />
+                          </div>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium text-[#FFF8EE]">
+                            {recipe!.title}
+                          </p>
+                          {recipe!.prepTime ? (
+                            <p className="mt-0.5 flex items-center gap-1 text-xs text-[#8D7E6E]">
+                              <Clock size={11} />
+                              {recipe!.prepTime} Min
+                            </p>
+                          ) : null}
+                        </div>
+                        <ArrowRight size={14} className="shrink-0 text-[#6B5E4E] transition-transform duration-300 group-hover:translate-x-0.5 group-hover:text-[#D6A84A]" />
+                      </button>
+                    );
+                  })}
+                </div>
+              </SectionCard>
+            ) : null}
+
             <SectionCard title="Letzte Rezepte">
               {isLoading ? (
                 <DashboardRecentRecipesSkeleton />
@@ -373,47 +430,80 @@ export function DashboardPage() {
                   }
                 />
               ) : recentRecipes.length === 0 ? (
-                <EmptyStateCard
-                  eyebrow="Noch leer"
-                  title="Noch keine sichtbaren Rezepte"
-                  description="Erstelle ein eigenes Rezept oder veröffentliche bestehende Inhalte, dann erscheint hier automatisch etwas."
-                />
+                <div className="rounded-[28px] border border-[#D6A84A]/14 bg-[linear-gradient(180deg,rgba(214,168,74,0.06),rgba(214,168,74,0.02))] p-6">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-[#D6A84A]/20 bg-[#D6A84A]/10 text-[#D6A84A]">
+                    <ChefHat size={20} />
+                  </div>
+                  <h3 className="mt-4 text-xl font-semibold tracking-[-0.04em] text-[#FFF8EE]">
+                    Willkommen in deiner Küche
+                  </h3>
+                  <p className="mt-2 text-sm leading-6 text-[#B7AA96]">
+                    Fang mit deinem ersten Rezept an — oder stöbere durch bestehende Rezepte und speichere deine Favoriten.
+                  </p>
+                  <div className="mt-5 flex flex-wrap gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setIsCreateRecipeOpen(true)}
+                      className="inline-flex h-10 items-center gap-2 rounded-full border border-[#D6A84A]/24 bg-[linear-gradient(180deg,rgba(214,168,74,0.22),rgba(214,168,74,0.12))] px-5 text-sm font-semibold text-[#FFF1D4] transition-all duration-300 hover:-translate-y-0.5 hover:border-[#D6A84A]/34"
+                    >
+                      <Plus size={15} />
+                      Erstes Rezept erstellen
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => navigate("/recipes")}
+                      className="inline-flex h-10 items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-5 text-sm font-medium text-[#F6EFE4] transition-colors hover:border-[#D6A84A]/18"
+                    >
+                      Rezepte entdecken
+                    </button>
+                  </div>
+                </div>
               ) : (
                 <div className="space-y-3">
-                  {recentRecipes.map((recipe, index) => (
-                    <motion.div
-                      key={recipe.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.08 + index * 0.06, duration: 0.35 }}
-                      className="flex items-center justify-between rounded-[22px] border border-white/8 bg-white/[0.025] px-4 py-4"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[#E9D8B4]/10 bg-white/[0.03] text-[#E9D8B4]">
-                          <ChefHat size={16} />
-                        </div>
-                        <div>
-                          <p className="text-base font-medium text-[#FFF8EE]">
-                            {recipe.title}
-                          </p>
-                          <p className="text-sm text-[#A99883]">
-                            {recipe.subtitle}
-                          </p>
-                        </div>
-                      </div>
-
-                      <button
+                  {recentRecipes.map((recipe, index) => {
+                    const imgUrl = getTransformedImageUrl(recipe.imageUrl ?? null, "card");
+                    return (
+                      <motion.button
+                        key={recipe.id}
                         type="button"
-                        onClick={() => navigate(`/recipes/${recipe.id}`)}
+                        onClick={() => navigate(`/recipes/${recipe.id}`, { state: { fromPath: "/dashboard" } })}
                         onMouseEnter={() => handlePrefetchRecipe(recipe.id)}
                         onFocus={() => handlePrefetchRecipe(recipe.id)}
                         onTouchStart={() => handlePrefetchRecipe(recipe.id)}
-                        className="rounded-full border border-white/8 bg-white/[0.03] px-4 py-2 text-sm text-[#D6A84A] transition-colors duration-300 hover:border-[#D6A84A]/20 hover:text-[#E9D8B4]"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.08 + index * 0.06, duration: 0.35 }}
+                        className="group flex w-full items-center gap-3 rounded-[22px] border border-white/8 bg-white/[0.025] px-4 py-4 text-left transition-all duration-300 hover:border-[#D6A84A]/18 hover:bg-white/[0.035]"
                       >
-                        Öffnen
-                      </button>
-                    </motion.div>
-                  ))}
+                        {imgUrl ? (
+                          <img
+                            src={imgUrl}
+                            alt={recipe.title}
+                            className="h-12 w-12 shrink-0 rounded-xl object-cover"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-[#E9D8B4]/10 bg-white/[0.03] text-[#E9D8B4]">
+                            <ChefHat size={16} />
+                          </div>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium text-[#FFF8EE]">
+                            {recipe.title}
+                          </p>
+                          {recipe.prepTime ? (
+                            <p className="mt-0.5 flex items-center gap-1 text-xs text-[#8D7E6E]">
+                              <Clock size={11} />
+                              {recipe.prepTime} Min
+                            </p>
+                          ) : (
+                            <p className="mt-0.5 text-xs text-[#6B5F52]">{recipe.subtitle}</p>
+                          )}
+                        </div>
+                        <ArrowRight size={14} className="shrink-0 text-[#6B5E4E] transition-transform duration-300 group-hover:translate-x-0.5 group-hover:text-[#D6A84A]" />
+                      </motion.button>
+                    );
+                  })}
                 </div>
               )}
             </SectionCard>
@@ -491,31 +581,6 @@ export function DashboardPage() {
                 </div>
               </SectionCard>
             )}
-
-            {recentlyViewedRecipes.length > 0 ? (
-              <SectionCard eyebrow="Verlauf" title="Zuletzt angesehen">
-                <div className="space-y-2">
-                  {recentlyViewedRecipes.map((recipe) => (
-                    <button
-                      key={recipe!.id}
-                      type="button"
-                      onClick={() => navigate(`/recipes/${recipe!.id}`)}
-                      onMouseEnter={() => handlePrefetchRecipe(recipe!.id)}
-                      className="group flex w-full items-center gap-3 rounded-[20px] border border-white/8 bg-white/[0.025] px-4 py-3 text-left transition-all duration-300 hover:border-[#D6A84A]/18 hover:bg-white/[0.035]"
-                    >
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#E9D8B4]/10 bg-white/[0.03] text-[#8D7E6E]">
-                        <ChefHat size={14} />
-                      </div>
-                      <p className="min-w-0 flex-1 truncate text-sm font-medium text-[#FFF8EE]">
-                        {recipe!.title}
-                      </p>
-                      <ArrowRight size={14} className="shrink-0 text-[#6B5E4E] transition-transform duration-300 group-hover:translate-x-0.5 group-hover:text-[#D6A84A]" />
-                    </button>
-                  ))}
-                </div>
-              </SectionCard>
-            ) : null}
-
           </motion.aside>
         </div>
       </div>

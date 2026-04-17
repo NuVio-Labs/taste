@@ -1,9 +1,12 @@
+import { BookOpen } from "lucide-react";
 import type { RecipeListItem } from "../../features/recipes/types";
 import { RecipeCard } from "./RecipeCard";
 
 type RecipeOverviewProps = {
   addToShoppingListPendingRecipeId?: string | null;
   emptyMessage: string;
+  emptyHint?: string;
+  emptyAction?: { label: string; onClick: () => void };
   favoritePendingRecipeId?: string | null;
   likePendingRecipeId?: string | null;
   onAddToShoppingList?: (recipeId: string) => void;
@@ -17,6 +20,8 @@ type RecipeOverviewProps = {
 export function RecipeOverview({
   addToShoppingListPendingRecipeId = null,
   emptyMessage,
+  emptyHint,
+  emptyAction,
   favoritePendingRecipeId = null,
   likePendingRecipeId = null,
   onAddToShoppingList,
@@ -28,8 +33,25 @@ export function RecipeOverview({
 }: RecipeOverviewProps) {
   if (recipes.length === 0) {
     return (
-      <div className="rounded-[24px] border border-white/8 bg-white/[0.025] px-4 py-5 text-sm leading-6 text-[#B7AA96]">
-        {emptyMessage}
+      <div className="flex flex-col items-center gap-4 rounded-[28px] border border-white/8 bg-white/[0.02] px-6 py-10 text-center">
+        <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/8 bg-white/[0.03] text-[#6B5F52]">
+          <BookOpen size={20} />
+        </div>
+        <div>
+          <p className="text-sm font-medium text-[#C8B79F]">{emptyMessage}</p>
+          {emptyHint ? (
+            <p className="mt-1.5 text-sm text-[#6B5F52]">{emptyHint}</p>
+          ) : null}
+        </div>
+        {emptyAction ? (
+          <button
+            type="button"
+            onClick={emptyAction.onClick}
+            className="inline-flex h-9 items-center gap-2 rounded-full border border-[#D6A84A]/20 bg-[#D6A84A]/10 px-4 text-sm font-medium text-[#F6D78E] transition-colors hover:bg-[#D6A84A]/16"
+          >
+            {emptyAction.label}
+          </button>
+        ) : null}
       </div>
     );
   }

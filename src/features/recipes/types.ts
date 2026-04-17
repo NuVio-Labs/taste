@@ -23,6 +23,7 @@ export type RecipeListItem = {
   description: string;
   id: string;
   imageUrl: string | null;
+  ingredientNames: string;
   isFavorite: boolean;
   isPublic: boolean;
   isLiked: boolean;

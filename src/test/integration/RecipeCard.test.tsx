@@ -48,6 +48,7 @@ const baseRecipe: RecipeListItem = {
   isLiked: false,
   isVegetarian: false,
   isVegan: false,
+  ingredientNames: "",
   likeCount: 3,
   prepTime: 20,
   servings: 2,

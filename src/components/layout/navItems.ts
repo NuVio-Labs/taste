@@ -2,6 +2,7 @@ import {
   Bookmark,
   BookOpen,
   ChefHat,
+  Compass,
   LayoutGrid,
   MessageSquareText,
   Tag,
@@ -36,6 +37,11 @@ export function buildAppNavItems({
       label: "Rezepte",
       icon: BookOpen,
       to: "/recipes",
+    },
+    {
+      label: "Inspiration",
+      icon: Compass,
+      to: "/inspiration",
     },
     {
       label: "Favoriten",

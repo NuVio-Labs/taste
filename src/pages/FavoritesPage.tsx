@@ -7,8 +7,8 @@ import {
 } from "lucide-react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useLayout } from "../contexts/LayoutContext";
+import { FavoriteRecipeList } from "../components/recipes/FavoriteRecipeList";
 import { RecipeFilters } from "../components/recipes/RecipeFilters";
-import { RecipeOverview } from "../components/recipes/RecipeOverview";
 import { ShoppingListPickerDialog } from "../components/shopping-list/ShoppingListPickerDialog";
 import { RecipeOverviewSkeleton } from "../components/ui/PageSkeletons";
 import { Skeleton } from "../components/ui/Skeleton";
@@ -104,7 +104,7 @@ function filterRecipes(
       return true;
     }
 
-    const haystack = [recipe.title, recipe.description, recipe.category]
+    const haystack = [recipe.title, recipe.description, recipe.category, recipe.ingredientNames]
       .join(" ")
       .toLowerCase();
 
@@ -524,21 +524,12 @@ export function FavoritesPage() {
                   }
                 />
               ) : (
-                <RecipeOverview
-                  addToShoppingListPendingRecipeId={shoppingListPendingRecipeId}
+                <FavoriteRecipeList
                   recipes={filteredRecipes}
-                  onAddToShoppingList={
-                    hasShoppingListAccess
-                      ? handleOpenShoppingListDialog
-                      : () => openUpgrade()
-                  }
                   onPrefetchRecipe={handlePrefetchRecipe}
                   onSelectRecipe={handleSelectRecipe}
                   onToggleFavorite={handleToggleFavorite}
-                  onToggleLike={handleToggleLike}
                   favoritePendingRecipeId={favoritePendingRecipeId}
-                  likePendingRecipeId={likePendingRecipeId}
-                  emptyMessage=""
                 />
               )}
             </>
