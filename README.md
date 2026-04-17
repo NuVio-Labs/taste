@@ -47,6 +47,11 @@ Die App läuft dann auf [http://localhost:5173](http://localhost:5173).
 ```env
 VITE_SUPABASE_URL=https://<dein-projekt>.supabase.co
 VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY=<anon-key>
+
+# Stripe (nur Vercel / server-seitig)
+STRIPE_SECRET_KEY=sk_...
+STRIPE_PRICE_ID=price_...
+STRIPE_WEBHOOK_SECRET=whsec_...
 ```
 
 Für E2E-Tests optional:
