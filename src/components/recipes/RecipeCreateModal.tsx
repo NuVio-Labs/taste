@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { useFieldArray, useForm } from "react-hook-form";
+import { useFieldArray, useForm, type UseFormRegister, type FieldErrors, type UseFieldArrayReturn } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
@@ -563,318 +563,31 @@ export function RecipeCreateModal({
                         </div>
                       </section>
 
-                      <section className="rounded-[28px] border border-white/8 bg-white/[0.03] p-5">
-                        <div className="mb-4 flex items-center justify-between gap-4">
-                          <SectionTitle
-                            title="Zutaten"
-                            subtitle="Mengen sind optional. Beispiele: 2 Stk., 1 Prise, nach Bedarf."
-                          />
-                          <button
-                            type="button"
-                            onClick={() =>
-                              appendIngredient({
-                                id: crypto.randomUUID(),
-                                name: "",
-                                amount: "",
-                                amountNote: "",
-                                unit: "",
-                              })
-                            }
-                            className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-[#E9D8B4]/12 bg-white/[0.03] px-4 text-sm font-medium text-[#F6EFE4] transition-all duration-300 hover:-translate-y-0.5 hover:border-[#D6A84A]/20"
-                          >
-                            <Plus size={16} />
-                            Zutat
-                          </button>
-                        </div>
+                      <IngredientFields
+                        fields={ingredientFields}
+                        register={register}
+                        errors={errors}
+                        onAppend={() => appendIngredient({ id: crypto.randomUUID(), name: "", amount: "", amountNote: "", unit: "" })}
+                        onRemove={removeIngredient}
+                      />
 
-                        <div className="space-y-4">
-                          <datalist id="ingredient-unit-options">
-                            {ingredientUnitOptions.map((unitOption) => (
-                              <option key={unitOption} value={unitOption} />
-                            ))}
-                          </datalist>
-
-                          {ingredientFields.map((field, index) => (
-                            <div
-                              key={field.id}
-                              className="rounded-[24px] border border-white/8 bg-black/10 p-4"
-                            >
-                              <div className="mb-4 flex items-center justify-between">
-                                <p className="text-sm font-medium text-[#D8B989]">
-                                  Zutat {index + 1}
-                                </p>
-
-                                {ingredientFields.length > 1 ? (
-                                  <button
-                                    type="button"
-                                    onClick={() => removeIngredient(index)}
-                                    className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-red-400/20 bg-red-400/5 text-red-200 transition-colors duration-300 hover:bg-red-400/10"
-                                  >
-                                    <Trash2 size={16} />
-                                  </button>
-                                ) : null}
-                              </div>
-
-                              <div className="grid gap-4 md:grid-cols-[1fr_0.5fr_0.7fr_0.8fr]">
-                                <div>
-                                  <label className="mb-2 block text-sm font-medium text-[#F6EFE4]">
-                                    Name
-                                  </label>
-                                  <input
-                                    {...register(`ingredients.${index}.name`)}
-                                    data-testid={index === 0 ? "ingredient-name-input-0" : undefined}
-                                    placeholder="z. B. Spaghetti"
-                                    className="h-12 w-full rounded-2xl border border-white/10 bg-black/10 px-4 text-[#FFF8EE] outline-none placeholder:text-[#8E806F] focus:border-[#D6A84A]"
-                                  />
-                                  <FieldError
-                                    message={errors.ingredients?.[index]?.name?.message}
-                                  />
-                                </div>
-
-                                <div>
-                                  <label className="mb-2 block text-sm font-medium text-[#F6EFE4]">
-                                    Menge
-                                  </label>
-                                  <input
-                                    {...register(`ingredients.${index}.amount`)}
-                                    data-testid={index === 0 ? "ingredient-amount-input-0" : undefined}
-                                    placeholder="z. B. 250 oder leer"
-                                    className="h-12 w-full rounded-2xl border border-white/10 bg-black/10 px-4 text-[#FFF8EE] outline-none placeholder:text-[#8E806F] focus:border-[#D6A84A]"
-                                  />
-                                  <FieldError
-                                    message={errors.ingredients?.[index]?.amount?.message}
-                                  />
-                                </div>
-
-                                <div>
-                                  <label className="mb-2 block text-sm font-medium text-[#F6EFE4]">
-                                    Zusatz
-                                  </label>
-                                  <input
-                                    {...register(`ingredients.${index}.amountNote`)}
-                                    placeholder="optional"
-                                    className="h-12 w-full rounded-2xl border border-white/10 bg-black/10 px-4 text-[#FFF8EE] outline-none placeholder:text-[#8E806F] focus:border-[#D6A84A]"
-                                  />
-                                  <p className="mt-2 text-xs text-[#9F917D]">
-                                    z. B. gehäuft, fein gehackt, nach Geschmack
-                                  </p>
-                                </div>
-
-                                <div>
-                                  <label className="mb-2 block text-sm font-medium text-[#F6EFE4]">
-                                    Einheit
-                                  </label>
-                                  <input
-                                    {...register(`ingredients.${index}.unit`)}
-                                    list="ingredient-unit-options"
-                                    data-testid={index === 0 ? "ingredient-unit-select-0" : undefined}
-                                    placeholder="z. B. Stk., Prise, nach Bedarf"
-                                    className="h-12 w-full rounded-2xl border border-white/10 bg-black/10 px-4 text-[#FFF8EE] outline-none placeholder:text-[#8E806F] focus:border-[#D6A84A]"
-                                  />
-                                  <p className="mt-2 text-xs text-[#9F917D]">
-                                    Freitext erlaubt. Vorschläge erscheinen beim Tippen.
-                                  </p>
-                                  <FieldError
-                                    message={errors.ingredients?.[index]?.unit?.message}
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </section>
-
-                      <section className="rounded-[28px] border border-white/8 bg-white/[0.03] p-5">
-                        <div className="mb-4 flex items-center justify-between gap-4">
-                          <SectionTitle
-                            title="Zubereitung"
-                            subtitle="Wird als jsonb Array gespeichert"
-                          />
-                          <button
-                            type="button"
-                            onClick={() =>
-                              appendStep({
-                                id: crypto.randomUUID(),
-                                text: "",
-                              })
-                            }
-                            className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-[#E9D8B4]/12 bg-white/[0.03] px-4 text-sm font-medium text-[#F6EFE4] transition-all duration-300 hover:-translate-y-0.5 hover:border-[#D6A84A]/20"
-                          >
-                            <Plus size={16} />
-                            Schritt
-                          </button>
-                        </div>
-
-                        <div className="space-y-4">
-                          {stepFields.map((field, index) => (
-                            <div
-                              key={field.id}
-                              className="rounded-[24px] border border-white/8 bg-black/10 p-4"
-                            >
-                              <div className="mb-3 flex items-center justify-between">
-                                <p className="text-sm font-medium text-[#D8B989]">
-                                  Schritt {index + 1}
-                                </p>
-
-                                {stepFields.length > 1 ? (
-                                  <button
-                                    type="button"
-                                    onClick={() => removeStep(index)}
-                                    className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-red-400/20 bg-red-400/5 text-red-200 transition-colors duration-300 hover:bg-red-400/10"
-                                  >
-                                    <Trash2 size={16} />
-                                  </button>
-                                ) : null}
-                              </div>
-
-                              <div>
-                                <label className="mb-2 block text-sm font-medium text-[#F6EFE4]">
-                                  Beschreibung
-                                </label>
-                                <textarea
-                                  {...register(`steps.${index}.text`)}
-                                  data-testid={index === 0 ? "step-textarea-0" : undefined}
-                                  rows={3}
-                                  placeholder="z. B. Nudeln nach Packungsanweisung kochen"
-                                  className="w-full rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-[#FFF8EE] outline-none placeholder:text-[#8E806F] focus:border-[#D6A84A]"
-                                />
-                                <FieldError message={errors.steps?.[index]?.text?.message} />
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </section>
+                      <StepFields
+                        fields={stepFields}
+                        register={register}
+                        errors={errors}
+                        onAppend={() => appendStep({ id: crypto.randomUUID(), text: "" })}
+                        onRemove={removeStep}
+                      />
                     </div>
 
                     <div className="space-y-6">
-                      <section className="rounded-[28px] border border-white/8 bg-white/[0.03] p-5">
-                        <SectionTitle
-                          title="Angaben zum Rezept"
-                          subtitle="Ergänze die wichtigsten Informationen zu deinem Rezept"
-                        />
-
-                        <div className="grid gap-5">
-                          <div>
-                            <label className="mb-2 block text-sm font-medium text-[#F6EFE4]">
-                              Kategorie
-                            </label>
-                            <input
-                              {...register("category")}
-                              data-testid="recipe-category-input"
-                              placeholder="z. B. Abendessen"
-                              className="h-12 w-full rounded-2xl border border-white/10 bg-black/10 px-4 text-[#FFF8EE] outline-none placeholder:text-[#8E806F] focus:border-[#D6A84A]"
-                            />
-                            <FieldError message={errors.category?.message} />
-                          </div>
-
-                          <div className="grid gap-4 sm:grid-cols-2">
-                            <div>
-                              <label className="mb-2 block text-sm font-medium text-[#F6EFE4]">
-                                Vorbereitungszeit
-                              </label>
-                              <div className="grid grid-cols-[1fr_110px] gap-3">
-                                <input
-                                  type="number"
-                                  {...register("prep_time", {
-                                    valueAsNumber: true,
-                                  })}
-                                  data-testid="recipe-prep-time-input"
-                                  className={numberInputClassName}
-                                />
-                                <div className="relative">
-                                  <select
-                                    {...register("prep_time_unit")}
-                                    data-testid="recipe-prep-time-unit-select"
-                                    className={selectClassName}
-                                  >
-                                    <option value="minutes" className="bg-[#171411] text-[#FFF8EE]">
-                                      Min
-                                    </option>
-                                    <option value="hours" className="bg-[#171411] text-[#FFF8EE]">
-                                      Std
-                                    </option>
-                                    <option value="days" className="bg-[#171411] text-[#FFF8EE]">
-                                      Tage
-                                    </option>
-                                  </select>
-                                  <div className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-[#B89A67]">
-                                    <ChevronDown size={16} />
-                                  </div>
-                                </div>
-                              </div>
-                              <FieldError message={errors.prep_time?.message} />
-                            </div>
-
-                            <div>
-                              <label className="mb-2 block text-sm font-medium text-[#F6EFE4]">
-                                Portionen
-                              </label>
-                              <input
-                                type="number"
-                                {...register("servings", {
-                                  valueAsNumber: true,
-                                })}
-                                data-testid="recipe-servings-input"
-                                className={numberInputClassName}
-                              />
-                              <FieldError message={errors.servings?.message} />
-                            </div>
-                          </div>
-
-                          <div>
-                            <label className="mb-2 block text-sm font-medium text-[#F6EFE4]">
-                              Sichtbarkeit
-                            </label>
-                            <div className="relative">
-                              <select
-                                {...register("visibility")}
-                                data-testid="recipe-visibility-select"
-                                className={selectClassName}
-                              >
-                                <option value="private" className="bg-[#171411]">
-                                  Privat
-                                </option>
-                                <option value="public" className="bg-[#171411]">
-                                  Öffentlich
-                                </option>
-                              </select>
-                              <div className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-[#B89A67]">
-                                <ChevronDown size={16} />
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="space-y-3">
-                            <p className="text-sm font-medium text-[#F6EFE4]">Ernährungsweise</p>
-                            <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-white/8 bg-black/10 px-4 py-3 transition-colors duration-200 hover:border-white/14">
-                              <input
-                                type="checkbox"
-                                {...register("is_vegetarian")}
-                                className="h-4 w-4 accent-[#6FA86A]"
-                              />
-                              <span className="text-sm text-[#FFF8EE]">🌿 Vegetarisch</span>
-                            </label>
-                            <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-white/8 bg-black/10 px-4 py-3 transition-colors duration-200 hover:border-white/14">
-                              <input
-                                type="checkbox"
-                                {...register("is_vegan")}
-                                className="h-4 w-4 accent-[#5BAF7A]"
-                              />
-                              <span className="text-sm text-[#FFF8EE]">🌱 Vegan</span>
-                            </label>
-                          </div>
-                        </div>
-                      </section>
-
-
+                      <RecipeMetaFields register={register} errors={errors} />
 
                       {submitError ? (
                         <section className="rounded-[28px] border border-[rgba(255,120,120,0.18)] bg-[rgba(255,120,120,0.06)] p-5">
                           <p className="text-sm leading-6 text-red-200">{submitError}</p>
                         </section>
                       ) : null}
-
-
                     </div>
                   </div>
 
@@ -914,5 +627,263 @@ export function RecipeCreateModal({
         </>
       ) : null}
     </AnimatePresence>
+  );
+}
+
+// --- Subkomponenten ---
+
+type IngredientFieldsProps = {
+  fields: UseFieldArrayReturn<RecipeFormValues, "ingredients">["fields"];
+  register: UseFormRegister<RecipeFormValues>;
+  errors: FieldErrors<RecipeFormValues>;
+  onAppend: () => void;
+  onRemove: (index: number) => void;
+};
+
+function IngredientFields({ fields, register, errors, onAppend, onRemove }: IngredientFieldsProps) {
+  return (
+    <section className="rounded-[28px] border border-white/8 bg-white/[0.03] p-5">
+      <div className="mb-4 flex items-center justify-between gap-4">
+        <SectionTitle
+          title="Zutaten"
+          subtitle="Mengen sind optional. Beispiele: 2 Stk., 1 Prise, nach Bedarf."
+        />
+        <button
+          type="button"
+          onClick={onAppend}
+          className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-[#E9D8B4]/12 bg-white/[0.03] px-4 text-sm font-medium text-[#F6EFE4] transition-all duration-300 hover:-translate-y-0.5 hover:border-[#D6A84A]/20"
+        >
+          <Plus size={16} />
+          Zutat
+        </button>
+      </div>
+
+      <div className="space-y-4">
+        <datalist id="ingredient-unit-options">
+          {ingredientUnitOptions.map((unitOption) => (
+            <option key={unitOption} value={unitOption} />
+          ))}
+        </datalist>
+
+        {fields.map((field, index) => (
+          <div key={field.id} className="rounded-[24px] border border-white/8 bg-black/10 p-4">
+            <div className="mb-4 flex items-center justify-between">
+              <p className="text-sm font-medium text-[#D8B989]">Zutat {index + 1}</p>
+              {fields.length > 1 ? (
+                <button
+                  type="button"
+                  onClick={() => onRemove(index)}
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-red-400/20 bg-red-400/5 text-red-200 transition-colors duration-300 hover:bg-red-400/10"
+                >
+                  <Trash2 size={16} />
+                </button>
+              ) : null}
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-[1fr_0.5fr_0.7fr_0.8fr]">
+              <div>
+                <label className="mb-2 block text-sm font-medium text-[#F6EFE4]">Name</label>
+                <input
+                  {...register(`ingredients.${index}.name`)}
+                  data-testid={index === 0 ? "ingredient-name-input-0" : undefined}
+                  placeholder="z. B. Spaghetti"
+                  className="h-12 w-full rounded-2xl border border-white/10 bg-black/10 px-4 text-[#FFF8EE] outline-none placeholder:text-[#8E806F] focus:border-[#D6A84A]"
+                />
+                <FieldError message={errors.ingredients?.[index]?.name?.message} />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-[#F6EFE4]">Menge</label>
+                <input
+                  {...register(`ingredients.${index}.amount`)}
+                  data-testid={index === 0 ? "ingredient-amount-input-0" : undefined}
+                  placeholder="z. B. 250 oder leer"
+                  className="h-12 w-full rounded-2xl border border-white/10 bg-black/10 px-4 text-[#FFF8EE] outline-none placeholder:text-[#8E806F] focus:border-[#D6A84A]"
+                />
+                <FieldError message={errors.ingredients?.[index]?.amount?.message} />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-[#F6EFE4]">Zusatz</label>
+                <input
+                  {...register(`ingredients.${index}.amountNote`)}
+                  placeholder="optional"
+                  className="h-12 w-full rounded-2xl border border-white/10 bg-black/10 px-4 text-[#FFF8EE] outline-none placeholder:text-[#8E806F] focus:border-[#D6A84A]"
+                />
+                <p className="mt-2 text-xs text-[#9F917D]">z. B. gehäuft, fein gehackt, nach Geschmack</p>
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-[#F6EFE4]">Einheit</label>
+                <input
+                  {...register(`ingredients.${index}.unit`)}
+                  list="ingredient-unit-options"
+                  data-testid={index === 0 ? "ingredient-unit-select-0" : undefined}
+                  placeholder="z. B. Stk., Prise, nach Bedarf"
+                  className="h-12 w-full rounded-2xl border border-white/10 bg-black/10 px-4 text-[#FFF8EE] outline-none placeholder:text-[#8E806F] focus:border-[#D6A84A]"
+                />
+                <p className="mt-2 text-xs text-[#9F917D]">Freitext erlaubt. Vorschläge erscheinen beim Tippen.</p>
+                <FieldError message={errors.ingredients?.[index]?.unit?.message} />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+type StepFieldsProps = {
+  fields: UseFieldArrayReturn<RecipeFormValues, "steps">["fields"];
+  register: UseFormRegister<RecipeFormValues>;
+  errors: FieldErrors<RecipeFormValues>;
+  onAppend: () => void;
+  onRemove: (index: number) => void;
+};
+
+function StepFields({ fields, register, errors, onAppend, onRemove }: StepFieldsProps) {
+  return (
+    <section className="rounded-[28px] border border-white/8 bg-white/[0.03] p-5">
+      <div className="mb-4 flex items-center justify-between gap-4">
+        <SectionTitle title="Zubereitung" subtitle="Wird als jsonb Array gespeichert" />
+        <button
+          type="button"
+          onClick={onAppend}
+          className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-[#E9D8B4]/12 bg-white/[0.03] px-4 text-sm font-medium text-[#F6EFE4] transition-all duration-300 hover:-translate-y-0.5 hover:border-[#D6A84A]/20"
+        >
+          <Plus size={16} />
+          Schritt
+        </button>
+      </div>
+
+      <div className="space-y-4">
+        {fields.map((field, index) => (
+          <div key={field.id} className="rounded-[24px] border border-white/8 bg-black/10 p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-sm font-medium text-[#D8B989]">Schritt {index + 1}</p>
+              {fields.length > 1 ? (
+                <button
+                  type="button"
+                  onClick={() => onRemove(index)}
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-red-400/20 bg-red-400/5 text-red-200 transition-colors duration-300 hover:bg-red-400/10"
+                >
+                  <Trash2 size={16} />
+                </button>
+              ) : null}
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-[#F6EFE4]">Beschreibung</label>
+              <textarea
+                {...register(`steps.${index}.text`)}
+                data-testid={index === 0 ? "step-textarea-0" : undefined}
+                rows={3}
+                placeholder="z. B. Nudeln nach Packungsanweisung kochen"
+                className="w-full rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-[#FFF8EE] outline-none placeholder:text-[#8E806F] focus:border-[#D6A84A]"
+              />
+              <FieldError message={errors.steps?.[index]?.text?.message} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+type RecipeMetaFieldsProps = {
+  register: UseFormRegister<RecipeFormValues>;
+  errors: FieldErrors<RecipeFormValues>;
+};
+
+function RecipeMetaFields({ register, errors }: RecipeMetaFieldsProps) {
+  return (
+    <section className="rounded-[28px] border border-white/8 bg-white/[0.03] p-5">
+      <SectionTitle
+        title="Angaben zum Rezept"
+        subtitle="Ergänze die wichtigsten Informationen zu deinem Rezept"
+      />
+
+      <div className="grid gap-5">
+        <div>
+          <label className="mb-2 block text-sm font-medium text-[#F6EFE4]">Kategorie</label>
+          <input
+            {...register("category")}
+            data-testid="recipe-category-input"
+            placeholder="z. B. Abendessen"
+            className="h-12 w-full rounded-2xl border border-white/10 bg-black/10 px-4 text-[#FFF8EE] outline-none placeholder:text-[#8E806F] focus:border-[#D6A84A]"
+          />
+          <FieldError message={errors.category?.message} />
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className="mb-2 block text-sm font-medium text-[#F6EFE4]">Vorbereitungszeit</label>
+            <div className="grid grid-cols-[1fr_110px] gap-3">
+              <input
+                type="number"
+                {...register("prep_time", { valueAsNumber: true })}
+                data-testid="recipe-prep-time-input"
+                className={numberInputClassName}
+              />
+              <div className="relative">
+                <select
+                  {...register("prep_time_unit")}
+                  data-testid="recipe-prep-time-unit-select"
+                  className={selectClassName}
+                >
+                  <option value="minutes" className="bg-[#171411] text-[#FFF8EE]">Min</option>
+                  <option value="hours" className="bg-[#171411] text-[#FFF8EE]">Std</option>
+                  <option value="days" className="bg-[#171411] text-[#FFF8EE]">Tage</option>
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-[#B89A67]">
+                  <ChevronDown size={16} />
+                </div>
+              </div>
+            </div>
+            <FieldError message={errors.prep_time?.message} />
+          </div>
+
+          <div>
+            <label className="mb-2 block text-sm font-medium text-[#F6EFE4]">Portionen</label>
+            <input
+              type="number"
+              {...register("servings", { valueAsNumber: true })}
+              data-testid="recipe-servings-input"
+              className={numberInputClassName}
+            />
+            <FieldError message={errors.servings?.message} />
+          </div>
+        </div>
+
+        <div>
+          <label className="mb-2 block text-sm font-medium text-[#F6EFE4]">Sichtbarkeit</label>
+          <div className="relative">
+            <select
+              {...register("visibility")}
+              data-testid="recipe-visibility-select"
+              className={selectClassName}
+            >
+              <option value="private" className="bg-[#171411]">Privat</option>
+              <option value="public" className="bg-[#171411]">Öffentlich</option>
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-[#B89A67]">
+              <ChevronDown size={16} />
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          <p className="text-sm font-medium text-[#F6EFE4]">Ernährungsweise</p>
+          <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-white/8 bg-black/10 px-4 py-3 transition-colors duration-200 hover:border-white/14">
+            <input type="checkbox" {...register("is_vegetarian")} className="h-4 w-4 accent-[#6FA86A]" />
+            <span className="text-sm text-[#FFF8EE]">🌿 Vegetarisch</span>
+          </label>
+          <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-white/8 bg-black/10 px-4 py-3 transition-colors duration-200 hover:border-white/14">
+            <input type="checkbox" {...register("is_vegan")} className="h-4 w-4 accent-[#5BAF7A]" />
+            <span className="text-sm text-[#FFF8EE]">🌱 Vegan</span>
+          </label>
+        </div>
+      </div>
+    </section>
   );
 }
